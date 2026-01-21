@@ -1,26 +1,123 @@
+/* Google Fonts are loaded via next/font/google in layout.tsx */
+
+/* Tailwind CSS v4 Import */
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Design System Theme */
+@theme {
+  /* Colors */
+  --color-primary: #183A37;
+  --color-desk: #F0EFEA;
+  --color-paper: #FAF9F5;
+  --color-ink: #141413;
+  --color-muted: #6E6D6A;
+  --color-border: #E5E2DA;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+/* Base Styles Layer */
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-eb-garamond: 'EB Garamond', Georgia, serif;
+  }
+
+  body {
+    background-color: #F0EFEA;
+    color: #141413;
+    font-family: var(--font-inter);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Utilities Layer */
+@layer utilities {
+  /* Shadow Utilities */
+  .shadow-raised {
+    box-shadow: 0 1px 2px rgba(20, 20, 19, 0.06) !important;
+  }
+
+  .shadow-raised-hover {
+    box-shadow: 0 2px 4px rgba(20, 20, 19, 0.08) !important;
+  }
+
+  .shadow-modal {
+    box-shadow: 0 4px 16px rgba(20, 20, 19, 0.12) !important;
+  }
+
+  /* Border Radius */
+  .rounded-card {
+    border-radius: 12px !important;
+  }
+
+  /* Font Families */
+  .font-sans {
+    font-family: var(--font-inter), Inter, system-ui, sans-serif !important;
+  }
+
+  .font-serif {
+    font-family: var(--font-eb-garamond), 'EB Garamond', Georgia, serif !important;
+  }
+
+  /* Font Size Utilities - Interface (Inter) */
+  .text-ui-xs {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-sm {
+    font-size: 0.8125rem !important; /* 13px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-base {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-md {
+    font-size: 0.9375rem !important; /* 15px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-lg {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-xl {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.25 !important;
+  }
+
+  .text-ui-2xl {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 1.25 !important;
+  }
+
+  /* Font Size Utilities - Content (EB Garamond) */
+  .text-content-sm {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.8 !important;
+  }
+
+  .text-content-base {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.8 !important;
+  }
+
+  .text-content-lg {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.6 !important;
+  }
+
+  .text-content-xl {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 1.6 !important;
+  }
+
+  .text-content-2xl {
+    font-size: 2rem !important; /* 32px */
+    line-height: 1.4 !important;
+  }
 }
