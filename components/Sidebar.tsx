@@ -4,17 +4,35 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useLanguage, languages } from '@/lib/contexts/LanguageContext';
+import { 
+  Globe, 
+  LayoutDashboard, 
+  Library, 
+  ClipboardList, 
+  Settings, 
+  ChevronUp, 
+  ChevronDown,
+  Wrench
+} from 'lucide-react';
 
 // ============================================================================
 // Hardcoded Data
 // ============================================================================
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', href: '/', icon: '📊' },
-  { id: 'series', label: 'Series', href: '/series', icon: '📚' },
-  { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: '📝' },
-  { id: 'settings', label: 'Settings', href: '/settings', icon: '⚙️' },
-];
+  { id: 'dashboard', label: 'Dashboard', href: '/', icon: 'dashboard' },
+  { id: 'series', label: 'Series', href: '/series', icon: 'series' },
+  { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary' },
+  { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings' },
+] as const;
+
+// Icon mapping
+const iconMap = {
+  dashboard: LayoutDashboard,
+  series: Library,
+  vocabulary: ClipboardList,
+  settings: Settings,
+};
 
 // ============================================================================
 // Sidebar Component
@@ -44,12 +62,16 @@ export function Sidebar() {
                 className="w-full h-10 px-2 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer"
                 title={currentLanguage?.name}
               >
-                <span className="text-lg shrink-0">🌐</span>
+                <Globe size={20} className="shrink-0 text-primary" strokeWidth={1.5} />
                 <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200">
                   {currentLanguage?.name}
                 </span>
-                <span className="text-ui-sm ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  {isDropdownOpen ? '▲' : '▼'}
+                <span className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {isDropdownOpen ? (
+                    <ChevronUp size={16} strokeWidth={2} />
+                  ) : (
+                    <ChevronDown size={16} strokeWidth={2} />
+                  )}
                 </span>
               </button>
               
@@ -81,6 +103,7 @@ export function Sidebar() {
           <nav className="flex-1 space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
+              const IconComponent = iconMap[item.icon];
               
               return (
                 <Link
@@ -98,7 +121,11 @@ export function Sidebar() {
                   {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-r"></div>
                   )}
-                  <span className="text-lg shrink-0">{item.icon}</span>
+                  <IconComponent 
+                    size={20} 
+                    className={cn("shrink-0", isActive ? "text-primary" : "text-ink")} 
+                    strokeWidth={1.5} 
+                  />
                   <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200">
                     {item.label}
                   </span>
@@ -113,7 +140,7 @@ export function Sidebar() {
               className="w-full h-10 px-2 bg-transparent border border-border text-ink font-sans font-medium text-ui-base rounded hover:bg-paper active:translate-y-px transition-all duration-200 flex items-center gap-2 overflow-hidden cursor-pointer"
               title="Manage Languages"
             >
-              <span className="text-base shrink-0">🔧</span>
+              <Wrench size={18} className="shrink-0 text-ink" strokeWidth={1.5} />
               <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200 text-ui-sm">
                 Manage Languages
               </span>
@@ -127,6 +154,7 @@ export function Sidebar() {
         <div className="flex items-center justify-around h-full px-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const IconComponent = iconMap[item.icon];
             
             return (
               <Link
@@ -139,7 +167,11 @@ export function Sidebar() {
                     : 'text-muted hover:text-ink'
                 )}
               >
-                <span className="text-xl">{item.icon}</span>
+                <IconComponent 
+                  size={24} 
+                  className={isActive ? 'text-primary' : 'text-muted'} 
+                  strokeWidth={1.5} 
+                />
                 <span>{item.label}</span>
               </Link>
             );
