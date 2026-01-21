@@ -2,6 +2,7 @@
 
 import { Heading, Body, Content, Muted } from '@/components/ui/Typography';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { ProgressGraph } from '@/components/dashboard/ProgressGraph';
 
 export default function Dashboard() {
   const { currentLanguage } = useLanguage();
@@ -33,9 +34,7 @@ export default function Dashboard() {
                   Your vocabulary growth over time
                 </Muted>
               </div>
-              <div className="h-32 md:h-48 flex items-center justify-center bg-desk rounded-lg">
-                <Muted>Progress chart will be implemented here</Muted>
-              </div>
+              <ProgressGraph />
             </section>
 
             {/* Stats Cards - Refined & Elegant */}
