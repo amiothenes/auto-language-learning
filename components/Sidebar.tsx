@@ -2,18 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useLanguage, languages } from '@/lib/contexts/LanguageContext';
 
 // ============================================================================
 // Hardcoded Data
 // ============================================================================
-
-const languages = [
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'ru', name: 'Russian' },
-];
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/', icon: '📊' },
@@ -28,29 +22,39 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [selectedLanguage, setSelectedLanguage] = useState('es');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const currentLanguage = languages.find((lang) => lang.code === selectedLanguage);
+  const {
+    selectedLanguage,
+    currentLanguage,
+    setSelectedLanguage,
+    isDropdownOpen,
+    setIsDropdownOpen,
+  } = useLanguage();
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:h-screen md:w-60 bg-desk border-r border-border">
-        <div className="flex flex-col h-full p-4">
+      {/* Desktop Sidebar - Icon Only with Hover Expansion */}
+      <aside className="hidden md:flex md:flex-col md:fixed md:left-0 md:top-0 md:h-screen md:w-16 hover:md:w-60 bg-desk border-r border-border transition-all duration-200 ease-in-out group z-40">
+        <div className="flex flex-col h-full p-3">
           {/* Language Selector */}
           <div className="mb-6">
             <div className="relative">
+              {/* Collapsed: Show icon only */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full px-4 py-3 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover transition-shadow flex items-center justify-between font-sans text-ui-base text-ink font-medium"
+                className="w-full h-10 px-2 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer"
+                title={currentLanguage?.name}
               >
-                <span>{currentLanguage?.name}</span>
-                <span className="text-ui-sm">{isDropdownOpen ? '▲' : '▼'}</span>
+                <span className="text-lg shrink-0">🌐</span>
+                <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200">
+                  {currentLanguage?.name}
+                </span>
+                <span className="text-ui-sm ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {isDropdownOpen ? '▲' : '▼'}
+                </span>
               </button>
               
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50">
+                <div className="absolute top-full left-0 w-60 mt-2 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -83,18 +87,21 @@ export function Sidebar() {
                   key={item.id}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded font-sans text-ui-base transition-colors relative',
+                    'flex items-center gap-3 px-2 py-3 rounded font-sans text-ui-base transition-all duration-200 relative overflow-hidden',
                     isActive
                       ? 'text-primary font-semibold bg-primary/5'
                       : 'text-ink hover:bg-paper'
                   )}
+                  title={item.label}
                 >
                   {/* Active state 2px left border */}
                   {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-r"></div>
                   )}
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span className="text-lg shrink-0">{item.icon}</span>
+                  <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200">
+                    {item.label}
+                  </span>
                 </Link>
               );
             })}
@@ -102,8 +109,14 @@ export function Sidebar() {
 
           {/* Manage Languages Button */}
           <div className="mt-4 pt-4 border-t border-border">
-            <button className="w-full px-4 py-3 bg-transparent border border-border text-ink font-sans font-medium text-ui-base rounded hover:bg-paper active:translate-y-px transition-all">
-              Manage Languages
+            <button 
+              className="w-full h-10 px-2 bg-transparent border border-border text-ink font-sans font-medium text-ui-base rounded hover:bg-paper active:translate-y-px transition-all duration-200 flex items-center gap-2 overflow-hidden cursor-pointer"
+              title="Manage Languages"
+            >
+              <span className="text-base shrink-0">🔧</span>
+              <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200 text-ui-sm">
+                Manage Languages
+              </span>
             </button>
           </div>
         </div>

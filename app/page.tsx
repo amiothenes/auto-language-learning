@@ -1,157 +1,196 @@
+'use client';
+
 import { Heading, Body, Content, Muted } from '@/components/ui/Typography';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function Dashboard() {
+  const { currentLanguage } = useLanguage();
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
         <header className="space-y-2">
           <Heading size="2xl" as="h1">
-            Dashboard
+            {currentLanguage?.name || 'Dashboard'}
           </Heading>
           <Muted>
             Track your language learning progress and recent activity
           </Muted>
         </header>
 
-        {/* Stats Overview */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-paper rounded-card border border-border shadow-raised p-6">
-            <Muted size="xs" className="mb-2">
-              TOTAL WORDS
-            </Muted>
-            <Heading size="2xl" weight="bold" as="h2" className="mb-1">
-              1,234
-            </Heading>
-            <Body size="sm" className="text-primary">
-              +47 this week
-            </Body>
-          </div>
+        {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts) */}
+        <div className="flex flex-col lg:grid lg:grid-cols-[35%_65%] gap-6">
+          {/* LEFT COLUMN: Chart + Stats - Order 3 on mobile, 1 on desktop */}
+          <div className="space-y-6 order-3 lg:order-1">
+            {/* Progress Chart */}
+            <section className="bg-paper rounded-card border border-border shadow-raised p-6 space-y-4">
+              <div>
+                <Heading size="lg" as="h2" className="mb-1">
+                  Progress
+                </Heading>
+                <Muted size="xs">
+                  Your vocabulary growth over time
+                </Muted>
+              </div>
+              <div className="h-32 md:h-48 flex items-center justify-center bg-desk rounded-lg">
+                <Muted>Progress chart will be implemented here</Muted>
+              </div>
+            </section>
 
-          <div className="bg-paper rounded-card border border-border shadow-raised p-6">
-            <Muted size="xs" className="mb-2">
-              KNOWN WORDS
-            </Muted>
-            <Heading size="2xl" weight="bold" as="h2" className="mb-1">
-              823
-            </Heading>
-            <Body size="sm" className="text-primary">
-              66.7% mastery
-            </Body>
-          </div>
-
-          <div className="bg-paper rounded-card border border-border shadow-raised p-6">
-            <Muted size="xs" className="mb-2">
-              TEXTS READ
-            </Muted>
-            <Heading size="2xl" weight="bold" as="h2" className="mb-1">
-              24
-            </Heading>
-            <Body size="sm" className="text-primary">
-              3 this week
-            </Body>
-          </div>
-        </section>
-
-        {/* Progress Section */}
-        <section className="bg-paper rounded-card border border-border shadow-raised p-6 space-y-4">
-          <div>
-            <Heading size="xl" as="h2" className="mb-2">
-              Learning Progress
-            </Heading>
-            <Muted>
-              Your vocabulary growth over time
-            </Muted>
-          </div>
-          <div className="h-48 flex items-center justify-center bg-desk rounded-lg">
-            <Muted>Progress chart will be implemented here</Muted>
-          </div>
-        </section>
-
-        {/* Recent Texts */}
-        <section className="bg-paper rounded-card border border-border shadow-raised p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Heading size="xl" as="h2" className="mb-2">
-                Recent Texts
-              </Heading>
-              <Muted>
-                Continue reading where you left off
-              </Muted>
-            </div>
-            <button className="px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all">
-              Add New Text
-            </button>
-          </div>
-
-          {/* Sample Text Items */}
-          <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="flex items-center justify-between p-4 bg-desk rounded-lg hover:bg-border transition-colors cursor-pointer"
-              >
-                <div className="flex-1">
-                  <Content size="lg" weight="semibold" className="mb-1">
-                    El gato en la casa
-                  </Content>
-                  <div className="flex items-center gap-4">
-                    <Muted size="xs">Spanish Short Stories</Muted>
-                    <Muted size="xs">•</Muted>
-                    <Muted size="xs">234 words</Muted>
-                    <Muted size="xs">•</Muted>
-                    <Muted size="xs">72% known</Muted>
+            {/* Stats Cards - Refined & Elegant */}
+            <div className="bg-paper rounded-card border border-border shadow-raised divide-y divide-border lg:divide-y-0 lg:space-y-0">
+              {/* Total Words */}
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-lg">📖</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Muted size="xs" className="mb-0.5">
+                    Total Words
+                  </Muted>
+                  <div className="flex items-baseline gap-2">
+                    <Heading size="xl" weight="bold" as="h3">
+                      1,234
+                    </Heading>
+                    <Body size="xs" className="text-primary">
+                      +47
+                    </Body>
                   </div>
                 </div>
-                <div className="text-right">
-                  <Muted size="xs">Last read</Muted>
-                  <Body size="sm" weight="medium">
-                    2 hours ago
-                  </Body>
+              </div>
+
+              {/* Known Words */}
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-lg">✓</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Muted size="xs" className="mb-0.5">
+                    Known Words
+                  </Muted>
+                  <div className="flex items-baseline gap-2">
+                    <Heading size="xl" weight="bold" as="h3">
+                      823
+                    </Heading>
+                    <Body size="xs" className="text-primary">
+                      66.7%
+                    </Body>
+                  </div>
                 </div>
               </div>
-            ))}
+
+              {/* Texts Read */}
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-lg">📚</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Muted size="xs" className="mb-0.5">
+                    Texts Read
+                  </Muted>
+                  <div className="flex items-baseline gap-2">
+                    <Heading size="xl" weight="bold" as="h3">
+                      24
+                    </Heading>
+                    <Body size="xs" className="text-primary">
+                      +3
+                    </Body>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="pt-4 border-t border-border text-center">
-            <button className="text-primary font-sans font-medium text-ui-base hover:underline">
-              View All Texts →
-            </button>
+          {/* RIGHT COLUMN: Recent Texts - Order 1 on mobile, 2 on desktop */}
+          <div className="space-y-6 order-1 lg:order-2">
+            {/* Recent Texts Section */}
+            <section className="bg-paper rounded-card border border-border shadow-raised p-4 md:p-6 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <Heading size="lg" as="h2" className="mb-1 md:mb-2 md:text-ui-xl">
+                    Recent Texts
+                  </Heading>
+                  <Muted size="xs" className="hidden md:block md:text-ui-sm">
+                    Continue reading where you left off
+                  </Muted>
+                </div>
+                <button className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer">
+                  <span className="hidden md:inline">Add New Text</span>
+                  <span className="md:hidden text-lg">➕</span>
+                </button>
+              </div>
+
+              {/* Sample Text Items */}
+              <div className="space-y-2 md:space-y-3">
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-desk rounded-lg hover:bg-border transition-colors cursor-pointer gap-2"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <Content size="base" weight="semibold" className="mb-1 md:text-content-lg">
+                        El gato en la casa
+                      </Content>
+                      <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+                        <Muted size="xs">Spanish Short Stories</Muted>
+                        <Muted size="xs" className="hidden md:inline">•</Muted>
+                        <Muted size="xs">234 words</Muted>
+                        <Muted size="xs" className="hidden md:inline">•</Muted>
+                        <Muted size="xs">72% known</Muted>
+                      </div>
+                    </div>
+                    <div className="text-left md:text-right shrink-0">
+                      <Muted size="xs">Last read</Muted>
+                      <Body size="sm" weight="medium">
+                        2 hours ago
+                      </Body>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-4 border-t border-border text-center">
+                <button className="text-primary font-sans font-medium text-ui-base hover:underline cursor-pointer">
+                  View All Texts →
+                </button>
+              </div>
+            </section>
+
+            {/* Quick Actions - Order 2 on mobile */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 order-2 lg:order-3">
+              <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all text-left cursor-pointer active:translate-y-px">
+                <div className="text-3xl mb-3">📚</div>
+                <Heading size="lg" as="h3" className="mb-2">
+                  Browse Series
+                </Heading>
+                <Muted size="sm">
+                  Explore organized text collections
+                </Muted>
+              </button>
+
+              <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all text-left cursor-pointer active:translate-y-px">
+                <div className="text-3xl mb-3">📝</div>
+                <Heading size="lg" as="h3" className="mb-2">
+                  Vocabulary List
+                </Heading>
+                <Muted size="sm">
+                  Review and practice your words
+                </Muted>
+              </button>
+
+              <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all text-left cursor-pointer active:translate-y-px">
+                <div className="text-3xl mb-3">⚙️</div>
+                <Heading size="lg" as="h3" className="mb-2">
+                  Settings
+                </Heading>
+                <Muted size="sm">
+                  Customize your learning experience
+                </Muted>
+              </button>
+            </section>
           </div>
-        </section>
-
-        {/* Quick Actions */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover transition-shadow text-left">
-            <div className="text-3xl mb-3">📚</div>
-            <Heading size="lg" as="h3" className="mb-2">
-              Browse Series
-            </Heading>
-            <Muted size="sm">
-              Explore organized text collections
-            </Muted>
-          </button>
-
-          <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover transition-shadow text-left">
-            <div className="text-3xl mb-3">📝</div>
-            <Heading size="lg" as="h3" className="mb-2">
-              Vocabulary List
-            </Heading>
-            <Muted size="sm">
-              Review and practice your words
-            </Muted>
-          </button>
-
-          <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover transition-shadow text-left">
-            <div className="text-3xl mb-3">⚙️</div>
-            <Heading size="lg" as="h3" className="mb-2">
-              Settings
-            </Heading>
-            <Muted size="sm">
-              Customize your learning experience
-            </Muted>
-          </button>
-        </section>
+        </div>
       </div>
     </div>
   );
