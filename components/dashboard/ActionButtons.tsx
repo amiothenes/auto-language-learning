@@ -1,6 +1,7 @@
 'use client';
 
 import { Heading, Muted } from '@/components/ui/Typography';
+import { Card } from '@/components/ui/Card';
 import { Library, ClipboardList, Settings } from 'lucide-react';
 
 interface ActionButtonsProps {
@@ -10,7 +11,7 @@ interface ActionButtonsProps {
 export function ActionButtons({ className }: ActionButtonsProps) {
   return (
     <section className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${className || ''}`}>
-      <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all text-left cursor-pointer active:translate-y-px">
+      <Card variant="interactive" padding="md" as="button" className="text-left">
         <div className="mb-3">
           <Library size={32} className="text-primary" strokeWidth={1.5} />
         </div>
@@ -20,9 +21,9 @@ export function ActionButtons({ className }: ActionButtonsProps) {
         <Muted size="sm">
           Explore organized text collections
         </Muted>
-      </button>
+      </Card>
 
-      <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all text-left cursor-pointer active:translate-y-px">
+      <Card variant="interactive" padding="md" as="button" className="text-left">
         <div className="mb-3">
           <ClipboardList size={32} className="text-primary" strokeWidth={1.5} />
         </div>
@@ -32,9 +33,9 @@ export function ActionButtons({ className }: ActionButtonsProps) {
         <Muted size="sm">
           Review and practice your words
         </Muted>
-      </button>
+      </Card>
 
-      <button className="bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all text-left cursor-pointer active:translate-y-px">
+      <Card variant="interactive" padding="md" as="button" className="text-left">
         <div className="mb-3">
           <Settings size={32} className="text-primary" strokeWidth={1.5} />
         </div>
@@ -44,7 +45,7 @@ export function ActionButtons({ className }: ActionButtonsProps) {
         <Muted size="sm">
           Customize your learning experience
         </Muted>
-      </button>
+      </Card>
     </section>
   );
 }

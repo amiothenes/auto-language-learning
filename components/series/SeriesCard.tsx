@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Content, Muted } from '@/components/ui/Typography';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { MoreVertical, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -64,9 +66,11 @@ export function SeriesCard({
   };
 
   return (
-    <div
+    <Card
+      variant="interactive"
+      padding="md"
       onClick={handleCardClick}
-      className="relative bg-paper border border-border rounded-card shadow-raised p-6 hover:shadow-raised-hover hover:bg-desk transition-all cursor-pointer active:translate-y-px group"
+      className="relative"
     >
       {/* Header: Series Name + Menu Button */}
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -76,38 +80,47 @@ export function SeriesCard({
         
         {/* Hover Menu Button */}
         <div ref={menuRef} className="relative">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
             onClick={handleMenuToggle}
-            className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-desk transition-all"
+            className="opacity-0 group-hover:opacity-100 rounded"
             aria-label="Series options"
           >
             <MoreVertical size={18} className="text-muted" strokeWidth={1.5} />
-          </button>
+          </Button>
 
           {/* Dropdown Menu */}
           {isMenuOpen && (
             <div className="absolute top-full right-0 mt-1 w-48 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<Edit size={16} className="text-muted" strokeWidth={1.5} />}
                 onClick={(e) => handleMenuAction(e, 'edit')}
-                className="w-full px-4 py-3 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-3"
+                className="w-full px-4 py-3 text-left rounded-none justify-start"
               >
-                <Edit size={16} className="text-muted" strokeWidth={1.5} />
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<Plus size={16} className="text-muted" strokeWidth={1.5} />}
                 onClick={(e) => handleMenuAction(e, 'add-text')}
-                className="w-full px-4 py-3 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-3"
+                className="w-full px-4 py-3 text-left rounded-none justify-start"
               >
-                <Plus size={16} className="text-muted" strokeWidth={1.5} />
                 Add Text
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<Trash2 size={16} className="text-muted" strokeWidth={1.5} />}
                 onClick={(e) => handleMenuAction(e, 'delete')}
-                className="w-full px-4 py-3 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-3"
+                className="w-full px-4 py-3 text-left rounded-none justify-start"
               >
-                <Trash2 size={16} className="text-muted" strokeWidth={1.5} />
                 Delete
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -134,6 +147,6 @@ export function SeriesCard({
 
       {/* Last Updated */}
       <Muted size="xs">Updated {lastUpdated}</Muted>
-    </div>
+    </Card>
   );
 }

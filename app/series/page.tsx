@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
+import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
 import { EmptySeriesState } from '@/components/series/EmptySeriesState';
 import { Search, Plus, ChevronDown } from 'lucide-react';
@@ -166,13 +167,14 @@ export default function SeriesPage() {
           </div>
 
           {/* New Series Button */}
-          <button
+          <Button
+            variant="primary"
+            size="lg"
+            leftIcon={<Plus size={18} strokeWidth={2} />}
             onClick={handleNewSeries}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 hover:shadow-raised-hover active:translate-y-px transition-all shadow-raised cursor-pointer"
           >
-            <Plus size={18} strokeWidth={2} />
             New Series
-          </button>
+          </Button>
         </header>
 
         {/* Filter Bar */}
@@ -195,32 +197,36 @@ export default function SeriesPage() {
 
           {/* Sort Dropdown */}
           <div ref={sortRef} className="relative">
-            <button
+            <Button
+              variant="secondary"
+              size="md"
               onClick={() => setIsSortOpen(!isSortOpen)}
-              className="h-10 px-4 bg-paper border border-border rounded font-sans text-ui-base text-ink hover:bg-desk transition-colors flex items-center gap-2 min-w-[200px] justify-between"
+              className="h-10 min-w-[200px] justify-between rounded"
             >
               <span className="text-muted text-ui-sm">Sort:</span>
               <span className="flex-1 text-left">{currentSortLabel}</span>
               <ChevronDown size={16} className="text-muted" strokeWidth={2} />
-            </button>
+            </Button>
 
             {isSortOpen && (
               <div className="absolute top-full right-0 mt-1 w-full bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
                 {sortOptions.map((option) => (
-                  <button
+                  <Button
                     key={option.value}
+                    variant="ghost"
+                    size="md"
                     onClick={() => {
                       setSortBy(option.value);
                       setIsSortOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left font-sans text-ui-sm transition-colors ${
+                    className={`w-full px-4 py-3 text-left rounded-none justify-start ${
                       sortBy === option.value
-                        ? 'bg-primary text-white font-medium'
-                        : 'text-ink hover:bg-desk'
+                        ? 'bg-primary text-white font-medium hover:bg-primary'
+                        : ''
                     }`}
                   >
                     {option.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}

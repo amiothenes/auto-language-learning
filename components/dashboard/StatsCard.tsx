@@ -1,6 +1,7 @@
 'use client';
 
 import { Heading, Body, Muted } from '@/components/ui/Typography';
+import { Card } from '@/components/ui/Card';
 import { ProgressGraph } from '@/components/dashboard/ProgressGraph';
 import { Target, BookOpen, CheckCircle2, BookMarked } from 'lucide-react';
 import { Skeleton, SkeletonText, SkeletonCircle } from '@/components/ui/Skeleton';
@@ -13,16 +14,16 @@ function StatsCardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Progress Chart Skeleton */}
-      <section className="bg-paper rounded-card border border-border shadow-raised p-6 space-y-4">
+      <Card variant="default" padding="md" as="section" className="space-y-4">
         <div>
           <SkeletonText width="w-24" className="mb-1 h-4" />
           <SkeletonText width="w-40" className="h-3" />
         </div>
         <Skeleton className="w-full h-[200px] rounded" />
-      </section>
+      </Card>
 
       {/* Stats Skeleton */}
-      <div className="bg-paper rounded-card border border-border shadow-raised divide-y divide-border">
+      <Card variant="default" padding="sm" className="divide-y divide-border">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="p-4 flex items-center gap-4">
             <SkeletonCircle size={40} />
@@ -35,7 +36,7 @@ function StatsCardSkeleton() {
             </div>
           </div>
         ))}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -48,7 +49,7 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
   return (
     <div className="space-y-6">
       {/* Progress Chart */}
-      <section className="bg-paper rounded-card border border-border shadow-raised p-6 space-y-4">
+      <Card variant="default" padding="md" as="section" className="space-y-4">
         <div>
           <Heading size="lg" as="h2" className="mb-1">
             Progress
@@ -58,10 +59,10 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
           </Muted>
         </div>
         <ProgressGraph />
-      </section>
+      </Card>
 
       {/* Stats Cards - Refined & Elegant */}
-      <div className="bg-paper rounded-card border border-border shadow-raised divide-y divide-border">
+      <Card variant="default" padding="sm" className="divide-y divide-border">
         {/* Fluency % */}
         <div className="p-4 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -138,7 +139,7 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
