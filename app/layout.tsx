@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
+import { Sidebar } from "@/components/Sidebar";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,9 +30,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${ebGaramond.variable} antialiased`}
+        className={`${inter.variable} ${ebGaramond.variable} antialiased bg-desk`}
       >
-        {children}
+        <Sidebar />
+        
+        {/* Main Content Area */}
+        <main className="md:ml-60 min-h-screen pb-16 md:pb-0">
+          {children}
+        </main>
       </body>
     </html>
   );
