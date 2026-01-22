@@ -151,4 +151,67 @@
   .animate-slide-up {
     animation: slide-up 300ms ease-out;
   }
+
+  @keyframes fade-slide-up {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pulse-green {
+    0%, 100% {
+      box-shadow: 0 4px 16px rgba(20, 20, 19, 0.12);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(24, 58, 55, 0.3);
+    }
+  }
+
+  @keyframes sparkle {
+    0% {
+      transform: translateY(0) scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(-30px) scale(1) rotate(180deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-60px) scale(0) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-fade-slide-up {
+    animation: fade-slide-up 200ms ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 200ms ease-out forwards;
+  }
+
+  .animate-pulse-green {
+    animation: pulse-green 500ms ease-in-out;
+  }
+
+  .animate-sparkle {
+    animation: sparkle 1200ms ease-out forwards;
+  }
 }

@@ -7,7 +7,8 @@ import { X, ChevronLeft, Info } from 'lucide-react';
 import { TextInfo } from '@/components/reader/TextInfo';
 import { ReaderContent } from '@/components/reader/ReaderContent';
 import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
-import { WordData } from '@/components/reader/Word';
+import { WordData, VocabularyStatus } from '@/components/reader/Word';
+import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 
 // ============================================================================
 // Hardcoded Data (Temporary)
@@ -104,6 +105,27 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // State for mobile text info panel
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
   
+  // State for vocabulary stats tracking
+  // NOTE: To test milestones, temporarily set knownWords to values like:
+  // - 99 (to trigger 100 milestone on next word marked as known)
+  // - 249 (to trigger 250 milestone)
+  // - 499 (to trigger 500 milestone)
+  // - 999 (to trigger 1000 milestone)
+  const [vocabularyStats, setVocabularyStats] = useState({
+    totalWords: textData.uniqueWordCount,
+    knownWords: Math.round(textData.uniqueWordCount * (textData.knownPercentage / 100)),
+    textKnownPercentage: textData.knownPercentage,
+  });
+  
+  // State for status update feedback
+  const [feedbackState, setFeedbackState] = useState<{
+    isVisible: boolean;
+    message: string;
+    oldStats: { knownWords: number; textProgress: number };
+    newStats: { knownWords: number; textProgress: number };
+    isMilestone: boolean;
+  } | null>(null);
+  
   // State for mobile header visibility (auto-hide on scroll)
   const [showMobileHeader, setShowMobileHeader] = useState(true);
   const lastScrollY = useRef(0);
@@ -137,6 +159,109 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     setIsRightPanelOpen(false);
     // Optionally clear selected word after animation
     setTimeout(() => setSelectedWord(null), 300);
+  };
+  
+  /**
+   * Check if a number is a milestone
+   */
+  const checkMilestone = (knownWords: number): boolean => {
+    const milestones = [100, 250, 500, 1000, 2000, 5000];
+    return milestones.includes(knownWords);
+  };
+  
+  /**
+   * Check if a status is considered "known" (KNOWN or WELL_KNOWN)
+   */
+  const isKnownStatus = (status: VocabularyStatus): boolean => {
+    return status === VocabularyStatus.KNOWN || status === VocabularyStatus.WELL_KNOWN;
+  };
+  
+  /**
+   * Handle status change for a word
+   */
+  const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
+    if (!selectedWord) return;
+    
+    const oldStatus = selectedWord.status;
+    const wasKnown = isKnownStatus(oldStatus);
+    const isNowKnown = isKnownStatus(newStatus);
+    
+    // Calculate stat changes
+    let knownWordsDelta = 0;
+    if (!wasKnown && isNowKnown) {
+      knownWordsDelta = 1; // Word became known
+    } else if (wasKnown && !isNowKnown) {
+      knownWordsDelta = -1; // Word became unknown
+    }
+    
+    // Calculate new stats
+    const oldStats = {
+      knownWords: vocabularyStats.knownWords,
+      textProgress: vocabularyStats.textKnownPercentage,
+    };
+    
+    const newKnownWords = vocabularyStats.knownWords + knownWordsDelta;
+    const newTextProgress = Math.round((newKnownWords / vocabularyStats.totalWords) * 100);
+    
+    const newStats = {
+      knownWords: newKnownWords,
+      textProgress: newTextProgress,
+    };
+    
+    // Update vocabulary stats
+    setVocabularyStats({
+      ...vocabularyStats,
+      knownWords: newKnownWords,
+      textKnownPercentage: newTextProgress,
+    });
+    
+    // Update selected word status (optimistic update)
+    setSelectedWord({
+      ...selectedWord,
+      status: newStatus,
+    });
+    
+    // Check if milestone reached
+    const isMilestone = knownWordsDelta > 0 && checkMilestone(newKnownWords);
+    
+    // Determine message
+    let message = 'Status updated!';
+    if (isMilestone) {
+      message = `Amazing! You've reached ${newKnownWords.toLocaleString()} known words!`;
+    }
+    
+    // Debug logging
+    console.log('Status Change Details:', {
+      wordId,
+      oldStatus,
+      newStatus,
+      knownWordsDelta,
+      oldKnownWords: oldStats.knownWords,
+      newKnownWords,
+      isMilestone,
+      nextMilestones: [100, 250, 500, 1000, 2000, 5000].filter(m => m > newKnownWords).slice(0, 3),
+    });
+    
+    // Show feedback only if stats changed
+    if (knownWordsDelta !== 0) {
+      setFeedbackState({
+        isVisible: true,
+        message,
+        oldStats,
+        newStats,
+        isMilestone,
+      });
+    }
+    
+    // TODO: In real app, make API call to update word status
+    console.log(`Status changed: ${selectedWord.surface} -> ${newStatus}`);
+  };
+  
+  /**
+   * Handle dismissing the feedback toast
+   */
+  const handleDismissFeedback = () => {
+    setFeedbackState(null);
   };
   
   // Handle click on mini map bar to scroll to paragraph
@@ -222,8 +347,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       }
     };
 
-    // Only add touch listeners on mobile
-    if (window.innerWidth < 768) {
+    // Only add touch listeners on mobile/tablet/small desktop
+    if (window.innerWidth < 1280) {
       document.addEventListener('touchstart', handleTouchStart, { passive: true });
       document.addEventListener('touchmove', handleTouchMove, { passive: true });
       document.addEventListener('touchend', handleTouchEnd);
@@ -238,9 +363,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   return (
     <div className="min-h-screen bg-desk">
-      {/* Mobile: Top Header Bar - Auto-hides on scroll */}
+      {/* Mobile/Tablet/Small Desktop: Top Header Bar - Auto-hides on scroll */}
       <header className={cn(
-        "fixed top-0 inset-x-0 bg-paper/95 backdrop-blur-sm border-b border-border z-40 md:hidden transition-transform duration-300",
+        "fixed top-0 inset-x-0 bg-paper/95 backdrop-blur-sm border-b border-border z-40 xl:hidden transition-transform duration-300",
         showMobileHeader ? "translate-y-0" : "-translate-y-full"
       )}>
         <div className="flex items-center justify-between px-4 py-3">
@@ -270,10 +395,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </div>
       </header>
 
-      {/* Mobile: Backdrop overlay when panels are open */}
+      {/* Mobile/Tablet/Small Desktop: Backdrop overlay when panels are open */}
       {(isTextInfoOpen || isRightPanelOpen) && (
         <div 
-          className="fixed inset-0 bg-ink/30 z-30 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-ink/30 z-30 xl:hidden backdrop-blur-sm"
           onClick={() => {
             setIsTextInfoOpen(false);
             setIsRightPanelOpen(false);
@@ -281,24 +406,19 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         />
       )}
 
-      {/* Desktop: 3-column grid | Mobile: Stacked layout */}
-      <div className={cn(
-        "flex flex-col md:grid",
-        isRightPanelOpen 
-          ? "md:grid-cols-[280px_1fr_380px]" 
-          : "md:grid-cols-[280px_1fr]"
-      )}>
+      {/* Large Desktop: 3-column grid | Mobile/Tablet/Small Desktop: Stacked layout */}
+      <div className="flex flex-col xl:grid xl:grid-cols-[280px_1fr_25rem]">
         {/* ================================================================ */}
         {/* LEFT SIDEBAR - Text Info & Navigation */}
         {/* ================================================================ */}
         <aside className={cn(
-          "fixed inset-x-0 bottom-0 h-[90vh] md:order-1 md:sticky md:top-0 md:h-screen md:inset-auto bg-paper border-t md:border-t-0 md:border-r border-border overflow-y-auto z-40 md:z-auto rounded-t-2xl md:rounded-none transition-transform duration-300",
-          isTextInfoOpen ? "translate-y-0" : "translate-y-full md:translate-y-0"
+          "fixed inset-x-0 bottom-0 h-[90vh] xl:order-1 xl:sticky xl:top-0 xl:h-screen xl:inset-auto bg-paper border-t xl:border-t-0 xl:border-r border-border overflow-y-auto z-40 xl:z-auto rounded-t-2xl xl:rounded-none transition-transform duration-300",
+          isTextInfoOpen ? "translate-y-0" : "translate-y-full xl:translate-y-0"
         )}>
           {/* Mobile: Close button */}
           <button
             onClick={() => setIsTextInfoOpen(false)}
-            className="absolute top-4 right-4 md:hidden text-muted hover:text-ink transition-colors z-10"
+            className="absolute top-4 right-4 xl:hidden text-muted hover:text-ink transition-colors z-10"
             aria-label="Close text information"
           >
             <X size={24} strokeWidth={1.5} />
@@ -324,7 +444,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         {/* ================================================================ */}
         {/* MAIN READER AREA - Centered Content */}
         {/* ================================================================ */}
-        <main className="order-1 md:order-2 flex justify-center px-4 pt-20 pb-8 md:pt-12 md:pb-12 md:px-8">
+        <main className="order-1 xl:order-2 flex justify-center px-4 pt-20 pb-8 xl:pt-12 xl:pb-12 xl:px-8">
           <ReaderContent
             content={textData.content}
             onWordClick={handleWordClick}
@@ -333,15 +453,46 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </main>
 
         {/* ================================================================ */}
-        {/* RIGHT PANEL - Word Details (Conditional) */}
+        {/* RIGHT PANEL SPACE - Reserved on Large Desktop (≥1280px), Hidden on smaller screens */}
         {/* ================================================================ */}
-        {isRightPanelOpen && (
-          <WordDetailsPanel
-            wordData={selectedWord}
-            onClose={handleCloseWordDetails}
-          />
-        )}
+        <aside className="hidden xl:block xl:order-3 relative">
+          {/* Reserved space - panel slides over this area */}
+          {isRightPanelOpen && (
+            <WordDetailsPanel
+              wordData={selectedWord}
+              onClose={handleCloseWordDetails}
+              onStatusChange={handleStatusChange}
+              isDesktop={true}
+            />
+          )}
+        </aside>
       </div>
+      
+      {/* ================================================================ */}
+      {/* MOBILE/TABLET/SMALL DESKTOP WORD DETAILS - Slides from right, overlaps content */}
+      {/* ================================================================ */}
+      {isRightPanelOpen && (
+        <WordDetailsPanel
+          wordData={selectedWord}
+          onClose={handleCloseWordDetails}
+          onStatusChange={handleStatusChange}
+          isDesktop={false}
+        />
+      )}
+      
+      {/* ================================================================ */}
+      {/* STATUS UPDATE FEEDBACK - Toast Notification */}
+      {/* ================================================================ */}
+      {feedbackState && (
+        <StatusUpdateFeedback
+          isVisible={feedbackState.isVisible}
+          message={feedbackState.message}
+          oldStats={feedbackState.oldStats}
+          newStats={feedbackState.newStats}
+          isMilestone={feedbackState.isMilestone}
+          onDismiss={handleDismissFeedback}
+        />
+      )}
     </div>
   );
 }

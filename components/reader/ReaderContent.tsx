@@ -165,7 +165,7 @@ export function ReaderContent({ content, onWordClick, selectedWordId }: ReaderCo
   });
 
   return (
-    <article className="w-full max-w-[720px] space-y-6">
+    <article className="w-full max-w-[45rem] space-y-6">
       {parsedContent.map((paragraph) => (
         <p 
           key={paragraph.id}

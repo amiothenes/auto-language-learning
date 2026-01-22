@@ -62,7 +62,7 @@ export function TextInfo({
   };
 
   return (
-    <div className="p-6 space-y-6 h-full">
+    <div className="p-6 pt-24 xl:pt-6 space-y-6 h-full overflow-y-auto">
       {/* Back Navigation */}
       <Link 
         href={`/series/${seriesId}`}
@@ -182,7 +182,7 @@ export function TextInfo({
 
       {/* Toggle Word Details Panel (Desktop only) */}
       {onRightPanelToggle && (
-        <div className="pt-4 border-t border-border hidden md:block">
+        <div className="pt-4 pb-2 border-t border-border hidden md:block">
           <Button
             variant={isRightPanelOpen ? "primary" : "secondary"}
             size="md"
