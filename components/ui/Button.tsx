@@ -37,7 +37,7 @@ export function Button({
   const variantStyles = {
     primary: 'bg-primary text-white shadow-raised hover:opacity-90 hover:shadow-raised-hover active:translate-y-px',
     secondary: 'bg-paper border border-border text-ink hover:bg-desk transition-colors',
-    ghost: 'bg-transparent text-ink hover:bg-desk transition-colors',
+    ghost: 'bg-transparent text-ink hover:bg-desk hover:underline transition-colors',
   };
   
   // Size styles

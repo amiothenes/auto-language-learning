@@ -372,22 +372,20 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             {isSortOpen && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
                 {sortOptions.map((option) => (
-                  <Button
+                  <button
                     key={option.value}
-                    variant="ghost"
-                    size="md"
                     onClick={() => {
                       setSortBy(option.value);
                       setIsSortOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left rounded-none justify-start ${
+                    className={`w-full px-4 py-3 text-left font-sans text-ui-base transition-colors ${
                       sortBy === option.value
-                        ? 'bg-primary text-white font-medium hover:bg-primary'
-                        : ''
+                        ? 'bg-primary text-white font-medium'
+                        : 'text-ink hover:bg-desk'
                     }`}
                   >
                     {option.label}
-                  </Button>
+                  </button>
                 ))}
               </div>
             )}
