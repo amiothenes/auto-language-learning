@@ -233,7 +233,7 @@ export function ProgressGraph() {
               ${
                 selectedRange === option.id
                   ? 'bg-primary text-white'
-                  : 'bg-transparent text-muted hover:bg-desk hover:text-ink'
+                  : 'bg-transparent text-muted hover:bg-desk cursor-pointer hover:text-ink'
               }
             `}
             aria-label={`Show ${option.label} range`}
