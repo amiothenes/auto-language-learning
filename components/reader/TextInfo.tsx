@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { MiniMap } from './MiniMap';
 import { 
   ChevronLeft, 
   BookOpen, 
@@ -27,6 +28,9 @@ interface TextInfoProps {
   seriesId: string;
   seriesName: string;
   tags: string[];
+  paragraphProgress: Array<{ id: string; progress: number }>;
+  currentParagraphIndex: number;
+  onParagraphNavigate: (index: number) => void;
   onRightPanelToggle?: () => void;
   isRightPanelOpen?: boolean;
 }
@@ -40,6 +44,9 @@ export function TextInfo({
   seriesId,
   seriesName,
   tags,
+  paragraphProgress,
+  currentParagraphIndex,
+  onParagraphNavigate,
   onRightPanelToggle,
   isRightPanelOpen = false,
 }: TextInfoProps) {
@@ -55,7 +62,7 @@ export function TextInfo({
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 h-full">
       {/* Back Navigation */}
       <Link 
         href={`/series/${seriesId}`}
@@ -126,6 +133,13 @@ export function TextInfo({
           </span>
         </div>
       </div>
+
+      {/* Mini Map */}
+      <MiniMap
+        paragraphs={paragraphProgress}
+        currentParagraphIndex={currentParagraphIndex}
+        onBarClick={onParagraphNavigate}
+      />
 
       {/* Tags Section */}
       {tags.length > 0 && (

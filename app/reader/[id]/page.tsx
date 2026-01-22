@@ -1,11 +1,13 @@
 'use client';
 
-import { use, useState } from 'react';
-import { notFound } from 'next/navigation';
-import { Heading, Muted } from '@/components/ui/Typography';
+import { use, useState, useRef, useEffect } from 'react';
+import { notFound, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, Info } from 'lucide-react';
 import { TextInfo } from '@/components/reader/TextInfo';
+import { ReaderContent } from '@/components/reader/ReaderContent';
+import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
+import { WordData } from '@/components/reader/Word';
 
 // ============================================================================
 // Hardcoded Data (Temporary)
@@ -63,6 +65,22 @@ const TEMP_TEXT_DATA: Record<string, TextData> = {
   },
 };
 
+// Hardcoded paragraph progress data for mini map
+const TEMP_PARAGRAPH_PROGRESS = [
+  { id: 'p1', progress: 85 },   // High - green
+  { id: 'p2', progress: 72 },   // Medium-high - yellow-green
+  { id: 'p3', progress: 45 },   // Medium - orange
+  { id: 'p4', progress: 68 },   // Medium-high
+  { id: 'p5', progress: 90 },   // High - green
+  { id: 'p6', progress: 55 },   // Medium
+  { id: 'p7', progress: 30 },   // Low - red-orange
+  { id: 'p8', progress: 78 },   // Medium-high
+  { id: 'p9', progress: 62 },   // Medium
+  { id: 'p10', progress: 82 },  // High
+  { id: 'p11', progress: 48 },  // Medium-low
+  { id: 'p12', progress: 95 },  // Very high - green
+];
+
 // ============================================================================
 // Reader Page Component
 // ============================================================================
@@ -77,9 +95,28 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // Unwrap the params Promise using React.use()
   const { id } = use(params);
   const textData = TEMP_TEXT_DATA[id];
+  const router = useRouter();
 
-  // State for right panel visibility
+  // State for right panel visibility and selected word
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
+  
+  // State for mobile text info panel
+  const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
+  
+  // State for mobile header visibility (auto-hide on scroll)
+  const [showMobileHeader, setShowMobileHeader] = useState(true);
+  const lastScrollY = useRef(0);
+  
+  // State for current paragraph tracking
+  const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
+  const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
+  
+  // Touch gesture tracking for swipe back
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchEndX = useRef(0);
+  const touchEndY = useRef(0);
 
   // If text not found, show 404
   if (!textData) {
@@ -88,20 +125,185 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   // Split content into paragraphs
   const paragraphs = textData.content.split('\n\n').filter(p => p.trim());
+  
+  // Handle word click - open right panel and set selected word
+  const handleWordClick = (wordData: WordData) => {
+    setSelectedWord(wordData);
+    setIsRightPanelOpen(true);
+  };
+
+  // Handle closing word details panel
+  const handleCloseWordDetails = () => {
+    setIsRightPanelOpen(false);
+    // Optionally clear selected word after animation
+    setTimeout(() => setSelectedWord(null), 300);
+  };
+  
+  // Handle click on mini map bar to scroll to paragraph
+  const handleParagraphNavigate = (index: number) => {
+    const element = paragraphRefs.current[index];
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      });
+    }
+  };
+  
+  // Track current paragraph position with IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = paragraphRefs.current.indexOf(entry.target as HTMLParagraphElement);
+            if (index !== -1) {
+              setCurrentParagraphIndex(index);
+            }
+          }
+        });
+      },
+      { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' }
+    );
+
+    paragraphRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, [paragraphs.length]);
+
+  // Auto-hide mobile header on scroll down, show on scroll up
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 10) {
+        // Always show at top
+        setShowMobileHeader(true);
+      } else if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        // Scrolling down - hide header
+        setShowMobileHeader(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up - show header
+        setShowMobileHeader(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Handle swipe gestures for navigation
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      touchEndX.current = e.touches[0].clientX;
+      touchEndY.current = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = () => {
+      const deltaX = touchEndX.current - touchStartX.current;
+      const deltaY = touchEndY.current - touchStartY.current;
+      
+      // Check if horizontal swipe (more horizontal than vertical)
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Swipe right (from left edge) - go back
+        if (deltaX > 100 && touchStartX.current < 50) {
+          router.push(`/series/${textData.seriesId}`);
+        }
+      }
+    };
+
+    // Only add touch listeners on mobile
+    if (window.innerWidth < 768) {
+      document.addEventListener('touchstart', handleTouchStart, { passive: true });
+      document.addEventListener('touchmove', handleTouchMove, { passive: true });
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [router, textData.seriesId]);
 
   return (
     <div className="min-h-screen bg-desk">
+      {/* Mobile: Top Header Bar - Auto-hides on scroll */}
+      <header className={cn(
+        "fixed top-0 inset-x-0 bg-paper/95 backdrop-blur-sm border-b border-border z-40 md:hidden transition-transform duration-300",
+        showMobileHeader ? "translate-y-0" : "-translate-y-full"
+      )}>
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push(`/series/${textData.seriesId}`)}
+            className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+            aria-label="Back to series"
+          >
+            <ChevronLeft size={20} strokeWidth={2} />
+            <span className="font-sans text-ui-sm font-medium">Back</span>
+          </button>
+          
+          {/* Title - Truncated */}
+          <h1 className="flex-1 px-4 font-serif text-content-sm text-ink truncate text-center">
+            {textData.title}
+          </h1>
+          
+          {/* Info Button */}
+          <button
+            onClick={() => setIsTextInfoOpen(true)}
+            className="text-muted hover:text-ink transition-colors p-1"
+            aria-label="Text information"
+          >
+            <Info size={20} strokeWidth={1.5} />
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile: Backdrop overlay when panels are open */}
+      {(isTextInfoOpen || isRightPanelOpen) && (
+        <div 
+          className="fixed inset-0 bg-ink/30 z-30 md:hidden backdrop-blur-sm"
+          onClick={() => {
+            setIsTextInfoOpen(false);
+            setIsRightPanelOpen(false);
+          }}
+        />
+      )}
+
       {/* Desktop: 3-column grid | Mobile: Stacked layout */}
       <div className={cn(
         "flex flex-col md:grid",
         isRightPanelOpen 
-          ? "md:grid-cols-[240px_1fr_320px]" 
-          : "md:grid-cols-[240px_1fr]"
+          ? "md:grid-cols-[280px_1fr_380px]" 
+          : "md:grid-cols-[280px_1fr]"
       )}>
         {/* ================================================================ */}
         {/* LEFT SIDEBAR - Text Info & Navigation */}
         {/* ================================================================ */}
-        <aside className="order-2 md:order-1 md:sticky md:top-0 md:h-screen md:overflow-y-auto bg-paper border-r border-border">
+        <aside className={cn(
+          "fixed inset-x-0 bottom-0 h-[90vh] md:order-1 md:sticky md:top-0 md:h-screen md:inset-auto bg-paper border-t md:border-t-0 md:border-r border-border overflow-y-auto z-40 md:z-auto rounded-t-2xl md:rounded-none transition-transform duration-300",
+          isTextInfoOpen ? "translate-y-0" : "translate-y-full md:translate-y-0"
+        )}>
+          {/* Mobile: Close button */}
+          <button
+            onClick={() => setIsTextInfoOpen(false)}
+            className="absolute top-4 right-4 md:hidden text-muted hover:text-ink transition-colors z-10"
+            aria-label="Close text information"
+          >
+            <X size={24} strokeWidth={1.5} />
+          </button>
+          
           <TextInfo
             title={textData.title}
             wordCount={textData.wordCount}
@@ -111,6 +313,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             seriesId={textData.seriesId}
             seriesName={textData.seriesName}
             tags={textData.tags}
+            paragraphProgress={TEMP_PARAGRAPH_PROGRESS}
+            currentParagraphIndex={currentParagraphIndex}
+            onParagraphNavigate={handleParagraphNavigate}
             onRightPanelToggle={() => setIsRightPanelOpen(!isRightPanelOpen)}
             isRightPanelOpen={isRightPanelOpen}
           />
@@ -119,75 +324,22 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         {/* ================================================================ */}
         {/* MAIN READER AREA - Centered Content */}
         {/* ================================================================ */}
-        <main className="order-1 md:order-2 flex justify-center px-4 py-8 md:px-8 md:py-12">
-          <article className="w-full max-w-[720px] space-y-6">
-            {/* Reader Content - EB Garamond, 18px, line-height 1.8 */}
-            {paragraphs.map((paragraph, index) => (
-              <p 
-                key={index}
-                className="font-serif text-content-base text-ink leading-relaxed"
-              >
-                {paragraph}
-              </p>
-            ))}
-
-            {/* Placeholder for future word interaction */}
-            <div className="pt-8 border-t border-border">
-              <Muted className="text-center text-ui-sm italic">
-                Click on words to see translations and mark learning progress
-              </Muted>
-            </div>
-          </article>
+        <main className="order-1 md:order-2 flex justify-center px-4 pt-20 pb-8 md:pt-12 md:pb-12 md:px-8">
+          <ReaderContent
+            content={textData.content}
+            onWordClick={handleWordClick}
+            selectedWordId={selectedWord?.id}
+          />
         </main>
 
         {/* ================================================================ */}
         {/* RIGHT PANEL - Word Details (Conditional) */}
         {/* ================================================================ */}
         {isRightPanelOpen && (
-          <aside className="order-3 md:sticky md:top-0 md:h-screen md:overflow-y-auto bg-paper border-l border-border">
-            <div className="p-6 space-y-6">
-              {/* Panel Header */}
-              <div className="flex items-center justify-between">
-                <Heading size="base" as="h2">
-                  Word Details
-                </Heading>
-                <button
-                  onClick={() => setIsRightPanelOpen(false)}
-                  className="text-muted hover:text-ink transition-colors"
-                  aria-label="Close word details panel"
-                >
-                  <X size={20} strokeWidth={1.5} />
-                </button>
-              </div>
-
-              {/* Placeholder Content */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <Muted className="text-ui-sm text-center italic">
-                  Select a word in the text to view its details, translation, and learning status.
-                </Muted>
-                
-                {/* Example Structure (will be populated when word is clicked) */}
-                <div className="space-y-3 opacity-40">
-                  <div>
-                    <Muted className="text-ui-xs mb-1">Surface Form</Muted>
-                    <p className="font-serif text-content-lg text-ink">—</p>
-                  </div>
-                  <div>
-                    <Muted className="text-ui-xs mb-1">Lemma (Root)</Muted>
-                    <p className="font-serif text-content-base text-ink">—</p>
-                  </div>
-                  <div>
-                    <Muted className="text-ui-xs mb-1">Translation</Muted>
-                    <p className="font-sans text-ui-base text-ink">—</p>
-                  </div>
-                  <div>
-                    <Muted className="text-ui-xs mb-1">Status</Muted>
-                    <div className="h-8 bg-desk rounded border border-border"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <WordDetailsPanel
+            wordData={selectedWord}
+            onClose={handleCloseWordDetails}
+          />
         )}
       </div>
     </div>
