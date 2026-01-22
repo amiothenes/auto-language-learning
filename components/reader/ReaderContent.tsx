@@ -1,6 +1,8 @@
 'use client';
 
 import { Word, WordData, VocabularyStatus } from './Word';
+import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
+import { cn } from '@/lib/utils';
 
 // ============================================================================
 // ReaderContent Component
@@ -14,6 +16,8 @@ interface ReaderContentProps {
 }
 
 export function ReaderContent({ content, onWordClick, selectedWordId }: ReaderContentProps) {
+  // Get reader settings from context
+  const { settings } = useReaderSettings();
   
   /**
    * Generate deterministic hash from string for consistent status assignment
@@ -164,12 +168,22 @@ export function ReaderContent({ content, onWordClick, selectedWordId }: ReaderCo
     };
   });
 
+  // Map font size setting to CSS class
+  const fontSizeClass = {
+    small: 'text-content-sm',   // 14px
+    medium: 'text-content-base', // 18px (default)
+    large: 'text-content-lg',    // 20px
+  }[settings.fontSize];
+
   return (
-    <article className="w-full max-w-[45rem] space-y-6">
+    <article className={cn(
+      "w-full max-w-[45rem] space-y-6 transition-all duration-200",
+      fontSizeClass
+    )}>
       {parsedContent.map((paragraph) => (
         <p 
           key={paragraph.id}
-          className="font-serif text-content-base text-ink leading-relaxed"
+          className="font-serif text-ink leading-relaxed"
         >
           {paragraph.words.map((wordData, index) => (
             <span key={wordData.id}>
@@ -177,6 +191,8 @@ export function ReaderContent({ content, onWordClick, selectedWordId }: ReaderCo
                 data={wordData}
                 onClick={onWordClick}
                 isSelected={selectedWordId === wordData.id}
+                highlightIntensity={settings.highlightIntensity}
+                showWellKnownWords={settings.showWellKnownWords}
               />
               {/* Add space after word unless it's followed by punctuation */}
               {index < paragraph.words.length - 1 && 

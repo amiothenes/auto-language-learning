@@ -10,7 +10,7 @@ import {
   BookOpen, 
   Library, 
   Download, 
-  Settings 
+  Pencil 
 } from 'lucide-react';
 
 // ============================================================================
@@ -56,13 +56,13 @@ export function TextInfo({
     // TODO: Implement export functionality
   };
 
-  const handleSettings = () => {
-    console.log('Open settings for text:', title);
-    // TODO: Implement settings modal
+  const handleEditText = () => {
+    console.log('Open edit text screen for:', title);
+    // TODO: Implement edit text modal/page
   };
 
   return (
-    <div className="p-6 pt-24 xl:pt-6 space-y-6 h-full overflow-y-auto">
+    <div className="p-6 pt-24 xl:pt-6 pb-24 xl:pb-6 space-y-6 h-full overflow-y-auto">
       {/* Back Navigation */}
       <Link 
         href={`/series/${seriesId}`}
@@ -172,11 +172,11 @@ export function TextInfo({
         <Button
           variant="secondary"
           size="sm"
-          leftIcon={<Settings size={16} strokeWidth={1.5} />}
-          onClick={handleSettings}
+          leftIcon={<Pencil size={16} strokeWidth={1.5} />}
+          onClick={handleEditText}
           className="flex-1"
         >
-          Settings
+          Edit Text
         </Button>
       </div>
 

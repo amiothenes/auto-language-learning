@@ -39,18 +39,29 @@ interface WordProps {
   data: WordData;
   onClick: (data: WordData) => void;
   isSelected?: boolean;
+  highlightIntensity?: number; // 0-100, default 100
+  showWellKnownWords?: boolean; // default true
 }
 
-export function Word({ data, onClick, isSelected = false }: WordProps) {
+export function Word({ 
+  data, 
+  onClick, 
+  isSelected = false,
+  highlightIntensity = 100,
+  showWellKnownWords = true,
+}: WordProps) {
   
   /**
    * Get status-based background color with opacity
+   * Applies highlight intensity multiplier to opacity
    * @param status Vocabulary learning status
    * @param isHover Whether the word is being hovered
    * @returns HSLA color string
    */
   const getStatusColor = (status: VocabularyStatus, isHover: boolean): string | undefined => {
-    const opacity = isHover ? 0.25 : (isSelected ? 0.2 : 0.15);
+    const baseOpacity = isHover ? 0.25 : (isSelected ? 0.2 : 0.15);
+    // Apply highlight intensity (0-100 -> 0.0-1.0 multiplier)
+    const opacity = baseOpacity * (highlightIntensity / 100);
     
     switch (status) {
       case VocabularyStatus.NEWLY_SEEN:
@@ -58,7 +69,7 @@ export function Word({ data, onClick, isSelected = false }: WordProps) {
       case VocabularyStatus.FAMILIAR:
         return `hsla(45, 85%, 55%, ${opacity})`;
       case VocabularyStatus.KNOWN:
-        return `hsla(145, 60%, 40%, ${opacity > 0.15 ? opacity : 0.1})`;
+        return `hsla(145, 60%, 40%, ${opacity > 0.1 ? opacity : 0.05})`;
       case VocabularyStatus.WELL_KNOWN:
         return undefined; // No styling
       case VocabularyStatus.IGNORE:
@@ -82,6 +93,8 @@ export function Word({ data, onClick, isSelected = false }: WordProps) {
         !isWellKnown && !isIgnored && "hover:underline decoration-1 underline-offset-2",
         // Ignore styling - dashed underline only
         isIgnored && "underline decoration-dashed decoration-1 underline-offset-2 opacity-70",
+        // Well-known words - dimmed if showWellKnownWords is false
+        isWellKnown && !showWellKnownWords && "opacity-50",
         // Selected state
         isSelected && "ring-1 ring-primary ring-offset-1"
       )}
