@@ -6,31 +6,30 @@ import { Content, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { MoreVertical, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { MoreVertical, FileText, Edit, Trash2 } from 'lucide-react';
 
 // ============================================================================
-// SeriesCard Component
-// Displays a series card with name, description, progress, and actions menu
+// TextCard Component
+// Displays an individual text card with title, stats, preview, and actions
 // ============================================================================
 
-interface SeriesCardProps {
+interface TextCardProps {
   id: string;
-  name: string;
-  description: string;
-  textCount: number;
-  progress: number;
-  lastUpdated: string;
+  title: string;
+  wordCount: number;
+  knownPercentage: number;
+  lastRead: string;
+  preview: string;
 }
 
-export function SeriesCard({
+export function TextCard({
   id,
-  name,
-  description,
-  textCount,
-  progress,
-  lastUpdated,
-}: SeriesCardProps) {
+  title,
+  wordCount,
+  knownPercentage,
+  lastRead,
+  preview,
+}: TextCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -50,7 +49,7 @@ export function SeriesCard({
   }, [isMenuOpen]);
 
   const handleCardClick = () => {
-    router.push(`/series/${id}`);
+    router.push(`/reader/${id}`);
   };
 
   const handleMenuToggle = (e: React.MouseEvent) => {
@@ -60,7 +59,7 @@ export function SeriesCard({
 
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
-    console.log(`${action} series:`, id);
+    console.log(`${action} text:`, id);
     setIsMenuOpen(false);
     // TODO: Implement actual actions
   };
@@ -72,10 +71,10 @@ export function SeriesCard({
       onClick={handleCardClick}
       className="relative"
     >
-      {/* Header: Series Name + Menu Button */}
+      {/* Header: Text Title + Menu Button */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <Content size="lg" weight="semibold" className="flex-1 line-clamp-1">
-          {name}
+          {title}
         </Content>
         
         {/* Hover Menu Button */}
@@ -83,7 +82,7 @@ export function SeriesCard({
           <button
             onClick={handleMenuToggle}
             className="p-1.5 rounded hover:bg-desk transition-all shrink-0 opacity-0 group-hover:opacity-100 cursor-pointer"
-            aria-label="Series options"
+            aria-label="Text options"
           >
             <MoreVertical size={18} className="text-ink" strokeWidth={2} />
           </button>
@@ -103,15 +102,6 @@ export function SeriesCard({
               <Button
                 variant="ghost"
                 size="sm"
-                leftIcon={<Plus size={16} className="text-muted" strokeWidth={1.5} />}
-                onClick={(e) => handleMenuAction(e, 'add-text')}
-                className="w-full px-4 py-3 text-left rounded-none justify-start"
-              >
-                Add Text
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
                 leftIcon={<Trash2 size={16} className="text-muted" strokeWidth={1.5} />}
                 onClick={(e) => handleMenuAction(e, 'delete')}
                 className="w-full px-4 py-3 text-left rounded-none justify-start"
@@ -123,27 +113,27 @@ export function SeriesCard({
         </div>
       </div>
 
-      {/* Description */}
-      <Muted size="sm" className="mb-4 line-clamp-2 h-[2.4rem]">
-        {description}
-      </Muted>
+      {/* Preview Snippet */}
+      <Content size="sm" className="mb-4 line-clamp-2 h-[2.8rem] text-muted">
+        {preview}
+      </Content>
 
       {/* Metadata Row */}
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
-          <BookOpen size={14} className="text-muted" strokeWidth={1.5} />
-          <Muted size="xs">{textCount} texts</Muted>
+          <FileText size={14} className="text-muted" strokeWidth={1.5} />
+          <Muted size="xs">{wordCount.toLocaleString('en-US')} words</Muted>
         </div>
         <Muted size="xs" className="text-primary font-medium">
-          {progress}% complete
+          {knownPercentage}% known
         </Muted>
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar value={progress} className="mb-3" />
+      <ProgressBar value={knownPercentage} className="mb-3" />
 
-      {/* Last Updated */}
-      <Muted size="xs">Updated {lastUpdated}</Muted>
+      {/* Last Read */}
+      <Muted size="xs">Last read {lastRead}</Muted>
     </Card>
   );
 }
