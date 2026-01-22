@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
 import { Library, ClipboardList, Settings } from 'lucide-react';
@@ -9,9 +10,17 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({ className }: ActionButtonsProps) {
+  const router = useRouter();
+
   return (
     <section className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${className || ''}`}>
-      <Card variant="interactive" padding="md" as="button" className="text-left">
+      <Card 
+        variant="interactive" 
+        padding="md" 
+        as="button" 
+        className="text-left"
+        onClick={() => router.push('/series')}
+      >
         <div className="mb-3">
           <Library size={32} className="text-primary" strokeWidth={1.5} />
         </div>
@@ -23,7 +32,13 @@ export function ActionButtons({ className }: ActionButtonsProps) {
         </Muted>
       </Card>
 
-      <Card variant="interactive" padding="md" as="button" className="text-left">
+      <Card 
+        variant="interactive" 
+        padding="md" 
+        as="button" 
+        className="text-left"
+        onClick={() => router.push('/vocabulary')}
+      >
         <div className="mb-3">
           <ClipboardList size={32} className="text-primary" strokeWidth={1.5} />
         </div>
@@ -35,7 +50,13 @@ export function ActionButtons({ className }: ActionButtonsProps) {
         </Muted>
       </Card>
 
-      <Card variant="interactive" padding="md" as="button" className="text-left">
+      <Card 
+        variant="interactive" 
+        padding="md" 
+        as="button" 
+        className="text-left"
+        onClick={() => router.push('/settings')}
+      >
         <div className="mb-3">
           <Settings size={32} className="text-primary" strokeWidth={1.5} />
         </div>
