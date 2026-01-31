@@ -214,4 +214,42 @@
   .animate-sparkle {
     animation: sparkle 1200ms ease-out forwards;
   }
+
+  /* Tooltip Animations */
+  @keyframes tooltip-enter {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes tooltip-exit {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+  }
+
+  .animate-tooltip-enter {
+    animation: tooltip-enter 150ms ease-out;
+  }
+
+  .animate-tooltip-exit {
+    animation: tooltip-exit 120ms ease-out forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-tooltip-enter,
+    .animate-tooltip-exit {
+      animation: none;
+    }
+  }
 }

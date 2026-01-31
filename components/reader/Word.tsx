@@ -37,7 +37,7 @@ export interface WordData {
 
 interface WordProps {
   data: WordData;
-  onClick: (data: WordData) => void;
+  onClick: (data: WordData, anchorRect: DOMRect) => void;
   isSelected?: boolean;
   highlightIntensity?: number; // 0-100, default 100
   showWellKnownWords?: boolean; // default true
@@ -83,9 +83,17 @@ export function Word({
   const isIgnored = data.status === VocabularyStatus.IGNORE;
   const isWellKnown = data.status === VocabularyStatus.WELL_KNOWN;
 
+  // Build native title tooltip text
+  const titleText = !isSelected
+    ? data.translation && data.translation !== '—'
+      ? `${data.lemma}: ${data.translation}`
+      : data.lemma
+    : undefined;
+
   return (
     <span
-      onClick={() => onClick(data)}
+      onClick={(e) => onClick(data, e.currentTarget.getBoundingClientRect())}
+      title={titleText}
       className={cn(
         // Base styles
         "font-serif cursor-pointer transition-all duration-150 rounded-sm px-0.5 -mx-0.5",

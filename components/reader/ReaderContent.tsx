@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface ReaderContentProps {
   content: string;
-  onWordClick: (data: WordData) => void;
+  onWordClick: (data: WordData, anchorRect: DOMRect) => void;
   selectedWordId?: string | null;
 }
 

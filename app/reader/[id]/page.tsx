@@ -1,14 +1,16 @@
 'use client';
 
-import { use, useState, useRef, useEffect } from 'react';
+import { use, useState, useRef, useEffect, useCallback } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { X, ChevronLeft, Info } from 'lucide-react';
 import { TextInfo } from '@/components/reader/TextInfo';
 import { ReaderContent } from '@/components/reader/ReaderContent';
 import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
+import { WordTooltip } from '@/components/reader/WordTooltip';
 import { WordData, VocabularyStatus } from '@/components/reader/Word';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
 // ============================================================================
 // Hardcoded Data (Temporary)
@@ -126,6 +128,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     isMilestone: boolean;
   } | null>(null);
   
+  // Desktop detection for tooltip vs side panel behavior
+  const isDesktop = useMediaQuery('(min-width: 1280px)');
+
+  // State for word tooltip (desktop only)
+  const [tooltipWord, setTooltipWord] = useState<WordData | null>(null);
+  const [tooltipAnchorRect, setTooltipAnchorRect] = useState<DOMRect | null>(null);
+  const [isTooltipExiting, setIsTooltipExiting] = useState(false);
+
   // State for mobile header visibility (auto-hide on scroll)
   const [showMobileHeader, setShowMobileHeader] = useState(true);
   const lastScrollY = useRef(0);
@@ -148,10 +158,24 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // Split content into paragraphs
   const paragraphs = textData.content.split('\n\n').filter(p => p.trim());
   
-  // Handle word click - open right panel and set selected word
-  const handleWordClick = (wordData: WordData) => {
+  // Handle word click - desktop: tooltip, mobile: side panel
+  const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
     setSelectedWord(wordData);
-    setIsRightPanelOpen(true);
+
+    if (isDesktop) {
+      // If clicking the same word, close tooltip
+      if (tooltipWord?.id === wordData.id && !isTooltipExiting) {
+        handleTooltipClose();
+        return;
+      }
+      // Swap immediately if different word (no exit animation)
+      setIsTooltipExiting(false);
+      setTooltipWord(wordData);
+      setTooltipAnchorRect(anchorRect);
+    } else {
+      // Mobile/tablet: open side panel directly
+      setIsRightPanelOpen(true);
+    }
   };
 
   // Handle closing word details panel
@@ -159,6 +183,25 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     setIsRightPanelOpen(false);
     // Optionally clear selected word after animation
     setTimeout(() => setSelectedWord(null), 300);
+  };
+
+  // Handle tooltip close with exit animation — also deselects the word
+  const handleTooltipClose = useCallback(() => {
+    setIsTooltipExiting(true);
+    setTimeout(() => {
+      setTooltipWord(null);
+      setTooltipAnchorRect(null);
+      setIsTooltipExiting(false);
+      setSelectedWord(null);
+    }, 120);
+  }, []);
+
+  // Handle "View Full Details" from tooltip
+  const handleTooltipViewDetails = () => {
+    setTooltipWord(null);
+    setTooltipAnchorRect(null);
+    setIsTooltipExiting(false);
+    setIsRightPanelOpen(true);
   };
   
   /**
@@ -480,6 +523,20 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         />
       )}
       
+      {/* ================================================================ */}
+      {/* DESKTOP WORD TOOLTIP */}
+      {/* ================================================================ */}
+      {tooltipWord && tooltipAnchorRect && (
+        <WordTooltip
+          wordData={tooltipWord}
+          anchorRect={tooltipAnchorRect}
+          onClose={handleTooltipClose}
+          onStatusChange={handleStatusChange}
+          onViewDetails={handleTooltipViewDetails}
+          isExiting={isTooltipExiting}
+        />
+      )}
+
       {/* ================================================================ */}
       {/* STATUS UPDATE FEEDBACK - Toast Notification */}
       {/* ================================================================ */}
