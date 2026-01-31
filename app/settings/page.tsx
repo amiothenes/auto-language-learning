@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { Heading, Muted } from '@/components/ui/Typography';
-import { Button } from '@/components/ui/Button';
-import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
-import { Type, Globe, Database, Info, ChevronLeft } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Heading, Muted } from "@/components/ui/Typography";
+import { Button } from "@/components/ui/Button";
+import { useReaderSettings } from "@/lib/contexts/ReaderSettingsContext";
+import { Type, Globe, Database, Info, ChevronLeft } from "lucide-react";
 
 // ============================================================================
 // Settings Page
 // Tab-based navigation: Display, Languages, Data, About
 // ============================================================================
 
-type SettingsTab = 'display' | 'languages' | 'data' | 'about';
+type SettingsTab = "display" | "languages" | "data" | "about";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('display');
+  const [activeTab, setActiveTab] = useState<SettingsTab>("display");
   const router = useRouter();
 
   const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Type }> = [
-    { id: 'display', label: 'Display', icon: Type },
-    { id: 'languages', label: 'Languages', icon: Globe },
-    { id: 'data', label: 'Data', icon: Database },
-    { id: 'about', label: 'About', icon: Info },
+    { id: "display", label: "Display", icon: Type },
+    { id: "languages", label: "Languages", icon: Globe },
+    { id: "data", label: "Data", icon: Database },
+    { id: "about", label: "About", icon: Info },
   ];
 
   const handleBack = () => {
@@ -55,16 +55,16 @@ export default function SettingsPage() {
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            
+
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-3 font-sans text-ui-base font-medium transition-colors border-b-2 whitespace-nowrap',
+                  "flex items-center gap-2 px-4 py-3 font-sans text-ui-base font-medium transition-colors border-b-2 whitespace-nowrap",
                   isActive
-                    ? 'text-primary border-primary'
-                    : 'text-muted border-transparent hover:text-ink hover:border-border'
+                    ? "text-primary border-primary"
+                    : "text-muted border-transparent hover:text-ink hover:border-border"
                 )}
               >
                 <Icon size={18} strokeWidth={1.5} />
@@ -76,10 +76,10 @@ export default function SettingsPage() {
 
         {/* Tab Content */}
         <div className="space-y-6">
-          {activeTab === 'display' && <DisplayTab />}
-          {activeTab === 'languages' && <PlaceholderTab title="Languages" />}
-          {activeTab === 'data' && <PlaceholderTab title="Data" />}
-          {activeTab === 'about' && <PlaceholderTab title="About" />}
+          {activeTab === "display" && <DisplayTab />}
+          {activeTab === "languages" && <PlaceholderTab title="Languages" />}
+          {activeTab === "data" && <PlaceholderTab title="Data" />}
+          {activeTab === "about" && <PlaceholderTab title="About" />}
         </div>
       </div>
     </div>
@@ -104,7 +104,7 @@ function DisplayTab() {
       {/* Reader Settings Section */}
       <section className="bg-paper border border-border rounded-card p-6 shadow-raised">
         <div className="mb-6">
-          <Heading size="md" as="h2" className="mb-1">
+          <Heading size="lg" as="h2" className="mb-1">
             Reader Settings
           </Heading>
           <Muted className="text-ui-sm">
@@ -120,34 +120,40 @@ function DisplayTab() {
             </label>
             <div className="flex gap-2">
               <Button
-                variant={settings.fontSize === 'small' ? 'primary' : 'secondary'}
+                variant={
+                  settings.fontSize === "small" ? "primary" : "secondary"
+                }
                 size="md"
-                onClick={() => updateFontSize('small')}
+                onClick={() => updateFontSize("small")}
                 className="flex-1"
               >
                 A−
               </Button>
               <Button
-                variant={settings.fontSize === 'medium' ? 'primary' : 'secondary'}
+                variant={
+                  settings.fontSize === "medium" ? "primary" : "secondary"
+                }
                 size="md"
-                onClick={() => updateFontSize('medium')}
+                onClick={() => updateFontSize("medium")}
                 className="flex-1"
               >
                 A
               </Button>
               <Button
-                variant={settings.fontSize === 'large' ? 'primary' : 'secondary'}
+                variant={
+                  settings.fontSize === "large" ? "primary" : "secondary"
+                }
                 size="md"
-                onClick={() => updateFontSize('large')}
+                onClick={() => updateFontSize("large")}
                 className="flex-1"
               >
                 A+
               </Button>
             </div>
             <Muted className="text-ui-xs mt-2">
-              {settings.fontSize === 'small' && '16px - Compact reading'}
-              {settings.fontSize === 'medium' && '18px - Default (recommended)'}
-              {settings.fontSize === 'large' && '20px - Comfortable reading'}
+              {settings.fontSize === "small" && "16px - Compact reading"}
+              {settings.fontSize === "medium" && "18px - Default (recommended)"}
+              {settings.fontSize === "large" && "20px - Comfortable reading"}
             </Muted>
           </div>
 
@@ -174,7 +180,8 @@ function DisplayTab() {
               }}
             />
             <Muted className="text-ui-xs mt-2">
-              Controls the opacity of word highlighting (0% = no highlights, 100% = full intensity)
+              Controls the opacity of word highlighting (0% = no highlights,
+              100% = full intensity)
             </Muted>
           </div>
 
@@ -207,19 +214,19 @@ function DisplayTab() {
             </label>
             <div className="flex gap-3">
               <button
-                onClick={() => updateColorScheme('light')}
+                onClick={() => updateColorScheme("light")}
                 className={cn(
-                  'flex-1 p-4 border-2 rounded-card transition-all',
-                  settings.colorScheme === 'light'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted'
+                  "flex-1 p-4 border-2 rounded-card transition-all",
+                  settings.colorScheme === "light"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted"
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-sans text-ui-base font-medium text-ink">
                     Light
                   </span>
-                  {settings.colorScheme === 'light' && (
+                  {settings.colorScheme === "light" && (
                     <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                       <svg
                         className="w-3 h-3 text-white"
@@ -241,19 +248,19 @@ function DisplayTab() {
               </button>
 
               <button
-                onClick={() => updateColorScheme('dark')}
+                onClick={() => updateColorScheme("dark")}
                 className={cn(
-                  'flex-1 p-4 border-2 rounded-card transition-all',
-                  settings.colorScheme === 'dark'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted'
+                  "flex-1 p-4 border-2 rounded-card transition-all",
+                  settings.colorScheme === "dark"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-muted"
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-sans text-ui-base font-medium text-ink">
                     Dark
                   </span>
-                  {settings.colorScheme === 'dark' && (
+                  {settings.colorScheme === "dark" && (
                     <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                       <svg
                         className="w-3 h-3 text-white"
@@ -269,9 +276,7 @@ function DisplayTab() {
                     </div>
                   )}
                 </div>
-                <Muted className="text-ui-xs text-left">
-                  Coming soon
-                </Muted>
+                <Muted className="text-ui-xs text-left">Coming soon</Muted>
               </button>
             </div>
           </div>
@@ -306,7 +311,7 @@ function DisplayTab() {
 function PlaceholderTab({ title }: { title: string }) {
   return (
     <div className="bg-paper border border-border rounded-card p-8 shadow-raised text-center">
-      <Heading size="md" as="h2" className="mb-2">
+      <Heading size="lg" as="h2" className="mb-2">
         {title}
       </Heading>
       <Muted>This section is coming soon</Muted>
