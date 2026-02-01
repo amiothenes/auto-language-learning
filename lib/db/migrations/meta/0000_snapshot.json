@@ -1,0 +1,109 @@
+{
+  "id": "0a469c46-6fb9-4275-95de-288d7e7b9985",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.languages": {
+      "name": "languages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_rtl": {
+          "name": "is_rtl",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "dict_uri": {
+          "name": "dict_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "translate_uri": {
+          "name": "translate_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "google_tts_code": {
+          "name": "google_tts_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "character_substitutions": {
+          "name": "character_substitutions",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sentence_split_regex": {
+          "name": "sentence_split_regex",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "languages_code_unique": {
+          "name": "languages_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
