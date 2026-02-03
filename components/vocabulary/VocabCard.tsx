@@ -48,9 +48,10 @@ interface VocabCardProps {
   item: VocabularyItem;
   isSelected: boolean;
   onToggle: () => void;
+  onDelete?: (item: VocabularyItem) => void;
 }
 
-export function VocabCard({ item, isSelected, onToggle }: VocabCardProps) {
+export function VocabCard({ item, isSelected, onToggle, onDelete }: VocabCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -70,9 +71,12 @@ export function VocabCard({ item, isSelected, onToggle }: VocabCardProps) {
 
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
-    console.log(`${action} vocabulary:`, item.id);
     setIsMenuOpen(false);
-    // TODO: Implement actual actions
+    if (action === 'delete') {
+      onDelete?.(item);
+    } else {
+      console.log(`${action} vocabulary:`, item.id);
+    }
   };
 
   const config = STATUS_CONFIG[item.status];
@@ -201,12 +205,14 @@ interface VocabCardListProps {
   items: VocabularyItem[];
   selectedIds: Set<string>;
   onToggleSelection: (id: string) => void;
+  onDelete?: (item: VocabularyItem) => void;
 }
 
 export function VocabCardList({
   items,
   selectedIds,
   onToggleSelection,
+  onDelete,
 }: VocabCardListProps) {
   if (items.length === 0) {
     return (
@@ -224,6 +230,7 @@ export function VocabCardList({
           item={item}
           isSelected={selectedIds.has(item.id)}
           onToggle={() => onToggleSelection(item.id)}
+          onDelete={onDelete}
         />
       ))}
     </div>

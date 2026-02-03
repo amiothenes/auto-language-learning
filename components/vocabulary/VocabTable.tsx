@@ -26,6 +26,7 @@ interface VocabTableProps {
   selectedIds: Set<string>;
   onToggleSelection: (id: string) => void;
   onToggleAll: () => void;
+  onDelete?: (item: VocabularyItem) => void;
 }
 
 // ============================================================================
@@ -88,10 +89,12 @@ function TableRow({
   item,
   isSelected,
   onToggle,
+  onDelete,
 }: {
   item: VocabularyItem;
   isSelected: boolean;
   onToggle: () => void;
+  onDelete?: (item: VocabularyItem) => void;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -112,9 +115,12 @@ function TableRow({
 
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
-    console.log(`${action} vocabulary:`, item.id);
     setIsMenuOpen(false);
-    // TODO: Implement actual actions
+    if (action === 'delete') {
+      onDelete?.(item);
+    } else {
+      console.log(`${action} vocabulary:`, item.id);
+    }
   };
 
   return (
@@ -234,6 +240,7 @@ export function VocabTable({
   selectedIds,
   onToggleSelection,
   onToggleAll,
+  onDelete,
 }: VocabTableProps) {
   const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
   const someSelected = items.some((item) => selectedIds.has(item.id)) && !allSelected;
@@ -287,6 +294,7 @@ export function VocabTable({
                 item={item}
                 isSelected={selectedIds.has(item.id)}
                 onToggle={() => onToggleSelection(item.id)}
+                onDelete={onDelete}
               />
             ))}
           </tbody>

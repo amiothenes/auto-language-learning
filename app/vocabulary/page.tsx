@@ -8,6 +8,7 @@ import { VocabFilterBar, SortOption } from '@/components/vocabulary/VocabFilterB
 import { VocabTable, VocabularyItem } from '@/components/vocabulary/VocabTable';
 import { VocabCardList } from '@/components/vocabulary/VocabCard';
 import { BulkActionsBar } from '@/components/vocabulary/BulkActionsBar';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ============================================================================
@@ -300,6 +301,10 @@ export default function VocabularyPage() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<VocabularyItem | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
@@ -426,9 +431,20 @@ export default function VocabularyPage() {
   };
 
   const handleDelete = () => {
-    console.log('Delete:', Array.from(selectedIds));
-    // TODO: Implement actual action
+    setShowBulkDeleteConfirm(true);
+  };
+
+  const handleConfirmBulkDelete = () => {
+    console.log('Deleted:', Array.from(selectedIds));
     setSelectedIds(new Set());
+    setShowBulkDeleteConfirm(false);
+  };
+
+  const handleConfirmSingleDelete = () => {
+    if (deleteTarget) {
+      console.log('Deleted:', deleteTarget.id);
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -471,6 +487,7 @@ export default function VocabularyPage() {
             selectedIds={selectedIds}
             onToggleSelection={handleToggleSelection}
             onToggleAll={handleToggleAll}
+            onDelete={(item) => setDeleteTarget(item)}
           />
         </div>
 
@@ -480,6 +497,7 @@ export default function VocabularyPage() {
             items={paginatedVocabulary}
             selectedIds={selectedIds}
             onToggleSelection={handleToggleSelection}
+            onDelete={(item) => setDeleteTarget(item)}
           />
         </div>
 
@@ -521,6 +539,28 @@ export default function VocabularyPage() {
           onClearSelection={handleClearSelection}
         />
       </div>
+
+      {/* Single item delete confirmation */}
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmSingleDelete}
+        title="Delete Word"
+        message={`Are you sure you want to delete "${deleteTarget?.lemma}" from your vocabulary? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
+
+      {/* Bulk delete confirmation */}
+      <ConfirmDialog
+        isOpen={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Delete Selected Words"
+        message={`Are you sure you want to delete ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} from your vocabulary? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        variant="danger"
+      />
     </div>
   );
 }

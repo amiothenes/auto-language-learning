@@ -246,9 +246,40 @@
     animation: tooltip-exit 120ms ease-out forwards;
   }
 
+  /* Modal Animations */
+  @keyframes modal-backdrop-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes modal-enter {
+    from {
+      transform: scale(0.95) translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-modal-backdrop-enter {
+    animation: modal-backdrop-enter 200ms ease-out;
+  }
+
+  .animate-modal-enter {
+    animation: modal-enter 200ms ease-out;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-tooltip-enter,
-    .animate-tooltip-exit {
+    .animate-tooltip-exit,
+    .animate-modal-backdrop-enter,
+    .animate-modal-enter {
       animation: none;
     }
   }
