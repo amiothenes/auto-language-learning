@@ -5,6 +5,7 @@ import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
 import { EmptySeriesState } from '@/components/series/EmptySeriesState';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Search, Plus, ChevronDown } from 'lucide-react';
 
 // ============================================================================
@@ -81,6 +82,7 @@ export default function SeriesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   // Close sort dropdown when clicking outside
@@ -143,6 +145,14 @@ export default function SeriesPage() {
   const handleNewSeries = () => {
     console.log('Create new series');
     // TODO: Implement new series modal/page
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      console.log('Deleted series:', deleteTarget.id);
+      // TODO: Implement actual delete via API
+      setDeleteTarget(null);
+    }
   };
 
   const sortOptions = [
@@ -248,11 +258,26 @@ export default function SeriesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedSeries.map((series) => (
-              <SeriesCard key={series.id} {...series} />
+              <SeriesCard
+                key={series.id}
+                {...series}
+                onDelete={setDeleteTarget}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Series"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? All texts in this series will also be deleted. This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -21,6 +21,7 @@ interface SeriesHeaderProps {
   overallProgress: number;
   lastUpdated: string;
   onTitleUpdate: (newTitle: string) => void;
+  onDelete?: (series: { id: string; name: string }) => void;
 }
 
 export function SeriesHeader({
@@ -32,6 +33,7 @@ export function SeriesHeader({
   overallProgress,
   lastUpdated,
   onTitleUpdate,
+  onDelete,
 }: SeriesHeaderProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -68,13 +70,13 @@ export function SeriesHeader({
   };
 
   const handleMenuAction = (action: string) => {
-    console.log(`${action} series:`, id);
     setIsMenuOpen(false);
-    
+
     if (action === 'edit') {
       handleEditClick();
+    } else if (action === 'delete' && onDelete) {
+      onDelete({ id, name });
     }
-    // TODO: Implement other actions
   };
 
   const handleSave = () => {

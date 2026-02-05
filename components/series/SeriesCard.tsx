@@ -21,6 +21,7 @@ interface SeriesCardProps {
   textCount: number;
   progress: number;
   lastUpdated: string;
+  onDelete?: (series: { id: string; name: string }) => void;
 }
 
 export function SeriesCard({
@@ -30,6 +31,7 @@ export function SeriesCard({
   textCount,
   progress,
   lastUpdated,
+  onDelete,
 }: SeriesCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -60,9 +62,11 @@ export function SeriesCard({
 
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
-    console.log(`${action} series:`, id);
     setIsMenuOpen(false);
-    // TODO: Implement actual actions
+
+    if (action === 'delete' && onDelete) {
+      onDelete({ id, name });
+    }
   };
 
   return (

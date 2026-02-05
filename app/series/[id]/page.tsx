@@ -2,10 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef, use } from 'react';
 import { notFound } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesHeader } from '@/components/series/SeriesHeader';
 import { TextCard } from '@/components/series/TextCard';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
 
 // ============================================================================
@@ -242,9 +244,12 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     notFound();
   }
 
+  const router = useRouter();
   const [seriesName, setSeriesName] = useState(seriesData.name);
   const [sortBy, setSortBy] = useState<SortOption>('title-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [deleteSeriesTarget, setDeleteSeriesTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteTextTarget, setDeleteTextTarget] = useState<{ id: string; title: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   // Close sort dropdown when clicking outside
@@ -311,6 +316,23 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     // TODO: Implement import modal
   };
 
+  const handleConfirmDeleteSeries = () => {
+    if (deleteSeriesTarget) {
+      console.log('Deleted series:', deleteSeriesTarget.id);
+      // TODO: Implement actual delete via API
+      setDeleteSeriesTarget(null);
+      router.push('/series');
+    }
+  };
+
+  const handleConfirmDeleteText = () => {
+    if (deleteTextTarget) {
+      console.log('Deleted text:', deleteTextTarget.id);
+      // TODO: Implement actual delete via API
+      setDeleteTextTarget(null);
+    }
+  };
+
   const sortOptions = [
     { value: 'title-asc', label: 'Title (A-Z)' },
     { value: 'progress-desc', label: 'Progress (High-Low)' },
@@ -333,6 +355,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
           overallProgress={seriesData.overallProgress}
           lastUpdated={seriesData.lastUpdated}
           onTitleUpdate={handleTitleUpdate}
+          onDelete={setDeleteSeriesTarget}
         />
 
         {/* Action Buttons Row */}
@@ -413,11 +436,34 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                 knownPercentage={text.knownPercentage}
                 lastRead={text.lastRead}
                 preview={text.preview}
+                onDelete={setDeleteTextTarget}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete series confirmation dialog */}
+      <ConfirmDialog
+        isOpen={deleteSeriesTarget !== null}
+        onClose={() => setDeleteSeriesTarget(null)}
+        onConfirm={handleConfirmDeleteSeries}
+        title="Delete Series"
+        message={`Are you sure you want to delete "${deleteSeriesTarget?.name}"? All texts in this series will also be deleted. This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
+
+      {/* Delete text confirmation dialog */}
+      <ConfirmDialog
+        isOpen={deleteTextTarget !== null}
+        onClose={() => setDeleteTextTarget(null)}
+        onConfirm={handleConfirmDeleteText}
+        title="Delete Text"
+        message={`Are you sure you want to delete "${deleteTextTarget?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 }

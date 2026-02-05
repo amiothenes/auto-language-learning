@@ -20,6 +20,7 @@ interface TextCardProps {
   knownPercentage: number;
   lastRead: string;
   preview: string;
+  onDelete?: (text: { id: string; title: string }) => void;
 }
 
 export function TextCard({
@@ -29,6 +30,7 @@ export function TextCard({
   knownPercentage,
   lastRead,
   preview,
+  onDelete,
 }: TextCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -59,9 +61,11 @@ export function TextCard({
 
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
-    console.log(`${action} text:`, id);
     setIsMenuOpen(false);
-    // TODO: Implement actual actions
+
+    if (action === 'delete' && onDelete) {
+      onDelete({ id, title });
+    }
   };
 
   return (
