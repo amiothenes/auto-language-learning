@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
+import { SeriesCardSkeleton } from '@/components/series/SeriesCardSkeleton';
 import { EmptySeriesState } from '@/components/series/EmptySeriesState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Search, Plus, ChevronDown } from 'lucide-react';
@@ -79,11 +80,21 @@ type SortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'updated-recen
 // ============================================================================
 
 export default function SeriesPage() {
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
+
+  // Simulate data loading with 2-second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Close sort dropdown when clicking outside
   useEffect(() => {
@@ -241,8 +252,14 @@ export default function SeriesPage() {
           </div>
         </div>
 
-        {/* Series Grid or Empty State */}
-        {filteredAndSortedSeries.length === 0 ? (
+        {/* Series Grid, Loading State, or Empty State */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SeriesCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredAndSortedSeries.length === 0 ? (
           searchQuery ? (
             <div className="flex items-center justify-center min-h-[300px]">
               <div className="text-center">

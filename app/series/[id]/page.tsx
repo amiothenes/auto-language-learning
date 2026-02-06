@@ -7,6 +7,8 @@ import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesHeader } from '@/components/series/SeriesHeader';
 import { TextCard } from '@/components/series/TextCard';
+import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
 
@@ -237,20 +239,30 @@ interface SeriesDetailPageProps {
 export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   // Unwrap the params Promise using React.use()
   const { id } = use(params);
+  const [isLoading, setIsLoading] = useState(true);
   const seriesData = TEMP_SERIES_DETAILS[id];
-  
-  // If series not found, show 404
-  if (!seriesData) {
+
+  // If series not found after loading, show 404
+  if (!seriesData && !isLoading) {
     notFound();
   }
 
   const router = useRouter();
-  const [seriesName, setSeriesName] = useState(seriesData.name);
+  const [seriesName, setSeriesName] = useState(seriesData?.name || '');
   const [sortBy, setSortBy] = useState<SortOption>('title-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteSeriesTarget, setDeleteSeriesTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteTextTarget, setDeleteTextTarget] = useState<{ id: string; title: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
+
+  // Simulate data loading with 2-second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Close sort dropdown when clicking outside
   useEffect(() => {
@@ -268,6 +280,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
   // Sort texts based on selected option
   const sortedTexts = useMemo(() => {
+    if (!seriesData) return [];
     const texts = [...seriesData.texts];
 
     switch (sortBy) {
@@ -346,20 +359,23 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Series Header */}
-        <SeriesHeader
-          id={seriesData.id}
-          name={seriesName}
-          description={seriesData.description}
-          textCount={seriesData.textCount}
-          totalWords={seriesData.totalWords}
-          overallProgress={seriesData.overallProgress}
-          lastUpdated={seriesData.lastUpdated}
-          onTitleUpdate={handleTitleUpdate}
-          onDelete={setDeleteSeriesTarget}
-        />
+        {!isLoading && seriesData && (
+          <SeriesHeader
+            id={seriesData.id}
+            name={seriesName}
+            description={seriesData.description}
+            textCount={seriesData.textCount}
+            totalWords={seriesData.totalWords}
+            overallProgress={seriesData.overallProgress}
+            lastUpdated={seriesData.lastUpdated}
+            onTitleUpdate={handleTitleUpdate}
+            onDelete={setDeleteSeriesTarget}
+          />
+        )}
 
         {/* Action Buttons Row */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        {!isLoading && (
+          <div className="flex flex-col sm:flex-row gap-3">
           <Button
             variant="primary"
             size="lg"
@@ -414,17 +430,30 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             )}
           </div>
         </div>
+        )}
 
-        {/* Texts Grid */}
-        {sortedTexts.length === 0 ? (
-          <div className="flex items-center justify-center min-h-[300px]">
-            <div className="text-center">
-              <Heading size="lg" as="h2" className="mb-2">
-                No texts in this series
-              </Heading>
-              <Muted>Add your first text to get started</Muted>
-            </div>
+        {/* Texts Grid, Loading State, or Empty State */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <TextCardSkeleton key={i} />
+            ))}
           </div>
+        ) : sortedTexts.length === 0 ? (
+          <EmptyState
+            illustration="books"
+            title="No texts in this series"
+            description="Add your first text to start building your collection and tracking your progress"
+            primaryAction={{
+              label: "Add Text",
+              onClick: handleAddText,
+              icon: <Plus size={18} strokeWidth={2} />,
+            }}
+            secondaryAction={{
+              label: "Import Texts",
+              onClick: handleImport,
+            }}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedTexts.map((text) => (

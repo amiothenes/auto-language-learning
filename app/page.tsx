@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -10,7 +10,16 @@ import { ActionButtons } from '@/components/dashboard/ActionButtons';
 export default function Dashboard() {
   const { currentLanguage } = useLanguage();
   // Set to true during data fetching, false when data is loaded
-  const [isLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate data loading with 2-second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen p-4 md:p-8">

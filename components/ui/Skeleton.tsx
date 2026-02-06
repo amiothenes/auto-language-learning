@@ -10,12 +10,12 @@ interface SkeletonProps {
 }
 
 /**
- * Base skeleton element with pulse animation
- * Uses bg-border (#E5E2DA) for subtle, organic loading states
+ * Base skeleton element with shimmer animation
+ * Uses gradient shimmer (#E5E2DA → #F0EFEA) for subtle, organic loading states
  */
 export function Skeleton({ className }: SkeletonProps) {
   return (
-    <div className={cn('animate-pulse bg-border rounded', className)} />
+    <div className={cn('animate-shimmer rounded', className)} />
   );
 }
 

@@ -215,6 +215,27 @@
     animation: sparkle 1200ms ease-out forwards;
   }
 
+  /* Shimmer Loading Animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      #E5E2DA 0%,
+      #F0EFEA 50%,
+      #E5E2DA 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
   /* Tooltip Animations */
   @keyframes tooltip-enter {
     from {
@@ -279,8 +300,13 @@
     .animate-tooltip-enter,
     .animate-tooltip-exit,
     .animate-modal-backdrop-enter,
-    .animate-modal-enter {
+    .animate-modal-enter,
+    .animate-shimmer {
       animation: none;
+    }
+
+    .animate-shimmer {
+      background: #E5E2DA;
     }
   }
 }

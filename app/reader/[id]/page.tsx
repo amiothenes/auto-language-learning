@@ -8,6 +8,7 @@ import { TextInfo } from '@/components/reader/TextInfo';
 import { ReaderContent } from '@/components/reader/ReaderContent';
 import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
 import { WordTooltip } from '@/components/reader/WordTooltip';
+import { TextInfoSkeleton, ReaderContentSkeleton, WordDetailsPanelSkeleton } from '@/components/reader/ReaderSkeleton';
 import { WordData, VocabularyStatus } from '@/components/reader/Word';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
@@ -97,16 +98,26 @@ interface ReaderPageProps {
 export default function ReaderPage({ params }: ReaderPageProps) {
   // Unwrap the params Promise using React.use()
   const { id } = use(params);
+  const [isLoading, setIsLoading] = useState(true);
   const textData = TEMP_TEXT_DATA[id];
   const router = useRouter();
+
+  // Simulate data loading with 2-second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // State for right panel visibility and selected word
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
-  
+
   // State for mobile text info panel
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
-  
+
   // State for vocabulary stats tracking
   // NOTE: To test milestones, temporarily set knownWords to values like:
   // - 99 (to trigger 100 milestone on next word marked as known)
@@ -114,9 +125,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // - 499 (to trigger 500 milestone)
   // - 999 (to trigger 1000 milestone)
   const [vocabularyStats, setVocabularyStats] = useState({
-    totalWords: textData.uniqueWordCount,
-    knownWords: Math.round(textData.uniqueWordCount * (textData.knownPercentage / 100)),
-    textKnownPercentage: textData.knownPercentage,
+    totalWords: textData?.uniqueWordCount || 0,
+    knownWords: textData ? Math.round(textData.uniqueWordCount * (textData.knownPercentage / 100)) : 0,
+    textKnownPercentage: textData?.knownPercentage || 0,
   });
   
   // State for status update feedback
@@ -150,8 +161,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const touchEndX = useRef(0);
   const touchEndY = useRef(0);
 
-  // If text not found, show 404
-  if (!textData) {
+  // If text not found after loading, show 404
+  if (!textData && !isLoading) {
     notFound();
   }
 
@@ -466,33 +477,41 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           >
             <X size={24} strokeWidth={1.5} />
           </button>
-          
-          <TextInfo
-            title={textData.title}
-            wordCount={textData.wordCount}
-            uniqueWordCount={textData.uniqueWordCount}
-            viewCount={textData.viewCount}
-            knownPercentage={textData.knownPercentage}
-            seriesId={textData.seriesId}
-            seriesName={textData.seriesName}
-            tags={textData.tags}
-            paragraphProgress={TEMP_PARAGRAPH_PROGRESS}
-            currentParagraphIndex={currentParagraphIndex}
-            onParagraphNavigate={handleParagraphNavigate}
-            onRightPanelToggle={() => setIsRightPanelOpen(!isRightPanelOpen)}
-            isRightPanelOpen={isRightPanelOpen}
-          />
+
+          {isLoading ? (
+            <TextInfoSkeleton />
+          ) : textData && (
+            <TextInfo
+              title={textData.title}
+              wordCount={textData.wordCount}
+              uniqueWordCount={textData.uniqueWordCount}
+              viewCount={textData.viewCount}
+              knownPercentage={textData.knownPercentage}
+              seriesId={textData.seriesId}
+              seriesName={textData.seriesName}
+              tags={textData.tags}
+              paragraphProgress={TEMP_PARAGRAPH_PROGRESS}
+              currentParagraphIndex={currentParagraphIndex}
+              onParagraphNavigate={handleParagraphNavigate}
+              onRightPanelToggle={() => setIsRightPanelOpen(!isRightPanelOpen)}
+              isRightPanelOpen={isRightPanelOpen}
+            />
+          )}
         </aside>
 
         {/* ================================================================ */}
         {/* MAIN READER AREA - Centered Content */}
         {/* ================================================================ */}
         <main className="order-1 xl:order-2 flex justify-center px-4 pt-20 pb-8 xl:pt-12 xl:pb-12 xl:px-8">
-          <ReaderContent
-            content={textData.content}
-            onWordClick={handleWordClick}
-            selectedWordId={selectedWord?.id}
-          />
+          {isLoading ? (
+            <ReaderContentSkeleton />
+          ) : textData && (
+            <ReaderContent
+              content={textData.content}
+              onWordClick={handleWordClick}
+              selectedWordId={selectedWord?.id}
+            />
+          )}
         </main>
 
         {/* ================================================================ */}
@@ -501,12 +520,18 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         <aside className="hidden xl:block xl:order-3 relative">
           {/* Reserved space - panel slides over this area */}
           {isRightPanelOpen && (
-            <WordDetailsPanel
-              wordData={selectedWord}
-              onClose={handleCloseWordDetails}
-              onStatusChange={handleStatusChange}
-              isDesktop={true}
-            />
+            isLoading ? (
+              <div className="fixed top-0 right-0 h-screen w-[25rem] bg-paper border-l border-border overflow-y-auto">
+                <WordDetailsPanelSkeleton />
+              </div>
+            ) : (
+              <WordDetailsPanel
+                wordData={selectedWord}
+                onClose={handleCloseWordDetails}
+                onStatusChange={handleStatusChange}
+                isDesktop={true}
+              />
+            )
           )}
         </aside>
       </div>

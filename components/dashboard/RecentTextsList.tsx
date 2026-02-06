@@ -1,8 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { TextListItem } from './TextListItem';
-import { Plus } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Plus, Library } from 'lucide-react';
 import { SkeletonText } from '@/components/ui/Skeleton';
 
 const recentTexts = [
@@ -56,6 +58,9 @@ function TextListItemSkeleton() {
 }
 
 export function RecentTextsList({ isLoading = false }: RecentTextsListProps) {
+  const router = useRouter();
+  const hasRecentTexts = recentTexts.length > 0;
+
   return (
     <section className="bg-paper rounded-card border border-border shadow-raised p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -73,16 +78,32 @@ export function RecentTextsList({ isLoading = false }: RecentTextsListProps) {
         </button>
       </div>
 
-      {/* Text Items or Skeleton */}
-      <div className="space-y-2 md:space-y-3">
-        {isLoading ? (
-          <>
-            <TextListItemSkeleton />
-            <TextListItemSkeleton />
-            <TextListItemSkeleton />
-          </>
-        ) : (
-          recentTexts.map((text) => (
+      {/* Text Items, Loading State, or Empty State */}
+      {isLoading ? (
+        <div className="space-y-2 md:space-y-3">
+          <TextListItemSkeleton />
+          <TextListItemSkeleton />
+          <TextListItemSkeleton />
+        </div>
+      ) : !hasRecentTexts ? (
+        <EmptyState
+          illustration="pages"
+          title="No recent texts"
+          description="Start reading to see your recent activity here"
+          primaryAction={{
+            label: "Browse Series",
+            onClick: () => router.push('/series'),
+            icon: <Library size={18} strokeWidth={2} />,
+          }}
+          secondaryAction={{
+            label: "Add New Text",
+            onClick: () => console.log('Add text'),
+          }}
+          className="min-h-[300px]"
+        />
+      ) : (
+        <div className="space-y-2 md:space-y-3">
+          {recentTexts.map((text) => (
             <TextListItem
               key={text.id}
               title={text.title}
@@ -92,15 +113,17 @@ export function RecentTextsList({ isLoading = false }: RecentTextsListProps) {
               lastViewed={text.lastViewed}
               onClick={() => {}}
             />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <div className="pt-4 border-t border-border text-center">
-        <button className="text-primary font-sans font-medium text-ui-base hover:underline cursor-pointer">
-          View All Texts →
-        </button>
-      </div>
+      {hasRecentTexts && !isLoading && (
+        <div className="pt-4 border-t border-border text-center">
+          <button className="text-primary font-sans font-medium text-ui-base hover:underline cursor-pointer">
+            View All Texts →
+          </button>
+        </div>
+      )}
     </section>
   );
 }
