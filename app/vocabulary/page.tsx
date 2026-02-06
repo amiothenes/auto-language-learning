@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/components/reader/Word';
@@ -11,7 +12,8 @@ import { VocabCardSkeleton } from '@/components/vocabulary/VocabCardSkeleton';
 import { VocabTableRowSkeleton } from '@/components/vocabulary/VocabTableRowSkeleton';
 import { BulkActionsBar } from '@/components/vocabulary/BulkActionsBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ChevronLeft, ChevronRight, Library } from 'lucide-react';
 
 // ============================================================================
 // Hardcoded Vocabulary Data
@@ -295,6 +297,8 @@ const TEMP_VOCABULARY: VocabularyItem[] = [
 // ============================================================================
 
 export default function VocabularyPage() {
+  const router = useRouter();
+
   // Loading state
   const [isLoading, setIsLoading] = useState(true);
 
@@ -494,70 +498,100 @@ export default function VocabularyPage() {
           statusCounts={statusCounts}
         />
 
-        {/* Tablet & Desktop: Table View */}
-        <div className="hidden md:block">
-          {isLoading ? (
-            <div className="bg-paper border border-border rounded-card shadow-raised overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-desk border-b border-border">
-                  <tr>
-                    <th className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
-                    <th className="px-2 md:px-4 py-2 md:py-3 text-left">
-                      <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Lemma</span>
-                    </th>
-                    <th className="px-2 md:px-4 py-2 md:py-3 text-left">
-                      <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Status</span>
-                    </th>
-                    <th className="px-2 md:px-3 py-2 md:py-3 text-left">
-                      <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Dict. Freq</span>
-                    </th>
-                    <th className="px-2 md:px-3 py-2 md:py-3 text-left">
-                      <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">User Freq</span>
-                    </th>
-                    <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
-                      <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Translation</span>
-                    </th>
-                    <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
-                      <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Tags</span>
-                    </th>
-                    <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                    <VocabTableRowSkeleton key={i} />
-                  ))}
-                </tbody>
-              </table>
+        {/* Loading State */}
+        {isLoading ? (
+          <>
+            {/* Tablet & Desktop: Table Skeleton */}
+            <div className="hidden md:block">
+              <div className="bg-paper border border-border rounded-card shadow-raised overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-desk border-b border-border">
+                    <tr>
+                      <th className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left">
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Lemma</span>
+                      </th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left">
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Status</span>
+                      </th>
+                      <th className="px-2 md:px-3 py-2 md:py-3 text-left">
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Dict. Freq</span>
+                      </th>
+                      <th className="px-2 md:px-3 py-2 md:py-3 text-left">
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">User Freq</span>
+                      </th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Translation</span>
+                      </th>
+                      <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Tags</span>
+                      </th>
+                      <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                      <VocabTableRowSkeleton key={i} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          ) : (
-            <VocabTable
-              items={paginatedVocabulary}
-              selectedIds={selectedIds}
-              onToggleSelection={handleToggleSelection}
-              onToggleAll={handleToggleAll}
-              onDelete={(item) => setDeleteTarget(item)}
-            />
-          )}
-        </div>
 
-        {/* Mobile: Card View */}
-        <div className="md:hidden">
-          {isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <VocabCardSkeleton key={i} />
-              ))}
+            {/* Mobile: Card Skeleton */}
+            <div className="md:hidden">
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <VocabCardSkeleton key={i} />
+                ))}
+              </div>
             </div>
-          ) : (
-            <VocabCardList
-              items={paginatedVocabulary}
-              selectedIds={selectedIds}
-              onToggleSelection={handleToggleSelection}
-              onDelete={(item) => setDeleteTarget(item)}
+          </>
+        ) : filteredAndSortedVocabulary.length === 0 ? (
+          /* Empty State */
+          searchQuery || activeStatuses.size > 0 ? (
+            <EmptyState
+              illustration="search"
+              title="No words found"
+              description="Try adjusting your search query or filter criteria to find what you're looking for"
             />
-          )}
-        </div>
+          ) : (
+            <EmptyState
+              illustration="vocabulary"
+              title="No vocabulary yet"
+              description="Start reading texts to build your vocabulary and track your learning progress"
+              primaryAction={{
+                label: "Browse Series",
+                onClick: () => router.push('/series'),
+                icon: <Library size={18} strokeWidth={2} />,
+              }}
+            />
+          )
+        ) : (
+          /* Content Views */
+          <>
+            {/* Tablet & Desktop: Table View */}
+            <div className="hidden md:block">
+              <VocabTable
+                items={paginatedVocabulary}
+                selectedIds={selectedIds}
+                onToggleSelection={handleToggleSelection}
+                onToggleAll={handleToggleAll}
+                onDelete={(item) => setDeleteTarget(item)}
+              />
+            </div>
+
+            {/* Mobile: Card View */}
+            <div className="md:hidden">
+              <VocabCardList
+                items={paginatedVocabulary}
+                selectedIds={selectedIds}
+                onToggleSelection={handleToggleSelection}
+                onDelete={(item) => setDeleteTarget(item)}
+              />
+            </div>
+          </>
+        )}
 
         {/* Pagination Controls */}
         {totalPages > 1 && (

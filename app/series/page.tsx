@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
 import { SeriesCardSkeleton } from '@/components/series/SeriesCardSkeleton';
 import { EmptySeriesState } from '@/components/series/EmptySeriesState';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Search, Plus, ChevronDown } from 'lucide-react';
 
@@ -261,14 +262,11 @@ export default function SeriesPage() {
           </div>
         ) : filteredAndSortedSeries.length === 0 ? (
           searchQuery ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <div className="text-center">
-                <Heading size="lg" as="h2" className="mb-2">
-                  No series found
-                </Heading>
-                <Muted>Try adjusting your search</Muted>
-              </div>
-            </div>
+            <EmptyState
+              illustration="search"
+              title="No series found"
+              description="Try adjusting your search query to find what you're looking for"
+            />
           ) : (
             <EmptySeriesState onCreateClick={handleNewSeries} />
           )

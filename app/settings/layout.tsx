@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Type, Globe, Database, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SettingsHeaderDecoration } from '@/components/ui/SettingsHeaderDecoration';
 
 const tabs = [
   { id: 'display', label: 'Display', icon: Type, href: '/settings/display' },
@@ -28,7 +29,10 @@ export default function SettingsLayout({
     <div className="min-h-screen px-4 py-8 md:px-8 md:py-12">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <header>
+        <header className="relative">
+          <div className="absolute top-0 right-0 opacity-100 pointer-events-none">
+            <SettingsHeaderDecoration />
+          </div>
           <h1 className="font-sans text-ui-2xl font-semibold text-ink mb-2">
             Settings
           </h1>
