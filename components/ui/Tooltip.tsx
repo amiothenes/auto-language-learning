@@ -2,10 +2,12 @@
 
 import { useRef, useState, useEffect, useCallback, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 // ============================================================================
 // Tooltip Component
 // Generic positioned tooltip container with backdrop, positioning, animations
+// Includes focus trap for keyboard accessibility
 // ============================================================================
 
 type Placement = 'above' | 'below';
@@ -74,6 +76,21 @@ export function Tooltip({
     const raf = requestAnimationFrame(updatePosition);
     return () => cancelAnimationFrame(raf);
   }, [isOpen, updatePosition]);
+
+  // Focus trap for keyboard navigation
+  useFocusTrap(isOpen, tooltipRef);
+
+  // Auto-focus first focusable element on open
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      const firstFocusable = tooltipRef.current?.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement;
+      firstFocusable?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   // Escape key dismiss
   useEffect(() => {

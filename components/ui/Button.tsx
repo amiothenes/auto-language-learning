@@ -17,6 +17,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   iconOnly?: boolean;
   className?: string;
   children?: ReactNode;
+  /** Accessible label for icon-only buttons (REQUIRED for iconOnly buttons) */
+  ariaLabel?: string;
 }
 
 export function Button({
@@ -28,10 +30,11 @@ export function Button({
   className,
   children,
   disabled = false,
+  ariaLabel,
   ...props
 }: ButtonProps) {
-  // Base styles
-  const baseStyles = 'inline-flex items-center justify-center gap-2 font-sans font-medium rounded transition-all';
+  // Base styles with focus visible state
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-sans font-medium rounded transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2';
   
   // Variant styles
   const variantStyles = {
@@ -61,6 +64,7 @@ export function Button({
         className
       )}
       disabled={disabled}
+      aria-label={iconOnly ? ariaLabel : undefined}
       {...props}
     >
       {leftIcon && <span className="flex items-center">{leftIcon}</span>}

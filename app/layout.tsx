@@ -4,6 +4,8 @@ import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { LanguageProvider } from "@/lib/contexts/LanguageContext";
 import { ReaderSettingsProvider } from "@/lib/contexts/ReaderSettingsContext";
+import { SkipLink } from "@/components/ui/SkipLink";
+import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,12 +38,15 @@ export default function RootLayout({
       >
         <LanguageProvider>
           <ReaderSettingsProvider>
-            <Sidebar />
-            
-            {/* Main Content Area - adjusted for collapsed sidebar (64px) */}
-            <main className="md:ml-16 min-h-screen pb-16 md:pb-0">
-              {children}
-            </main>
+            <KeyboardShortcutsProvider>
+              <SkipLink targetId="main-content" />
+              <Sidebar />
+
+              {/* Main Content Area - adjusted for collapsed sidebar (64px) */}
+              <main id="main-content" tabIndex={-1} className="md:ml-16 min-h-screen pb-16 md:pb-0">
+                {children}
+              </main>
+            </KeyboardShortcutsProvider>
           </ReaderSettingsProvider>
         </LanguageProvider>
       </body>

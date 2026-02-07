@@ -310,3 +310,31 @@
     }
   }
 }
+
+/* ============================================================================
+   Focus Visible Utilities
+   Consistent focus ring patterns for accessibility (WCAG AA)
+   ============================================================================ */
+
+/* Standard focus ring for interactive elements (buttons, links, etc.) */
+.focus-ring-primary {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+}
+
+/* Inset focus ring for form inputs and contained elements */
+.focus-ring-inset {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset;
+}
+
+/* Screen reader only utility - hides element visually but keeps it accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

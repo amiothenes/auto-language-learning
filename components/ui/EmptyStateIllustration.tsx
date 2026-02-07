@@ -8,6 +8,16 @@ interface EmptyStateIllustrationProps {
   type: 'books' | 'pages' | 'vocabulary' | 'search' | 'quill' | 'compass';
 }
 
+// Accessible descriptions for each illustration type
+const illustrationDescriptions = {
+  books: 'Illustration of stacked books',
+  pages: 'Illustration of paper documents',
+  vocabulary: 'Illustration of an open vocabulary book',
+  search: 'Illustration of a magnifying glass over a document',
+  quill: 'Illustration of a quill pen and ink bottle',
+  compass: 'Illustration of a navigation compass',
+};
+
 export function EmptyStateIllustration({ type }: EmptyStateIllustrationProps) {
   const illustrations = {
     books: <BooksIllustration />,
@@ -22,7 +32,8 @@ export function EmptyStateIllustration({ type }: EmptyStateIllustrationProps) {
     <div
       className="relative w-32 h-32"
       style={{ filter: 'contrast(0.95) brightness(1.02)' }}
-      aria-hidden="true"
+      role="img"
+      aria-label={illustrationDescriptions[type]}
     >
       {illustrations[type]}
     </div>

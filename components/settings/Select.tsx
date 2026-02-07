@@ -2,11 +2,14 @@
 
 // ============================================================================
 // Select Component
-// Dropdown select with click-outside-to-close functionality
+// Dropdown select with full keyboard navigation and accessibility
+// Keyboard: Arrow Up/Down, Home/End, Enter, ESC
 // ============================================================================
 
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
+import { cn } from '@/lib/utils';
 
 export interface SelectOption {
   value: string;
@@ -32,6 +35,21 @@ export function Select({
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const selectId = useRef(`select-${Math.random().toString(36).slice(2, 9)}`).current;
+
+  // Keyboard navigation
+  const { highlightedIndex } = useDropdownNavigation(
+    isOpen,
+    options,
+    options.find((opt) => opt.value === value),
+    (option) => {
+      onChange(option.value);
+      setIsOpen(false);
+    },
+    () => setIsOpen(false),
+    dropdownRef
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,7 +70,10 @@ export function Select({
   return (
     <div className={className}>
       {label && (
-        <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+        <label
+          id={`${selectId}-label`}
+          className="block font-sans text-ui-sm font-medium text-ink mb-2"
+        >
           {label}
         </label>
       )}
@@ -60,7 +81,12 @@ export function Select({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-4 py-2 bg-paper border border-border rounded font-sans text-ui-base text-ink hover:bg-desk focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all flex items-center justify-between"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+          aria-labelledby={label ? `${selectId}-label` : undefined}
+          aria-controls={`${selectId}-listbox`}
+          className="w-full px-4 py-2 bg-paper border border-border rounded font-sans text-ui-base text-ink hover:bg-desk focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all flex items-center justify-between"
         >
           <span className={selectedOption ? 'text-ink' : 'text-muted'}>
             {selectedOption ? selectedOption.label : placeholder}
@@ -75,19 +101,30 @@ export function Select({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10 max-h-60 overflow-y-auto">
-            {options.map((option) => (
+          <div
+            ref={dropdownRef}
+            id={`${selectId}-listbox`}
+            role="listbox"
+            className="absolute top-full left-0 right-0 mt-1 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10 max-h-60 overflow-y-auto"
+          >
+            {options.map((option, index) => (
               <button
                 key={option.value}
+                role="option"
+                aria-selected={value === option.value}
+                data-index={index}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-3 text-left font-sans text-ui-base transition-colors ${
+                className={cn(
+                  'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
                   value === option.value
                     ? 'bg-primary text-white font-medium'
+                    : highlightedIndex === index
+                    ? 'bg-desk text-ink'
                     : 'text-ink hover:bg-desk'
-                }`}
+                )}
               >
                 {option.label}
               </button>

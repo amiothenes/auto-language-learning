@@ -2,15 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage, languages } from '@/lib/contexts/LanguageContext';
-import { 
-  Globe, 
-  LayoutDashboard, 
-  Library, 
-  ClipboardList, 
-  Settings, 
-  ChevronUp, 
+import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
+import {
+  Globe,
+  LayoutDashboard,
+  Library,
+  ClipboardList,
+  Settings,
+  ChevronUp,
   ChevronDown,
   Wrench
 } from 'lucide-react';
@@ -48,6 +50,21 @@ export function Sidebar() {
     setIsDropdownOpen,
   } = useLanguage();
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Keyboard navigation for language dropdown
+  const { highlightedIndex } = useDropdownNavigation(
+    isDropdownOpen,
+    languages,
+    languages.find((lang) => lang.code === selectedLanguage),
+    (lang) => {
+      setSelectedLanguage(lang.code);
+      setIsDropdownOpen(false);
+    },
+    () => setIsDropdownOpen(false),
+    dropdownRef
+  );
+
   return (
     <>
       {/* Desktop Sidebar - Icon Only with Hover Expansion */}
@@ -59,7 +76,11 @@ export function Sidebar() {
               {/* Collapsed: Show icon only */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full h-10 px-2 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer"
+                role="combobox"
+                aria-expanded={isDropdownOpen}
+                aria-haspopup="listbox"
+                aria-label="Select language"
+                className="w-full h-10 px-2 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 title={currentLanguage?.name}
               >
                 <Globe size={20} className="shrink-0 text-primary" strokeWidth={1.5} />
@@ -76,10 +97,17 @@ export function Sidebar() {
               </button>
               
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 w-60 mt-2 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50">
-                  {languages.map((lang) => (
+                <div
+                  ref={dropdownRef}
+                  role="listbox"
+                  className="absolute top-full left-0 w-60 mt-2 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50"
+                >
+                  {languages.map((lang, index) => (
                     <button
                       key={lang.code}
+                      role="option"
+                      aria-selected={lang.code === selectedLanguage}
+                      data-index={index}
                       onClick={() => {
                         setSelectedLanguage(lang.code);
                         setIsDropdownOpen(false);
@@ -88,6 +116,8 @@ export function Sidebar() {
                         'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
                         lang.code === selectedLanguage
                           ? 'bg-primary text-white font-medium'
+                          : highlightedIndex === index
+                          ? 'bg-desk text-ink'
                           : 'text-ink hover:bg-desk'
                       )}
                     >

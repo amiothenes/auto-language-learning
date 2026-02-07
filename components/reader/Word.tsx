@@ -91,12 +91,17 @@ export function Word({
     : undefined;
 
   return (
-    <span
+    <button
+      type="button"
       onClick={(e) => onClick(data, e.currentTarget.getBoundingClientRect())}
       title={titleText}
       className={cn(
+        // Reset button styles to inline appearance
+        "inline appearance-none border-0 bg-transparent p-0 text-inherit align-baseline",
         // Base styles
         "font-serif cursor-pointer transition-all duration-150 rounded-sm px-0.5 -mx-0.5",
+        // Focus visible state
+        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
         // Hover state (for words with highlights)
         !isWellKnown && !isIgnored && "hover:underline decoration-1 underline-offset-2",
         // Ignore styling - dashed underline only
@@ -122,6 +127,6 @@ export function Word({
       aria-label={`${data.surface}, status: ${data.status}`}
     >
       {data.surface}
-    </span>
+    </button>
   );
 }
