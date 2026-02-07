@@ -119,7 +119,7 @@ export function VocabFilterBar({
             variant="secondary"
             size="md"
             onClick={() => setIsSortOpen(!isSortOpen)}
-            className="h-10 min-w-[200px] justify-between rounded"
+            className="h-10 w-full md:min-w-[200px] justify-between rounded"
           >
             <span className="text-muted text-ui-sm">Sort:</span>
             <span className="flex-1 text-left ml-2">{currentSortLabel}</span>
@@ -127,7 +127,7 @@ export function VocabFilterBar({
           </Button>
 
           {isSortOpen && (
-            <div className="absolute top-full right-0 mt-1 w-full min-w-[260px] bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
+            <div className="absolute top-full right-0 mt-1 w-full min-w-[260px] max-w-[320px] bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
               {sortOptions.map((option) => (
                 <button
                   key={option.value}
@@ -165,7 +165,7 @@ export function VocabFilterBar({
                 key={status}
                 onClick={() => onStatusToggle(status)}
                 className={cn(
-                  'px-3 py-1.5 rounded-full font-sans text-ui-sm font-medium transition-all border cursor-pointer',
+                  'px-4 py-2.5 rounded-full font-sans text-ui-sm font-medium transition-all border cursor-pointer min-h-[44px] inline-flex items-center justify-center',
                   isActive
                     ? 'border-transparent shadow-raised'
                     : 'border-border bg-paper hover:bg-desk'

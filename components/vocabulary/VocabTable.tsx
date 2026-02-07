@@ -127,13 +127,15 @@ function TableRow({
     <tr className="border-b border-border hover:bg-desk transition-colors group">
       {/* Checkbox */}
       <td className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3">
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onToggle}
-          className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
-          aria-label={`Select ${item.lemma}`}
-        />
+        <label className="inline-flex items-center justify-center p-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggle}
+            className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+            aria-label={`Select ${item.lemma}`}
+          />
+        </label>
       </td>
 
       {/* Lemma */}
@@ -253,16 +255,18 @@ export function VocabTable({
           <thead className="bg-desk border-b border-border sticky top-0">
             <tr>
               <th className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someSelected;
-                  }}
-                  onChange={onToggleAll}
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                  aria-label="Select all"
-                />
+                <label className="inline-flex items-center justify-center p-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected;
+                    }}
+                    onChange={onToggleAll}
+                    className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    aria-label="Select all"
+                  />
+                </label>
               </th>
               <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
                 Lemma

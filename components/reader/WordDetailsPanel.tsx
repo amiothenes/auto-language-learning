@@ -87,8 +87,8 @@ export function WordDetailsPanel({
   // Large Desktop: render on right side with slide animation and reserved space
   // Mobile/Tablet/Small Desktop: render on right side overlapping content
   const panelClasses = isDesktop
-    ? "fixed top-0 right-0 h-screen w-[25rem] bg-paper border-l border-border overflow-y-auto animate-slide-in-right z-auto"
-    : "fixed top-0 right-0 h-screen w-[25rem] bg-paper border-l border-border overflow-y-auto animate-slide-in-right z-50 xl:hidden";
+    ? "fixed top-0 right-0 h-screen w-full max-w-[25rem] bg-paper border-l border-border overflow-y-auto animate-slide-in-right z-auto"
+    : "fixed top-0 right-0 h-screen w-full max-w-[25rem] sm:w-[400px] bg-paper border-l border-border overflow-y-auto animate-slide-in-right z-50 xl:hidden";
 
   // If no word is selected, show placeholder
   if (!wordData) {

@@ -42,9 +42,10 @@ export function Button({
   
   // Size styles
   const sizeStyles = {
-    sm: iconOnly ? 'p-1.5 text-ui-sm' : 'px-3 py-1.5 text-ui-sm',
-    md: iconOnly ? 'p-2 text-ui-base' : 'px-4 py-2 text-ui-base',
-    lg: iconOnly ? 'p-2.5 text-ui-base' : 'px-5 py-2.5 text-ui-base',
+    // Icon-only buttons: Ensure 44×44px minimum touch target (WCAG 2.1 Level AAA)
+    sm: iconOnly ? 'p-2.5 text-ui-sm min-w-[44px] min-h-[44px]' : 'px-3 py-1.5 text-ui-sm',
+    md: iconOnly ? 'p-3 text-ui-base min-w-[44px] min-h-[44px]' : 'px-4 py-2 text-ui-base',
+    lg: iconOnly ? 'p-3.5 text-ui-base min-w-[44px] min-h-[44px]' : 'px-5 py-2.5 text-ui-base',
   };
   
   // Disabled styles

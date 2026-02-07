@@ -309,6 +309,7 @@ export default function VocabularyPage() {
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isMultiSelectActive, setIsMultiSelectActive] = useState(false);
 
   // Simulate data loading with 2-second delay
   useEffect(() => {
@@ -410,14 +411,26 @@ export default function VocabularyPage() {
       newSelected.add(id);
     }
     setSelectedIds(newSelected);
+
+    // Exit multi-select mode when all items are deselected
+    if (newSelected.size === 0) {
+      setIsMultiSelectActive(false);
+    }
   };
 
   const handleToggleAll = () => {
     if (selectedIds.size === paginatedVocabulary.length) {
       setSelectedIds(new Set());
+      setIsMultiSelectActive(false);
     } else {
       setSelectedIds(new Set(paginatedVocabulary.map((item) => item.id)));
+      setIsMultiSelectActive(true);
     }
+  };
+
+  // Enable multi-select mode (triggered by long-press on mobile)
+  const handleEnableMultiSelect = () => {
+    setIsMultiSelectActive(true);
   };
 
   const handleClearSelection = () => {
@@ -466,7 +479,7 @@ export default function VocabularyPage() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 pb-32 lg:pb-8">
+    <div className="min-h-screen p-4 md:p-8 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Page Header */}
         <header className="space-y-2">
@@ -588,6 +601,8 @@ export default function VocabularyPage() {
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
                 onDelete={(item) => setDeleteTarget(item)}
+                isMultiSelectActive={isMultiSelectActive}
+                onEnableMultiSelect={handleEnableMultiSelect}
               />
             </div>
           </>

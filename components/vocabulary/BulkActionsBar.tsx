@@ -83,8 +83,8 @@ export function BulkActionsBar({
       </div>
 
       {/* Desktop: Floating centered */}
-      <div className="hidden lg:block fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
-        <div className="bg-primary border border-border rounded-card shadow-modal px-6 py-4 min-w-[600px]">
+      <div className="hidden lg:block fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-slide-up px-4">
+        <div className="bg-primary border border-border rounded-card shadow-modal px-6 py-4 w-full max-w-[600px]">
           <div className="flex items-center gap-4">
             {/* Selection count */}
             <div className="flex items-center gap-3">

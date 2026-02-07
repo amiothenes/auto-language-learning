@@ -49,11 +49,22 @@ interface VocabCardProps {
   isSelected: boolean;
   onToggle: () => void;
   onDelete?: (item: VocabularyItem) => void;
+  isMultiSelectActive?: boolean;
+  onEnableMultiSelect?: () => void;
 }
 
-export function VocabCard({ item, isSelected, onToggle, onDelete }: VocabCardProps) {
+export function VocabCard({
+  item,
+  isSelected,
+  onToggle,
+  onDelete,
+  isMultiSelectActive = false,
+  onEnableMultiSelect
+}: VocabCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLongPressing, setIsLongPressing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -68,6 +79,68 @@ export function VocabCard({ item, isSelected, onToggle, onDelete }: VocabCardPro
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isMenuOpen]);
+
+  // Long press detection (mobile only)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only on mobile (< 768px)
+    if (window.innerWidth >= 768) return;
+
+    // Don't trigger if touching the menu button
+    const target = e.target as HTMLElement;
+    if (target.closest('button[aria-label="Options"]')) return;
+
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPressing(true);
+      // Enable multi-select mode in parent
+      onEnableMultiSelect?.();
+      // Select this card
+      onToggle();
+      // Haptic feedback (if available)
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }, 500); // 500ms for long press
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setIsLongPressing(false);
+  };
+
+  const handleTouchMove = () => {
+    // Cancel long press if user moves finger (scrolling)
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    setIsLongPressing(false);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't handle if clicking the menu or checkbox
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input[type="checkbox"]')) {
+      return;
+    }
+
+    // Mobile: tap to select and enable multi-select mode
+    if (window.innerWidth < 768) {
+      e.preventDefault();
+      // If multi-select isn't active yet, activate it
+      if (!isMultiSelectActive) {
+        onEnableMultiSelect?.();
+      }
+      // Toggle selection
+      onToggle();
+      return;
+    }
+
+    // Desktop: normal click behavior (could navigate to details page in future)
+    console.log('Card clicked:', item.id);
+  };
 
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
@@ -85,18 +158,28 @@ export function VocabCard({ item, isSelected, onToggle, onDelete }: VocabCardPro
     <Card
       variant="default"
       padding="sm"
+      onClick={handleCardClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
       className={cn(
         'relative transition-all p-2.5! md:p-2!',
-        isSelected && 'ring-2 ring-primary ring-offset-1'
+        isSelected
+          ? 'border-2 border-primary shadow-raised'
+          : 'border-2 border-transparent',
+        isLongPressing && 'scale-98 transition-transform',
+        'cursor-pointer'
       )}
     >
+
       <div className="flex gap-2 md:gap-2.5 items-center">
-        {/* Left: Checkbox - Vertically Centered */}
+        {/* Desktop: Checkbox - Vertically Centered */}
         <input
           type="checkbox"
           checked={isSelected}
           onChange={onToggle}
-          className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          className="hidden md:block w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer shrink-0"
           aria-label={`Select ${item.lemma}`}
         />
 
@@ -125,7 +208,7 @@ export function VocabCard({ item, isSelected, onToggle, onDelete }: VocabCardPro
                     e.stopPropagation();
                     setIsMenuOpen(!isMenuOpen);
                   }}
-                  className="p-0.5 rounded hover:bg-desk transition-colors cursor-pointer"
+                  className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded hover:bg-desk transition-colors cursor-pointer"
                   aria-label="Options"
                 >
                   <MoreVertical size={14} className="text-muted" strokeWidth={2} />
@@ -206,6 +289,8 @@ interface VocabCardListProps {
   selectedIds: Set<string>;
   onToggleSelection: (id: string) => void;
   onDelete?: (item: VocabularyItem) => void;
+  isMultiSelectActive?: boolean;
+  onEnableMultiSelect?: () => void;
 }
 
 export function VocabCardList({
@@ -213,6 +298,8 @@ export function VocabCardList({
   selectedIds,
   onToggleSelection,
   onDelete,
+  isMultiSelectActive = false,
+  onEnableMultiSelect,
 }: VocabCardListProps) {
   if (items.length === 0) {
     return (
@@ -231,6 +318,8 @@ export function VocabCardList({
           isSelected={selectedIds.has(item.id)}
           onToggle={() => onToggleSelection(item.id)}
           onDelete={onDelete}
+          isMultiSelectActive={isMultiSelectActive}
+          onEnableMultiSelect={onEnableMultiSelect}
         />
       ))}
     </div>
