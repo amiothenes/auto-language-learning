@@ -296,11 +296,28 @@
     animation: modal-enter 200ms ease-out;
   }
 
+  /* Slide Down Animation (BulkActionsBar exit) */
+  @keyframes slide-down {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+
+  .animate-slide-down {
+    animation: slide-down 200ms ease-out forwards;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-tooltip-enter,
     .animate-tooltip-exit,
     .animate-modal-backdrop-enter,
     .animate-modal-enter,
+    .animate-slide-down,
     .animate-shimmer {
       animation: none;
     }
@@ -308,6 +325,36 @@
     .animate-shimmer {
       background: #E5E2DA;
     }
+  }
+}
+
+/* ============================================================================
+   View Transitions - Page Route Changes
+   Native CSS transitions for Next.js App Router navigation
+   ============================================================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+::view-transition-old(root) {
+  animation: fade-out 200ms ease-out;
+}
+
+::view-transition-new(root) {
+  animation: fade-in 200ms ease-out;
+}
+
+/* Respect reduced motion preference for view transitions */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
   }
 }
 

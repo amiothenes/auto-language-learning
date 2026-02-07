@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { X, Check, Tag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -24,12 +25,32 @@ export function BulkActionsBar({
   onDelete,
   onClearSelection,
 }: BulkActionsBarProps) {
-  if (selectedCount === 0) return null;
+  const [isExiting, setIsExiting] = useState(false);
+  const prevSelectedCountRef = useRef(selectedCount);
+
+  // Exit animation when deselecting all items
+  useEffect(() => {
+    // Detect when going from selected items to no items
+    if (prevSelectedCountRef.current > 0 && selectedCount === 0) {
+      setIsExiting(true);
+      // Wait for animation to complete before hiding
+      const timeout = setTimeout(() => {
+        setIsExiting(false);
+      }, 200); // Match slide-down animation duration
+      return () => clearTimeout(timeout);
+    }
+    prevSelectedCountRef.current = selectedCount;
+  }, [selectedCount]);
+
+  if (selectedCount === 0 && !isExiting) return null;
 
   return (
     <>
       {/* Mobile: Fixed bottom, full width */}
-      <div className="fixed bottom-0 left-0 right-0 lg:hidden z-50 animate-slide-up">
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 lg:hidden z-50",
+        isExiting ? "animate-slide-down" : "animate-slide-up"
+      )}>
         <div className="bg-primary border-t border-border shadow-modal">
           <div className="px-4 py-4">
             {/* Top row: Count + Clear */}
@@ -83,7 +104,10 @@ export function BulkActionsBar({
       </div>
 
       {/* Desktop: Floating centered */}
-      <div className="hidden lg:block fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-slide-up px-4">
+      <div className={cn(
+        "hidden lg:block fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-4",
+        isExiting ? "animate-slide-down" : "animate-slide-up"
+      )}>
         <div className="bg-primary border border-border rounded-card shadow-modal px-6 py-4 w-full max-w-[600px]">
           <div className="flex items-center gap-4">
             {/* Selection count */}
