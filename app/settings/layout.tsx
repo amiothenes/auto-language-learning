@@ -42,8 +42,8 @@ export default function SettingsLayout({
         </header>
 
         {/* Tab Navigation */}
-        <nav className="border-b border-border overflow-x-auto">
-          <div className="flex gap-1 min-w-max">
+        <nav className="border-b border-border overflow-x-auto scrollbar-hide">
+          <div className="flex gap-1 min-w-max pb-px">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = pathname === tab.href;
@@ -53,13 +53,13 @@ export default function SettingsLayout({
                   key={tab.id}
                   href={tab.href}
                   className={cn(
-                    'flex items-center gap-2 px-4 py-3 font-sans text-ui-base font-medium transition-colors border-b-2 whitespace-nowrap',
+                    'flex items-center gap-1.5 px-3 py-3 md:px-4 md:gap-2 font-sans text-ui-sm md:text-ui-base font-medium transition-colors border-b-2 whitespace-nowrap',
                     isActive
                       ? 'text-primary border-primary'
                       : 'text-muted border-transparent hover:text-ink hover:border-border'
                   )}
                 >
-                  <Icon className="w-5 h-5" strokeWidth={2} />
+                  <Icon className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2} />
                   {tab.label}
                 </Link>
               );

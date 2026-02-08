@@ -12,6 +12,7 @@ import { Select, SelectOption } from '@/components/settings/Select';
 import { Toggle } from '@/components/settings/Toggle';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { AddLanguageModal, NewLanguageData } from '@/components/settings/AddLanguageModal';
 
 interface Language {
   id: string;
@@ -33,14 +34,7 @@ export default function LanguagesSettingsPage() {
   const [languages, setLanguages] = useState<Language[]>(INITIAL_LANGUAGES);
   const [expandedLanguageId, setExpandedLanguageId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Language | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newLanguage, setNewLanguage] = useState({
-    name: '',
-    code: '',
-    dictUri: '',
-    ttsCode: '',
-    rtl: false,
-  });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Get current active language
   const activeLanguage = languages.find((lang) => lang.isActive);
@@ -84,25 +78,15 @@ export default function LanguagesSettingsPage() {
     // In a real app, this would save to the backend
   };
 
-  const handleAddLanguage = () => {
-    if (!newLanguage.name || !newLanguage.code) {
-      alert('Please fill in name and code');
-      return;
-    }
-
+  const handleAddLanguage = (newLanguageData: NewLanguageData) => {
     const newLang: Language = {
       id: Date.now().toString(),
-      name: newLanguage.name,
-      code: newLanguage.code,
+      ...newLanguageData,
       isActive: false,
-      dictUri: newLanguage.dictUri || undefined,
-      ttsCode: newLanguage.ttsCode || undefined,
-      rtl: newLanguage.rtl,
     };
 
     setLanguages((prev) => [...prev, newLang]);
-    setNewLanguage({ name: '', code: '', dictUri: '', ttsCode: '', rtl: false });
-    setShowAddForm(false);
+    setIsAddModalOpen(false);
     console.log('Added new language:', newLang);
   };
 
@@ -262,125 +246,16 @@ export default function LanguagesSettingsPage() {
           })}
         </div>
 
-        {/* Add New Language Section */}
+        {/* Add New Language Button */}
         <div className="mt-4">
           <Button
             variant="secondary"
             size="md"
             leftIcon={<Plus size={18} strokeWidth={2} />}
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="w-full"
+            onClick={() => setIsAddModalOpen(true)}
           >
-            {showAddForm ? 'Cancel' : 'Add New Language'}
+            Add New Language
           </Button>
-
-          {/* Add Language Form - Expands Downward */}
-          <div
-            className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-              showAddForm ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-            }`}
-          >
-            <div className="overflow-hidden">
-              <div className="p-4 border border-border border-t-0 rounded-b-card bg-desk space-y-4">
-            <h3 className="font-sans text-ui-base font-semibold text-ink">
-              Add New Language
-            </h3>
-
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Language Name *
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Spanish"
-                value={newLanguage.name}
-                onChange={(e) =>
-                  setNewLanguage((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Language Code *
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., es"
-                value={newLanguage.code}
-                onChange={(e) =>
-                  setNewLanguage((prev) => ({ ...prev, code: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Dictionary URI
-              </label>
-              <input
-                type="text"
-                placeholder="https://dictionary.example.com/{word}"
-                value={newLanguage.dictUri}
-                onChange={(e) =>
-                  setNewLanguage((prev) => ({ ...prev, dictUri: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                TTS Code
-              </label>
-              <input
-                type="text"
-                placeholder="es-ES"
-                value={newLanguage.ttsCode}
-                onChange={(e) =>
-                  setNewLanguage((prev) => ({ ...prev, ttsCode: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-
-            <div>
-              <Toggle
-                checked={newLanguage.rtl}
-                onChange={(checked) =>
-                  setNewLanguage((prev) => ({ ...prev, rtl: checked }))
-                }
-                label="Right-to-Left (RTL)"
-                description="Enable for Arabic, Hebrew, and other RTL languages"
-              />
-            </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button variant="primary" size="sm" onClick={handleAddLanguage}>
-                    Add Language
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowAddForm(false);
-                      setNewLanguage({
-                        name: '',
-                        code: '',
-                        dictUri: '',
-                        ttsCode: '',
-                        rtl: false,
-                      });
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </SettingSection>
 
@@ -393,6 +268,13 @@ export default function LanguagesSettingsPage() {
         message={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
+      />
+
+      {/* Add Language Modal */}
+      <AddLanguageModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddLanguage}
       />
     </div>
   );

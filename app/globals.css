@@ -326,6 +326,93 @@
       background: #E5E2DA;
     }
   }
+
+  /* Range Input Slider Thumb Styling */
+  input[type="range"].slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) - Track */
+  input[type="range"].slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 9999px;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) - Thumb */
+  input[type="range"].slider::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #183A37 !important; /* Library green */
+    cursor: pointer;
+    border: 2px solid #FAF9F5;
+    box-shadow: 0 1px 3px rgba(20, 20, 19, 0.12);
+    transition: all 150ms ease;
+    margin-top: -6px; /* Center the thumb on the track */
+  }
+
+  input[type="range"].slider::-webkit-slider-thumb:hover {
+    background: #0f2422 !important; /* Darker green on hover */
+    box-shadow: 0 2px 4px rgba(20, 20, 19, 0.16);
+  }
+
+  input[type="range"].slider::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+  }
+
+  /* Firefox - Track */
+  input[type="range"].slider::-moz-range-track {
+    height: 8px;
+    border-radius: 9999px;
+  }
+
+  /* Firefox - Thumb */
+  input[type="range"].slider::-moz-range-thumb {
+    -moz-appearance: none !important;
+    appearance: none !important;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #183A37 !important;
+    cursor: pointer;
+    border: 2px solid #FAF9F5;
+    box-shadow: 0 1px 3px rgba(20, 20, 19, 0.12);
+    transition: all 150ms ease;
+  }
+
+  input[type="range"].slider::-moz-range-thumb:hover {
+    background: #0f2422 !important;
+    box-shadow: 0 2px 4px rgba(20, 20, 19, 0.16);
+  }
+
+  input[type="range"].slider::-moz-range-thumb:active {
+    transform: scale(1.1);
+  }
+
+  /* Focus styles for accessibility */
+  input[type="range"].slider:focus-visible::-webkit-slider-thumb {
+    outline: none;
+    box-shadow: 0 0 0 2px #FAF9F5, 0 0 0 4px #183A37;
+  }
+
+  input[type="range"].slider:focus-visible::-moz-range-thumb {
+    outline: none;
+    box-shadow: 0 0 0 2px #FAF9F5, 0 0 0 4px #183A37;
+  }
+
+  /* Scrollbar Hide Utility */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* ============================================================================

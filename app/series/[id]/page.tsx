@@ -5,10 +5,12 @@ import { notFound } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { SeriesHeader } from '@/components/series/SeriesHeader';
+import { SeriesHeaderSkeleton } from '@/components/series/SeriesHeaderSkeleton';
 import { TextCard } from '@/components/series/TextCard';
 import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
 import type { SeriesDetail } from '@/lib/types';
 
@@ -339,7 +341,9 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Series Header */}
-        {!isLoading && seriesData && (
+        {isLoading ? (
+          <SeriesHeaderSkeleton />
+        ) : seriesData ? (
           <SeriesHeader
             id={seriesData.id}
             name={seriesName}
@@ -351,10 +355,16 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             onTitleUpdate={handleTitleUpdate}
             onDelete={setDeleteSeriesTarget}
           />
-        )}
+        ) : null}
 
         {/* Action Buttons Row */}
-        {!isLoading && (
+        {isLoading ? (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Skeleton className="h-12 sm:flex-1 rounded" />
+            <Skeleton className="h-12 sm:flex-1 rounded" />
+            <Skeleton className="h-12 sm:flex-1 rounded" />
+          </div>
+        ) : (
           <div className="flex flex-col sm:flex-row gap-3">
           <Button
             variant="primary"
