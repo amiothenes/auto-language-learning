@@ -30,7 +30,7 @@ import { useEffect, RefObject } from 'react';
  */
 export function useFocusTrap(
   isActive: boolean,
-  containerRef: RefObject<HTMLElement>
+  containerRef: RefObject<HTMLElement | null>
 ): void {
   useEffect(() => {
     if (!isActive) return;

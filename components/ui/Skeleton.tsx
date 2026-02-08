@@ -7,15 +7,16 @@ import { cn } from '@/lib/utils';
 
 interface SkeletonProps {
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
  * Base skeleton element with shimmer animation
  * Uses gradient shimmer (#E5E2DA → #F0EFEA) for subtle, organic loading states
  */
-export function Skeleton({ className }: SkeletonProps) {
+export function Skeleton({ className, style }: SkeletonProps) {
   return (
-    <div className={cn('animate-shimmer rounded', className)} />
+    <div className={cn('animate-shimmer rounded', className)} style={style} />
   );
 }
 

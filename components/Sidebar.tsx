@@ -79,6 +79,7 @@ export function Sidebar() {
                 role="combobox"
                 aria-expanded={isDropdownOpen}
                 aria-haspopup="listbox"
+                aria-controls="language-listbox"
                 aria-label="Select language"
                 className="w-full h-10 px-2 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 title={currentLanguage?.name}
@@ -99,6 +100,7 @@ export function Sidebar() {
               {isDropdownOpen && (
                 <div
                   ref={dropdownRef}
+                  id="language-listbox"
                   role="listbox"
                   className="absolute top-full left-0 w-60 mt-2 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50"
                 >

@@ -3,6 +3,8 @@
 // Switch-style toggle for boolean settings
 // ============================================================================
 
+import { useId } from 'react';
+
 interface ToggleProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -18,7 +20,8 @@ export function Toggle({
   description,
   id,
 }: ToggleProps) {
-  const toggleId = id || `toggle-${Math.random().toString(36).slice(2, 9)}`;
+  const autoId = useId();
+  const toggleId = id || autoId;
 
   return (
     <div className="flex items-start gap-3">

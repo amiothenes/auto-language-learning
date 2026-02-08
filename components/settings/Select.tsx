@@ -6,7 +6,7 @@
 // Keyboard: Arrow Up/Down, Home/End, Enter, ESC
 // ============================================================================
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
 import { cn } from '@/lib/utils';
@@ -36,7 +36,7 @@ export function Select({
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const selectId = useRef(`select-${Math.random().toString(36).slice(2, 9)}`).current;
+  const selectId = useId();
 
   // Keyboard navigation
   const { highlightedIndex } = useDropdownNavigation(

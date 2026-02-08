@@ -32,7 +32,8 @@ export function BulkActionsBar({
   useEffect(() => {
     // Detect when going from selected items to no items
     if (prevSelectedCountRef.current > 0 && selectedCount === 0) {
-      setIsExiting(true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsExiting(true); // Intentional: trigger exit animation
       // Wait for animation to complete before hiding
       const timeout = setTimeout(() => {
         setIsExiting(false);

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { MoreVertical, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // ============================================================================
 // SeriesCard Component

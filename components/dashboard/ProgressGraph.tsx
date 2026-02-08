@@ -12,6 +12,9 @@ import {
   Filler,
   Legend,
   TooltipItem,
+  ChartData,
+  ChartOptions,
+  ScriptableContext,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -107,7 +110,7 @@ export function ProgressGraph() {
   };
 
   // Prepare chart data
-  const chartData = {
+  const chartData: ChartData<'line'> = {
     labels: filteredData.map((d) => formatDate(d.date)),
     datasets: [
       {
@@ -115,7 +118,7 @@ export function ProgressGraph() {
         data: filteredData.map((d) => d.percentage),
         fill: true,
         borderColor: '#183A37', // Library Green
-        backgroundColor: (context: any) => {
+        backgroundColor: (context: ScriptableContext<'line'>) => {
           const ctx = context.chart.ctx;
           const gradient = ctx.createLinearGradient(0, 0, 0, 200);
           gradient.addColorStop(0, 'rgba(24, 58, 55, 0.1)');
@@ -134,7 +137,7 @@ export function ProgressGraph() {
   };
 
   // Chart options
-  const chartOptions = {
+  const chartOptions: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -195,7 +198,6 @@ export function ProgressGraph() {
         max: 100,
         grid: {
           color: '#E5E2DA', // Border Subtle
-          drawBorder: false,
         },
         border: {
           display: false,

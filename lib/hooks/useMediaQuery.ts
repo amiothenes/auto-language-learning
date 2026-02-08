@@ -12,7 +12,8 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     const mql = window.matchMedia(query);
-    setMatches(mql.matches);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMatches(mql.matches); // Intentional: sync with browser media query state
 
     const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
     mql.addEventListener('change', handler);

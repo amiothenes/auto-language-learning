@@ -34,6 +34,7 @@ export function Tooltip({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<Placement>(preferredPlacement);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [tooltipDimensions, setTooltipDimensions] = useState({ width: 320, height: 0 });
   const scrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
 
   // Two-phase render: measure then position
@@ -45,6 +46,9 @@ export function Tooltip({
     const tooltipHeight = el.offsetHeight;
     const viewportWidth = window.innerWidth;
     const margin = 12;
+
+    // Store dimensions for arrow calculation
+    setTooltipDimensions({ width: tooltipWidth, height: tooltipHeight });
 
     // Determine placement
     const spaceAbove = anchorRect.top;
@@ -162,7 +166,7 @@ export function Tooltip({
           <div
             className="absolute w-0 h-0"
             style={{
-              left: Math.max(12, Math.min(arrowLeft, (tooltipRef.current?.offsetWidth ?? 320) - 12)),
+              left: Math.max(12, Math.min(arrowLeft, tooltipDimensions.width - 12)),
               transform: 'translateX(-50%)',
               ...(placement === 'above'
                 ? {

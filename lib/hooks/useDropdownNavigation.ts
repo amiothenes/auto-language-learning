@@ -52,7 +52,7 @@ export function useDropdownNavigation<T>(
   selectedValue: T | undefined,
   onSelect: (value: T) => void,
   onClose: () => void,
-  containerRef: RefObject<HTMLElement>
+  containerRef: RefObject<HTMLElement | null>
 ): {
   highlightedIndex: number;
   setHighlightedIndex: (index: number) => void;
@@ -62,13 +62,17 @@ export function useDropdownNavigation<T>(
   // Initialize highlighted index to selected value when opening
   useEffect(() => {
     if (!isOpen) {
-      setHighlightedIndex(-1);
+      // Only reset if not already -1 to prevent unnecessary updates
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHighlightedIndex((prev) => (prev !== -1 ? -1 : prev));
       return;
     }
 
     // Find index of selected value
     const selectedIndex = options.findIndex((opt) => opt === selectedValue);
-    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    const targetIndex = selectedIndex >= 0 ? selectedIndex : 0;
+    // Only update if different to prevent unnecessary renders
+    setHighlightedIndex((prev) => (prev !== targetIndex ? targetIndex : prev));
   }, [isOpen, options, selectedValue]);
 
   // Auto-scroll highlighted option into view

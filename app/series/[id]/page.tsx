@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useRef, use } from 'react';
 import { notFound } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesHeader } from '@/components/series/SeriesHeader';
 import { TextCard } from '@/components/series/TextCard';
@@ -11,7 +10,7 @@ import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
-import type { Text, SeriesDetail } from '@/lib/types';
+import type { SeriesDetail } from '@/lib/types';
 
 // ============================================================================
 // Hardcoded Data

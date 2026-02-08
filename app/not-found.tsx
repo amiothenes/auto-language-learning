@@ -29,7 +29,7 @@ export default function NotFound() {
 
         {/* Description */}
         <p className="font-sans text-ui-base text-muted mb-8">
-          The page you're looking for doesn't exist or has been moved.
+          {`The page you're looking for doesn't exist or has been moved.`}
         </p>
 
         {/* Action buttons */}

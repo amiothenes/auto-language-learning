@@ -6,7 +6,6 @@ import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
 import { Content, Muted } from '@/components/ui/Typography';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { cn } from '@/lib/utils';
 
 // Re-export for backward compatibility
 export type { VocabularyItem };

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
-import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';

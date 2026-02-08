@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Content, Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { ArrowLeft, Edit2, Check, X, FileText, Type, Clock, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, X, FileText, Type, Clock, MoreVertical, Edit, Trash2 } from 'lucide-react';
 
 // ============================================================================
 // SeriesHeader Component
