@@ -129,8 +129,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     isMilestone: boolean;
   } | null>(null);
   
-  // Desktop detection for tooltip vs side panel behavior
+  // Desktop detection for 3-column layout
   const isDesktop = useMediaQuery('(min-width: 1280px)');
+  // Tablet+ detection for tooltip behavior (separate from layout)
+  const shouldShowTooltip = useMediaQuery('(min-width: 768px)');
 
   // State for word tooltip (desktop only)
   const [tooltipWord, setTooltipWord] = useState<WordData | null>(null);
@@ -159,11 +161,11 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // Split content into paragraphs
   const paragraphs = textData.content.split('\n\n').filter(p => p.trim());
   
-  // Handle word click - desktop: tooltip, mobile: side panel
+  // Handle word click - desktop/tablet: tooltip, mobile: side panel
   const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
     setSelectedWord(wordData);
 
-    if (isDesktop) {
+    if (shouldShowTooltip) {
       // If clicking the same word, close tooltip
       if (tooltipWord?.id === wordData.id && !isTooltipExiting) {
         handleTooltipClose();
@@ -174,7 +176,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       setTooltipWord(wordData);
       setTooltipAnchorRect(anchorRect);
     } else {
-      // Mobile/tablet: open side panel directly
+      // Mobile only: open side panel directly
       setIsRightPanelOpen(true);
     }
   };
@@ -391,8 +393,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       }
     };
 
-    // Only add touch listeners on mobile/tablet/small desktop
-    if (window.innerWidth < 1280) {
+    // Only add touch listeners on mobile screens
+    if (window.innerWidth < 768) {
       document.addEventListener('touchstart', handleTouchStart, { passive: true });
       document.addEventListener('touchmove', handleTouchMove, { passive: true });
       document.addEventListener('touchend', handleTouchEnd);
@@ -439,9 +441,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </div>
       </header>
 
-      {/* Mobile/Tablet/Small Desktop: Backdrop overlay when panels are open */}
-      {(isTextInfoOpen || isRightPanelOpen) && (
-        <div 
+      {/* Mobile/Tablet: Backdrop overlay when panels are open (not for tooltips) */}
+      {(isTextInfoOpen || (isRightPanelOpen && !isDesktop)) && (
+        <div
           className="fixed inset-0 bg-ink/30 z-30 xl:hidden backdrop-blur-sm"
           onClick={() => {
             setIsTextInfoOpen(false);
@@ -527,9 +529,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       </div>
       
       {/* ================================================================ */}
-      {/* MOBILE/TABLET/SMALL DESKTOP WORD DETAILS - Slides from right, overlaps content */}
+      {/* MOBILE/TABLET WORD DETAILS - Slides from right, overlaps content */}
       {/* ================================================================ */}
-      {isRightPanelOpen && (
+      {isRightPanelOpen && !isDesktop && (
         <WordDetailsPanel
           wordData={selectedWord}
           onClose={handleCloseWordDetails}
