@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { VocabularyStatus } from '@/components/reader/Word';
+import { VocabularyStatus, VocabularyItem } from '@/lib/types';
 import { Content, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
-import { VocabularyItem } from './VocabTable';
 import { cn } from '@/lib/utils';
 
 // ============================================================================

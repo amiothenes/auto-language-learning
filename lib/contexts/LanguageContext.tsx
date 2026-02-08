@@ -1,23 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface Language {
-  code: string;
-  name: string;
-}
-
-interface LanguageContextType {
-  selectedLanguage: string;
-  currentLanguage: Language | undefined;
-  setSelectedLanguage: (code: string) => void;
-  isDropdownOpen: boolean;
-  setIsDropdownOpen: (open: boolean) => void;
-}
+import { Language, LanguageContextType } from '@/lib/types';
 
 // ============================================================================
 // Hardcoded Data (same as Sidebar)

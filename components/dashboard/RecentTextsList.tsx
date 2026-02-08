@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Plus, Library } from 'lucide-react';
 import { SkeletonText } from '@/components/ui/Skeleton';
 
+// TODO: Replace with API call
 const recentTexts = [
   {
     id: '1',

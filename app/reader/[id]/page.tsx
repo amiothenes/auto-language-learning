@@ -9,7 +9,8 @@ import { ReaderContent } from '@/components/reader/ReaderContent';
 import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
 import { WordTooltip } from '@/components/reader/WordTooltip';
 import { TextInfoSkeleton, ReaderContentSkeleton, WordDetailsPanelSkeleton } from '@/components/reader/ReaderSkeleton';
-import { WordData, VocabularyStatus } from '@/components/reader/Word';
+import { VocabularyStatus } from '@/lib/types';
+import type { WordData, TextData } from '@/lib/types';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
@@ -17,19 +18,7 @@ import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 // Hardcoded Data (Temporary)
 // ============================================================================
 
-interface TextData {
-  id: string;
-  title: string;
-  seriesId: string;
-  seriesName: string;
-  wordCount: number;
-  uniqueWordCount: number;
-  viewCount: number;
-  knownPercentage: number;
-  tags: string[];
-  content: string;
-}
-
+// TODO: Replace with API call
 const TEMP_TEXT_DATA: Record<string, TextData> = {
   't1': {
     id: 't1',
@@ -69,6 +58,7 @@ const TEMP_TEXT_DATA: Record<string, TextData> = {
   },
 };
 
+// TODO: Replace with API call
 // Hardcoded paragraph progress data for mini map
 const TEMP_PARAGRAPH_PROGRESS = [
   { id: 'p1', progress: 85 },   // High - green

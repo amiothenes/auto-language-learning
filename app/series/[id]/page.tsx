@@ -11,32 +11,13 @@ import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
+import type { Text, SeriesDetail } from '@/lib/types';
 
 // ============================================================================
 // Hardcoded Data
 // ============================================================================
 
-interface Text {
-  id: string;
-  title: string;
-  wordCount: number;
-  uniqueWordCount: number;
-  knownPercentage: number;
-  lastRead: string;
-  preview: string;
-}
-
-interface SeriesDetail {
-  id: string;
-  name: string;
-  description: string;
-  textCount: number;
-  totalWords: number;
-  overallProgress: number;
-  lastUpdated: string;
-  texts: Text[];
-}
-
+// TODO: Replace with API call
 const TEMP_SERIES_DETAILS: Record<string, SeriesDetail> = {
   '1': {
     id: '1',

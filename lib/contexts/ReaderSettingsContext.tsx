@@ -1,29 +1,12 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-// ============================================================================
-// ReaderSettings Type Definitions
-// ============================================================================
-
-export type FontSize = 'small' | 'medium' | 'large';
-export type ColorScheme = 'light' | 'dark';
-
-export interface ReaderSettings {
-  fontSize: FontSize;
-  highlightIntensity: number; // 0-100
-  showWellKnownWords: boolean;
-  colorScheme: ColorScheme;
-}
-
-interface ReaderSettingsContextType {
-  settings: ReaderSettings;
-  updateFontSize: (size: FontSize) => void;
-  updateHighlightIntensity: (intensity: number) => void;
-  updateShowWellKnownWords: (show: boolean) => void;
-  updateColorScheme: (scheme: ColorScheme) => void;
-  resetToDefaults: () => void;
-}
+import {
+  FontSize,
+  ColorScheme,
+  ReaderSettings,
+  ReaderSettingsContextType,
+} from '@/lib/types';
 
 // ============================================================================
 // Default Settings

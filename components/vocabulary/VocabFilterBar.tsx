@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { VocabularyStatus } from '@/components/reader/Word';
+import { VocabularyStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
 

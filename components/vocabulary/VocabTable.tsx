@@ -2,24 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
-import { VocabularyStatus } from '@/components/reader/Word';
+import { VocabularyStatus } from '@/lib/types';
+import type { VocabularyItem } from '@/lib/types';
 import { Content, Muted } from '@/components/ui/Typography';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { cn } from '@/lib/utils';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface VocabularyItem {
-  id: string;
-  lemma: string;
-  status: VocabularyStatus;
-  dictionaryFrequency: number;
-  userFrequency: number;
-  translation: string;
-  tags: string[];
-}
+// Re-export for backward compatibility
+export type { VocabularyItem };
 
 interface VocabTableProps {
   items: VocabularyItem[];

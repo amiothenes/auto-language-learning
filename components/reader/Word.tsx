@@ -1,34 +1,12 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { VocabularyStatus } from '@/lib/types';
+import type { WordData } from '@/lib/types';
 
-// ============================================================================
-// VocabularyStatus Enum
-// ============================================================================
-
-export enum VocabularyStatus {
-  NEWLY_SEEN = 'NEWLY_SEEN',
-  FAMILIAR = 'FAMILIAR',
-  KNOWN = 'KNOWN',
-  WELL_KNOWN = 'WELL_KNOWN',
-  IGNORE = 'IGNORE'
-}
-
-// ============================================================================
-// Word Data Interface
-// ============================================================================
-
-export interface WordData {
-  id: string;
-  surface: string;
-  lemma: string;
-  pos: string;
-  inflection: string;
-  translation: string;
-  dictionaryFrequency: number;
-  userFrequency: number;
-  status: VocabularyStatus;
-}
+// Re-export for backward compatibility
+export { VocabularyStatus };
+export type { WordData };
 
 // ============================================================================
 // Word Component

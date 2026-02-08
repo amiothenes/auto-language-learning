@@ -97,7 +97,7 @@ export function WordDetailsPanel({
         <div className="p-5 space-y-5">
           {/* Panel Header */}
           <div className="flex items-center justify-between">
-            <Heading size="base" as="h2">
+            <Heading size="lg" as="h2">
               Word Details
             </Heading>
             <button
@@ -125,7 +125,7 @@ export function WordDetailsPanel({
       <div className="p-5 space-y-4 h-full flex flex-col">
         {/* Panel Header */}
         <div className="flex items-center justify-between sticky top-0 bg-paper pb-3 border-b border-border z-10 shrink-0">
-          <Heading size="base" as="h2">
+          <Heading size="lg" as="h2">
             Word Details
           </Heading>
           <button

@@ -9,20 +9,13 @@ import { EmptySeriesState } from '@/components/series/EmptySeriesState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Search, Plus, ChevronDown } from 'lucide-react';
+import type { Series, SeriesSortOption } from '@/lib/types';
 
 // ============================================================================
 // Hardcoded Data
 // ============================================================================
 
-interface Series {
-  id: string;
-  name: string;
-  description: string;
-  textCount: number;
-  progress: number;
-  lastUpdated: string;
-}
-
+// TODO: Replace with API call
 const TEMP_SERIES: Series[] = [
   {
     id: '1',
@@ -74,8 +67,6 @@ const TEMP_SERIES: Series[] = [
   },
 ];
 
-type SortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'updated-recent';
-
 // ============================================================================
 // Series Page Component
 // ============================================================================
@@ -83,7 +74,7 @@ type SortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'updated-recen
 export default function SeriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+  const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -263,7 +254,7 @@ export default function SeriesPage() {
         ) : filteredAndSortedSeries.length === 0 ? (
           searchQuery ? (
             <EmptyState
-              illustration="search"
+              illustration="none"
               title="No series found"
               description="Try adjusting your search query to find what you're looking for"
             />

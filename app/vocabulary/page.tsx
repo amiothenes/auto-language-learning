@@ -4,9 +4,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
-import { VocabularyStatus } from '@/components/reader/Word';
+import { VocabularyStatus } from '@/lib/types';
+import type { VocabularyItem } from '@/lib/types';
 import { VocabFilterBar, SortOption } from '@/components/vocabulary/VocabFilterBar';
-import { VocabTable, VocabularyItem } from '@/components/vocabulary/VocabTable';
+import { VocabTable } from '@/components/vocabulary/VocabTable';
 import { VocabCardList } from '@/components/vocabulary/VocabCard';
 import { VocabCardSkeleton } from '@/components/vocabulary/VocabCardSkeleton';
 import { VocabTableRowSkeleton } from '@/components/vocabulary/VocabTableRowSkeleton';
@@ -19,6 +20,7 @@ import { ChevronLeft, ChevronRight, Library } from 'lucide-react';
 // Hardcoded Vocabulary Data
 // ============================================================================
 
+// TODO: Replace with API call
 const TEMP_VOCABULARY: VocabularyItem[] = [
   {
     id: '1',
@@ -564,7 +566,7 @@ export default function VocabularyPage() {
           /* Empty State */
           searchQuery || activeStatuses.size > 0 ? (
             <EmptyState
-              illustration="search"
+              illustration="none"
               title="No words found"
               description="Try adjusting your search query or filter criteria to find what you're looking for"
             />

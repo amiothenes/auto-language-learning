@@ -154,12 +154,12 @@ export function ProgressGraph() {
         titleFont: {
           family: 'Inter, system-ui, sans-serif',
           size: 13,
-          weight: '600',
+          weight: 600,
         },
         bodyFont: {
           family: 'Inter, system-ui, sans-serif',
           size: 12,
-          weight: '400',
+          weight: 400,
         },
         callbacks: {
           title: (tooltipItems: TooltipItem<'line'>[]) => {
