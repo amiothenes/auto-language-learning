@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
@@ -8,8 +9,11 @@ import { SeriesCardSkeleton } from '@/components/series/SeriesCardSkeleton';
 import { EmptySeriesState } from '@/components/series/EmptySeriesState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { NewSeriesModal } from '@/components/series/NewSeriesModal';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { Search, Plus, ChevronDown } from 'lucide-react';
 import type { Series, SeriesSortOption } from '@/lib/types';
+import type { NewSeriesData } from '@/lib/types/forms';
 
 // ============================================================================
 // Hardcoded Data
@@ -72,11 +76,14 @@ const TEMP_SERIES: Series[] = [
 // ============================================================================
 
 export default function SeriesPage() {
+  const router = useRouter();
+  const { toast, showToast, hideToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
   // Simulate data loading with 2-second delay
@@ -146,8 +153,40 @@ export default function SeriesPage() {
   }, [searchQuery, sortBy]);
 
   const handleNewSeries = () => {
-    console.log('Create new series');
-    // TODO: Implement new series modal/page
+    setIsNewSeriesModalOpen(true);
+  };
+
+  const handleCreateSeries = (seriesData: NewSeriesData) => {
+    // Generate new ID
+    const newId = `s${TEMP_SERIES.length + 1}`;
+
+    // Create series object
+    const newSeries: Series = {
+      id: newId,
+      name: seriesData.name,
+      description: seriesData.description,
+      textCount: seriesData.texts?.length || 0,
+      progress: 0,
+      lastUpdated: 'Just now'
+    };
+
+    // TODO: Replace with API call
+    TEMP_SERIES.push(newSeries);
+
+    // Show success feedback
+    showToast(
+      seriesData.texts && seriesData.texts.length > 0
+        ? `Series "${seriesData.name}" created with ${seriesData.texts.length} text${seriesData.texts.length > 1 ? 's' : ''}!`
+        : `Series "${seriesData.name}" created successfully!`
+    );
+
+    // Close modal
+    setIsNewSeriesModalOpen(false);
+
+    // Navigate to new series page if texts were imported
+    if (seriesData.texts && seriesData.texts.length > 0) {
+      router.push(`/series/${newId}`);
+    }
   };
 
   const handleConfirmDelete = () => {
@@ -283,6 +322,20 @@ export default function SeriesPage() {
         message={`Are you sure you want to delete "${deleteTarget?.name}"? All texts in this series will also be deleted. This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
+      />
+
+      {/* New Series Modal */}
+      <NewSeriesModal
+        isOpen={isNewSeriesModalOpen}
+        onClose={() => setIsNewSeriesModalOpen(false)}
+        onAdd={handleCreateSeries}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        isOpen={toast.isOpen}
+        onClose={hideToast}
       />
     </div>
   );

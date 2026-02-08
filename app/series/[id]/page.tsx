@@ -10,9 +10,13 @@ import { TextCard } from '@/components/series/TextCard';
 import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { NewTextModal } from '@/components/texts/NewTextModal';
+import { ImportTextsModal } from '@/components/texts/ImportTextsModal';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
-import type { SeriesDetail } from '@/lib/types';
+import type { SeriesDetail, Series } from '@/lib/types';
+import type { NewTextData, ImportedTextData } from '@/lib/types/forms';
 
 // ============================================================================
 // Hardcoded Data
@@ -230,11 +234,14 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   }
 
   const router = useRouter();
+  const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState(seriesData?.name || '');
   const [sortBy, setSortBy] = useState<SortOption>('title-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteSeriesTarget, setDeleteSeriesTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteTextTarget, setDeleteTextTarget] = useState<{ id: string; title: string } | null>(null);
+  const [isNewTextModalOpen, setIsNewTextModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
   // Simulate data loading with 2-second delay
@@ -302,13 +309,37 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleAddText = () => {
-    console.log('Add new text to series:', id);
-    // TODO: Implement add text modal
+    setIsNewTextModalOpen(true);
+  };
+
+  const handleCreateText = (textData: NewTextData) => {
+    // TODO: Replace with API call - this is just for demonstration
+    console.log('Creating text:', textData);
+
+    // Show success feedback
+    showToast(`Text "${textData.title}" added successfully!`);
+
+    // Close modal
+    setIsNewTextModalOpen(false);
+
+    // In a real app, we would update the series data here
   };
 
   const handleImport = () => {
-    console.log('Import texts to series:', id);
-    // TODO: Implement import modal
+    setIsImportModalOpen(true);
+  };
+
+  const handleImportTexts = (texts: ImportedTextData[]) => {
+    // TODO: Replace with API call - this is just for demonstration
+    console.log('Importing texts:', texts);
+
+    // Show success feedback
+    showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
+
+    // Close modal
+    setIsImportModalOpen(false);
+
+    // In a real app, we would update the series data here
   };
 
   const handleConfirmDeleteSeries = () => {
@@ -482,6 +513,34 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         message={`Are you sure you want to delete "${deleteTextTarget?.title}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
+      />
+
+      {/* New Text Modal */}
+      <NewTextModal
+        isOpen={isNewTextModalOpen}
+        onClose={() => setIsNewTextModalOpen(false)}
+        onAdd={handleCreateText}
+        prefilledSeriesId={id}
+        availableSeries={Object.values(TEMP_SERIES_DETAILS).map((s) => ({
+          id: s.id,
+          name: s.name,
+        }))}
+      />
+
+      {/* Import Texts Modal */}
+      <ImportTextsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportTexts}
+        seriesId={id}
+        seriesName={seriesData?.name || ''}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        isOpen={toast.isOpen}
+        onClose={hideToast}
       />
     </div>
   );

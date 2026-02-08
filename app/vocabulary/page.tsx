@@ -13,8 +13,12 @@ import { VocabCardSkeleton } from '@/components/vocabulary/VocabCardSkeleton';
 import { VocabTableRowSkeleton } from '@/components/vocabulary/VocabTableRowSkeleton';
 import { BulkActionsBar } from '@/components/vocabulary/BulkActionsBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
+import { ImportVocabularyModal } from '@/components/vocabulary/ImportVocabularyModal';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ChevronLeft, ChevronRight, Library } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Library, Plus, Upload } from 'lucide-react';
+import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
 
 // ============================================================================
 // Hardcoded Vocabulary Data
@@ -300,6 +304,7 @@ const TEMP_VOCABULARY: VocabularyItem[] = [
 
 export default function VocabularyPage() {
   const router = useRouter();
+  const { toast, showToast, hideToast } = useToast();
 
   // Loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -312,6 +317,10 @@ export default function VocabularyPage() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isMultiSelectActive, setIsMultiSelectActive] = useState(false);
+
+  // Modal state
+  const [isAddVocabModalOpen, setIsAddVocabModalOpen] = useState(false);
+  const [isImportVocabModalOpen, setIsImportVocabModalOpen] = useState(false);
 
   // Simulate data loading with 2-second delay
   useEffect(() => {
@@ -481,25 +490,69 @@ export default function VocabularyPage() {
     }
   };
 
+  const handleAddVocabulary = (vocabData: NewVocabularyData) => {
+    // TODO: Replace with API call
+    console.log('Adding vocabulary:', vocabData);
+
+    // Show success feedback
+    showToast(`"${vocabData.lemma}" added to vocabulary!`);
+
+    // Close modal
+    setIsAddVocabModalOpen(false);
+  };
+
+  const handleImportVocabulary = (items: ImportedVocabularyData[], strategy: MergeStrategy) => {
+    // TODO: Replace with API call
+    console.log('Importing vocabulary:', items, 'Strategy:', strategy);
+
+    // Show success feedback
+    showToast(`${items.length} vocabulary item${items.length > 1 ? 's' : ''} imported successfully!`);
+
+    // Close modal
+    setIsImportVocabModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-8 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Page Header */}
-        <header className="space-y-2">
-          <Heading size="2xl" as="h1">
-            Vocabulary
-          </Heading>
-          <div className="flex items-center gap-4 flex-wrap">
-            <Muted>Manage your learned words and track your progress</Muted>
-            <div className="flex items-center gap-3">
-              <span className="font-sans text-ui-sm text-muted">
-                Total: {TEMP_VOCABULARY.length} words
-              </span>
-              <span className="text-muted">•</span>
-              <span className="font-sans text-ui-sm text-muted">
-                Showing: {filteredAndSortedVocabulary.length} words
-              </span>
+        <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="space-y-2">
+            <Heading size="2xl" as="h1">
+              Vocabulary
+            </Heading>
+            <div className="flex items-center gap-4 flex-wrap">
+              <Muted>Manage your learned words and track your progress</Muted>
+              <div className="flex items-center gap-3">
+                <span className="font-sans text-ui-sm text-muted">
+                  Total: {TEMP_VOCABULARY.length} words
+                </span>
+                <span className="text-muted">•</span>
+                <span className="font-sans text-ui-sm text-muted">
+                  Showing: {filteredAndSortedVocabulary.length} words
+                </span>
+              </div>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              size="lg"
+              leftIcon={<Upload size={18} strokeWidth={1.5} />}
+              onClick={() => setIsImportVocabModalOpen(true)}
+            >
+              Import
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              leftIcon={<Plus size={18} strokeWidth={2} />}
+              onClick={() => setIsAddVocabModalOpen(true)}
+            >
+              Add Vocabulary
+            </Button>
           </div>
         </header>
 
@@ -670,6 +723,27 @@ export default function VocabularyPage() {
         message={`Are you sure you want to delete ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} from your vocabulary? This action cannot be undone.`}
         confirmLabel="Delete All"
         variant="danger"
+      />
+
+      {/* Add Vocabulary Modal */}
+      <AddVocabularyModal
+        isOpen={isAddVocabModalOpen}
+        onClose={() => setIsAddVocabModalOpen(false)}
+        onAdd={handleAddVocabulary}
+      />
+
+      {/* Import Vocabulary Modal */}
+      <ImportVocabularyModal
+        isOpen={isImportVocabModalOpen}
+        onClose={() => setIsImportVocabModalOpen(false)}
+        onImport={handleImportVocabulary}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        isOpen={toast.isOpen}
+        onClose={hideToast}
       />
     </div>
   );
