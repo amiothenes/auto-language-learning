@@ -112,3 +112,19 @@ export {
   isRomanizationSupported,
   getSupportedRomanizations,
 } from './romanizers';
+
+// ============================================================================
+// Text Processing
+// ============================================================================
+
+export {
+  processTextForImport,
+  TextProcessingError,
+} from './textProcessor';
+
+export type {
+  ProgressUpdate,
+  ProcessedTextResult,
+  ProgressStage,
+  ProgressCallback,
+} from './textProcessor';
