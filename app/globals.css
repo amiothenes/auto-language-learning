@@ -1,0 +1,474 @@
+/* Google Fonts are loaded via next/font/google in layout.tsx */
+
+/* Tailwind CSS v4 Import */
+@import "tailwindcss";
+
+/* Design System Theme */
+@theme {
+  /* Colors */
+  --color-primary: #183A37;
+  --color-desk: #F0EFEA;
+  --color-paper: #FAF9F5;
+  --color-ink: #141413;
+  --color-muted: #6E6D6A;
+  --color-border: #E5E2DA;
+}
+
+/* Base Styles Layer */
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-eb-garamond: 'EB Garamond', Georgia, serif;
+  }
+
+  body {
+    background-color: #F0EFEA;
+    color: #141413;
+    font-family: var(--font-inter);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Utilities Layer */
+@layer utilities {
+  /* Shadow Utilities */
+  .shadow-raised {
+    box-shadow: 0 1px 2px rgba(20, 20, 19, 0.06) !important;
+  }
+
+  .shadow-raised-hover {
+    box-shadow: 0 2px 4px rgba(20, 20, 19, 0.08) !important;
+  }
+
+  .shadow-modal {
+    box-shadow: 0 4px 16px rgba(20, 20, 19, 0.12) !important;
+  }
+
+  /* Border Radius */
+  .rounded-card {
+    border-radius: 12px !important;
+  }
+
+  /* Font Families */
+  .font-sans {
+    font-family: var(--font-inter), Inter, system-ui, sans-serif !important;
+  }
+
+  .font-serif {
+    font-family: var(--font-eb-garamond), 'EB Garamond', Georgia, serif !important;
+  }
+
+  /* Font Size Utilities - Interface (Inter) */
+  .text-ui-xs {
+    font-size: 0.75rem !important; /* 12px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-sm {
+    font-size: 0.8125rem !important; /* 13px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-base {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-md {
+    font-size: 0.9375rem !important; /* 15px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-lg {
+    font-size: 1rem !important; /* 16px */
+    line-height: 1.5 !important;
+  }
+
+  .text-ui-xl {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.25 !important;
+  }
+
+  .text-ui-2xl {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 1.25 !important;
+  }
+
+  /* Font Size Utilities - Content (EB Garamond) */
+  .text-content-sm {
+    font-size: 0.875rem !important; /* 14px */
+    line-height: 1.8 !important;
+  }
+
+  .text-content-base {
+    font-size: 1.125rem !important; /* 18px */
+    line-height: 1.8 !important;
+  }
+
+  .text-content-lg {
+    font-size: 1.25rem !important; /* 20px */
+    line-height: 1.6 !important;
+  }
+
+  .text-content-xl {
+    font-size: 1.5rem !important; /* 24px */
+    line-height: 1.6 !important;
+  }
+
+  .text-content-2xl {
+    font-size: 2rem !important; /* 32px */
+    line-height: 1.4 !important;
+  }
+
+  /* Animations */
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 300ms ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 300ms ease-out;
+  }
+
+  @keyframes fade-slide-up {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pulse-green {
+    0%, 100% {
+      box-shadow: 0 4px 16px rgba(20, 20, 19, 0.12);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(24, 58, 55, 0.3);
+    }
+  }
+
+  @keyframes sparkle {
+    0% {
+      transform: translateY(0) scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(-30px) scale(1) rotate(180deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-60px) scale(0) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-fade-slide-up {
+    animation: fade-slide-up 200ms ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 200ms ease-out forwards;
+  }
+
+  .animate-pulse-green {
+    animation: pulse-green 500ms ease-in-out;
+  }
+
+  .animate-sparkle {
+    animation: sparkle 1200ms ease-out forwards;
+  }
+
+  /* Shimmer Loading Animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      #E5E2DA 0%,
+      #F0EFEA 50%,
+      #E5E2DA 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  /* Tooltip Animations */
+  @keyframes tooltip-enter {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes tooltip-exit {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+  }
+
+  .animate-tooltip-enter {
+    animation: tooltip-enter 150ms ease-out;
+  }
+
+  .animate-tooltip-exit {
+    animation: tooltip-exit 120ms ease-out forwards;
+  }
+
+  /* Modal Animations */
+  @keyframes modal-backdrop-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes modal-enter {
+    from {
+      transform: scale(0.95) translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-modal-backdrop-enter {
+    animation: modal-backdrop-enter 200ms ease-out;
+  }
+
+  .animate-modal-enter {
+    animation: modal-enter 200ms ease-out;
+  }
+
+  /* Slide Down Animation (BulkActionsBar exit) */
+  @keyframes slide-down {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+
+  .animate-slide-down {
+    animation: slide-down 200ms ease-out forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-tooltip-enter,
+    .animate-tooltip-exit,
+    .animate-modal-backdrop-enter,
+    .animate-modal-enter,
+    .animate-slide-down,
+    .animate-shimmer {
+      animation: none;
+    }
+
+    .animate-shimmer {
+      background: #E5E2DA;
+    }
+  }
+
+  /* Range Input Slider Thumb Styling */
+  input[type="range"].slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) - Track */
+  input[type="range"].slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 9999px;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) - Thumb */
+  input[type="range"].slider::-webkit-slider-thumb {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #183A37 !important; /* Library green */
+    cursor: pointer;
+    border: 2px solid #FAF9F5;
+    box-shadow: 0 1px 3px rgba(20, 20, 19, 0.12);
+    transition: all 150ms ease;
+    margin-top: -6px; /* Center the thumb on the track */
+  }
+
+  input[type="range"].slider::-webkit-slider-thumb:hover {
+    background: #0f2422 !important; /* Darker green on hover */
+    box-shadow: 0 2px 4px rgba(20, 20, 19, 0.16);
+  }
+
+  input[type="range"].slider::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+  }
+
+  /* Firefox - Track */
+  input[type="range"].slider::-moz-range-track {
+    height: 8px;
+    border-radius: 9999px;
+  }
+
+  /* Firefox - Thumb */
+  input[type="range"].slider::-moz-range-thumb {
+    -moz-appearance: none !important;
+    appearance: none !important;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #183A37 !important;
+    cursor: pointer;
+    border: 2px solid #FAF9F5;
+    box-shadow: 0 1px 3px rgba(20, 20, 19, 0.12);
+    transition: all 150ms ease;
+  }
+
+  input[type="range"].slider::-moz-range-thumb:hover {
+    background: #0f2422 !important;
+    box-shadow: 0 2px 4px rgba(20, 20, 19, 0.16);
+  }
+
+  input[type="range"].slider::-moz-range-thumb:active {
+    transform: scale(1.1);
+  }
+
+  /* Focus styles for accessibility */
+  input[type="range"].slider:focus-visible::-webkit-slider-thumb {
+    outline: none;
+    box-shadow: 0 0 0 2px #FAF9F5, 0 0 0 4px #183A37;
+  }
+
+  input[type="range"].slider:focus-visible::-moz-range-thumb {
+    outline: none;
+    box-shadow: 0 0 0 2px #FAF9F5, 0 0 0 4px #183A37;
+  }
+
+  /* Scrollbar Hide Utility */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ============================================================================
+   View Transitions - Page Route Changes
+   Native CSS transitions for Next.js App Router navigation
+   ============================================================================ */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+::view-transition-old(root) {
+  animation: fade-out 200ms ease-out;
+}
+
+::view-transition-new(root) {
+  animation: fade-in 200ms ease-out;
+}
+
+/* Respect reduced motion preference for view transitions */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   Focus Visible Utilities
+   Consistent focus ring patterns for accessibility (WCAG AA)
+   ============================================================================ */
+
+/* Standard focus ring for interactive elements (buttons, links, etc.) */
+.focus-ring-primary {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+}
+
+/* Inset focus ring for form inputs and contained elements */
+.focus-ring-inset {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset;
+}
+
+/* Screen reader only utility - hides element visually but keeps it accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
