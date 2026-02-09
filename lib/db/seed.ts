@@ -116,6 +116,17 @@ const seedLanguages = [
     characterSubstitutions: {},
     sentenceSplitRegex: '[.!?]+',
   },
+  {
+    id: 'lang_korean',
+    code: 'ko',
+    name: 'Korean',
+    isRTL: false,
+    dictURI: 'https://krdict.korean.go.kr/eng/dicSearch/search?nation=eng&nationCode=6&ParaWordNo=&mainSearchWord={word}',
+    translateURI: 'https://translate.google.com/?sl=ko&tl=en&text={word}',
+    googleTTSCode: 'ko-KR',
+    characterSubstitutions: {},
+    sentenceSplitRegex: '[.!?\u3002]+',
+  },
 ];
 
 // ========== SERIES DATA ==========

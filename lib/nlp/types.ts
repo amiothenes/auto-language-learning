@@ -64,6 +64,9 @@ export interface Token {
 
   /** Sub-tokens if this is a contraction (e.g., ["do", "n't"]) */
   subTokens?: string[];
+
+  /** Romanized form for non-Latin scripts (null if Latin script) */
+  romanization?: string | null;
 }
 
 // ============================================================================
@@ -235,4 +238,74 @@ export interface CacheStats {
 
   /** Cache hit rate (0-1) */
   hitRate: number;
+}
+
+// ============================================================================
+// Romanization Types
+// ============================================================================
+
+/**
+ * Script type for a language
+ */
+export type ScriptType = 'latin' | 'cjk' | 'arabic' | 'cyrillic' | 'hangul';
+
+/**
+ * Romanization options
+ */
+export interface RomanizeOptions {
+  /** Include tone marks for Chinese (default: true) */
+  includeTones?: boolean;
+
+  /** Preserve whitespace in output (default: false) */
+  preserveWhitespace?: boolean;
+}
+
+/**
+ * Result from romanizing text
+ *
+ * Contains the romanized version along with metadata about
+ * the script type and whether mixed scripts were detected.
+ */
+export interface RomanizeResult {
+  /** Original text */
+  original: string;
+
+  /** Romanized text (null if Latin script) */
+  romanized: string | null;
+
+  /** Script type detected */
+  scriptType: ScriptType;
+
+  /** Language code */
+  languageCode: string;
+
+  /** Whether text contains mixed scripts */
+  isMixed?: boolean;
+}
+
+/**
+ * Interface for language-specific romanization handlers
+ *
+ * Each language implements its own romanization rules based on
+ * standard romanization systems (e.g., Pinyin for Chinese,
+ * Revised Romanization for Korean).
+ */
+export interface RomanizeHandler {
+  /** ISO 639-1 language code this handler supports */
+  readonly code: string;
+
+  /** Human-readable language name */
+  readonly name: string;
+
+  /** Primary script type for this language */
+  readonly scriptType: ScriptType;
+
+  /**
+   * Romanize text to Latin script
+   *
+   * @param text - Text to romanize
+   * @param options - Optional romanization settings
+   * @returns Romanized text, or null if already Latin script
+   */
+  romanize(text: string, options?: RomanizeOptions): Promise<string | null>;
 }
