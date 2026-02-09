@@ -19,12 +19,13 @@ import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 // ============================================================================
 
 // TODO: Replace with API call
-const TEMP_TEXT_DATA: Record<string, TextData> = {
+const TEMP_TEXT_DATA: Record<string, TextData & { languageId: string }> = {
   't1': {
     id: 't1',
     title: 'Breaking: New Economic Reforms Announced',
     seriesId: '1',
     seriesName: 'Russian News Articles',
+    languageId: 'lang_ru', // Russian language ID
     wordCount: 2847,
     uniqueWordCount: 892,
     viewCount: 3,
@@ -45,6 +46,7 @@ const TEMP_TEXT_DATA: Record<string, TextData> = {
     title: 'Climate Summit Reaches Historic Agreement',
     seriesId: '1',
     seriesName: 'Russian News Articles',
+    languageId: 'lang_ru', // Russian language ID
     wordCount: 1923,
     uniqueWordCount: 645,
     viewCount: 5,
@@ -92,6 +94,19 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const textData = TEMP_TEXT_DATA[id];
   const router = useRouter();
 
+  // NLP processing state
+  const [processedWords, setProcessedWords] = useState<Array<{
+    surface: string;
+    lemma: string;
+    pos: string;
+    inflectionData: Record<string, unknown>;
+    position: number;
+    sentenceIndex: number;
+    tokenIndex: number;
+  }> | null>(null);
+  const [isProcessingNLP, setIsProcessingNLP] = useState(false);
+  const [nlpError, setNlpError] = useState<string | null>(null);
+
   // Simulate data loading with 2-second delay
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -100,6 +115,51 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Process text through NLP API after text data loads
+  useEffect(() => {
+    async function processText() {
+      if (!textData || isLoading) return;
+
+      setIsProcessingNLP(true);
+      setNlpError(null);
+
+      try {
+        console.log('[Reader] Processing text through NLP API...');
+
+        const response = await fetch('/api/nlp/process-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            textContent: textData.content,
+            languageId: textData.languageId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log(
+          `[Reader] NLP processing complete:`,
+          `${data.wordInstances.length} words processed in ${data.stats.totalTime}ms`,
+          `(cache hit rate: ${(data.stats.cacheHitRate * 100).toFixed(1)}%)`
+        );
+
+        setProcessedWords(data.wordInstances);
+      } catch (error) {
+        console.error('[Reader] NLP processing error:', error);
+        setNlpError(error instanceof Error ? error.message : 'Unknown error');
+      } finally {
+        setIsProcessingNLP(false);
+      }
+    }
+
+    processText();
+  }, [textData, isLoading]);
 
   // State for right panel visibility and selected word
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
@@ -502,6 +562,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               content={textData.content}
               onWordClick={handleWordClick}
               selectedWordId={selectedWord?.id}
+              processedWords={processedWords}
+              isProcessingNLP={isProcessingNLP}
+              nlpError={nlpError}
             />
           )}
         </main>
