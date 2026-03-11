@@ -144,19 +144,25 @@ export function ReaderContent({
     large: 'text-content-lg',    // 20px
   }[settings.fontSize];
 
-  // Show NLP processing indicator
+  // Show NLP processing indicator with shimmer
   if (isProcessingNLP) {
     return (
       <article className={cn(
         "w-full max-w-[45rem] space-y-6 transition-all duration-200",
         fontSizeClass
       )}>
-        <div className="flex items-center gap-3 p-4 bg-paper rounded-lg border border-border">
-          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="font-sans text-ui-sm text-muted">
-            Processing text with NLP engine...
-          </p>
-        </div>
+        {/* Shimmer paragraph blocks */}
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="space-y-3">
+            <div className="animate-shimmer h-5 rounded w-full" />
+            <div className="animate-shimmer h-5 rounded w-11/12" />
+            <div className="animate-shimmer h-5 rounded w-full" />
+            <div className="animate-shimmer h-5 rounded w-5/6" />
+          </div>
+        ))}
+        <p className="font-sans text-ui-sm text-center text-muted mt-6">
+          Processing text with NLP engine...
+        </p>
       </article>
     );
   }

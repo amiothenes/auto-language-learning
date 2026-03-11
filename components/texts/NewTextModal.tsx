@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
+import { useImportText } from '@/lib/hooks/useImportText';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { NewTextData } from '@/lib/types/forms';
 
 // ============================================================================
@@ -13,7 +15,7 @@ import type { NewTextData } from '@/lib/types/forms';
 interface NewTextModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (textData: NewTextData) => void;
+  onAdd?: (textId: string) => void; // Optional callback after successful import
   prefilledSeriesId?: string; // Pre-select series if provided
   availableSeries: Array<{ id: string; name: string }>; // List of series for dropdown
 }
@@ -25,6 +27,9 @@ export function NewTextModal({
   prefilledSeriesId,
   availableSeries,
 }: NewTextModalProps) {
+  const { selectedLanguage } = useLanguage();
+  const mutation = useImportText();
+
   const [formData, setFormData] = useState<NewTextData>({
     title: '',
     content: '',
@@ -87,17 +92,17 @@ export function NewTextModal({
     }
   }, [isOpen]);
 
-  // Escape key dismiss
+  // Escape key dismiss (blocked during import)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !mutation.isPending) {
         onClose();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, mutation.isPending]);
 
   // Focus trap
   useEffect(() => {
@@ -129,10 +134,10 @@ export function NewTextModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Backdrop click handler
+  // Backdrop click handler (blocked during import)
   const handleBackdropClick = useCallback(() => {
-    onClose();
-  }, [onClose]);
+    if (!mutation.isPending) onClose();
+  }, [onClose, mutation.isPending]);
 
   // Form validation
   const isFormValid = useMemo(() => {
@@ -155,22 +160,30 @@ export function NewTextModal({
 
   // Form submission handler
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
 
       if (!isFormValid) return;
 
-      // Parse tags from comma-separated input
       const tags = parseTags(tagsInput);
 
-      onAdd({
-        title: formData.title.trim(),
-        content: formData.content.trim(),
-        seriesId: formData.seriesId,
-        tags,
-      });
+      try {
+        const result = await mutation.mutateAsync({
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          languageCode: selectedLanguage,
+          seriesId: formData.seriesId || undefined,
+          tags,
+        });
+
+        // Notify parent of newly created text ID for state refresh
+        onAdd?.(result.text.id);
+        onClose();
+      } catch {
+        // Error state displayed via mutation.isError — no extra handling needed
+      }
     },
-    [formData, tagsInput, isFormValid, onAdd]
+    [formData, tagsInput, isFormValid, selectedLanguage, mutation, onAdd, onClose]
   );
 
   // Character counts for validation feedback
@@ -198,6 +211,21 @@ export function NewTextModal({
           className="w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Loading Overlay (shown during NLP processing) */}
+          {mutation.isPending && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-card overflow-hidden">
+              <div className="absolute inset-0 animate-shimmer" />
+              <div className="relative text-center">
+                <p className="font-sans text-ui-sm font-medium text-ink">
+                  Processing text...
+                </p>
+                <p className="font-sans text-ui-xs text-muted mt-1">
+                  This may take a few seconds
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Title */}
           <h2
             id="new-text-dialog-title"
@@ -205,6 +233,15 @@ export function NewTextModal({
           >
             Add New Text
           </h2>
+
+          {/* Error banner */}
+          {mutation.isError && (
+            <div className="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded">
+              <p className="font-sans text-ui-sm text-red-800">
+                {mutation.error?.message || 'Failed to import text. Please try again.'}
+              </p>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -221,7 +258,8 @@ export function NewTextModal({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, title: e.target.value }))
                 }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                disabled={mutation.isPending}
+                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
                 maxLength={200}
               />
               <p className="font-sans text-ui-xs text-muted mt-1">
@@ -239,7 +277,8 @@ export function NewTextModal({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, seriesId: e.target.value }))
                 }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                disabled={mutation.isPending}
+                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
               >
                 <option value="">Select a series...</option>
                 {availableSeries.map((series) => (
@@ -261,7 +300,8 @@ export function NewTextModal({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, content: e.target.value }))
                 }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-vertical"
+                disabled={mutation.isPending}
+                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-vertical disabled:opacity-50"
                 rows={12}
               />
               <p className="font-sans text-ui-xs text-muted mt-1">
@@ -285,7 +325,8 @@ export function NewTextModal({
                 placeholder="e.g., news, politics, current-events"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                disabled={mutation.isPending}
+                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
               />
               <p className="font-sans text-ui-xs text-muted mt-1">
                 Separate tags with commas. Max 10 tags, each max 30 characters.
@@ -299,6 +340,7 @@ export function NewTextModal({
                 variant="ghost"
                 size="md"
                 onClick={onClose}
+                disabled={mutation.isPending}
               >
                 Cancel
               </Button>
@@ -306,9 +348,9 @@ export function NewTextModal({
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={!isFormValid}
+                disabled={!isFormValid || mutation.isPending}
               >
-                Add Text
+                {mutation.isPending ? 'Importing...' : 'Add Text'}
               </Button>
             </div>
           </form>

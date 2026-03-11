@@ -3,6 +3,7 @@ import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { LanguageProvider } from "@/lib/contexts/LanguageContext";
+import { QueryClientProvider } from "@/lib/contexts/QueryClientProvider";
 import { ReaderSettingsProvider } from "@/lib/contexts/ReaderSettingsContext";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
@@ -39,21 +40,23 @@ export default function RootLayout({
         className={`${inter.variable} ${ebGaramond.variable} antialiased bg-desk`}
       >
         <LanguageProvider>
-          <ReaderSettingsProvider>
-            <KeyboardShortcutsProvider>
-              <SkipLink targetId="main-content" />
-              <Sidebar />
+          <QueryClientProvider>
+            <ReaderSettingsProvider>
+              <KeyboardShortcutsProvider>
+                <SkipLink targetId="main-content" />
+                <Sidebar />
 
-              {/* Main Content Area - adjusted for collapsed sidebar (64px) */}
-              <ViewTransitionWrapper>
-                <ErrorBoundary>
-                  <main id="main-content" tabIndex={-1} className="md:ml-16 min-h-screen pb-16 md:pb-0">
-                    {children}
-                  </main>
-                </ErrorBoundary>
-              </ViewTransitionWrapper>
-            </KeyboardShortcutsProvider>
-          </ReaderSettingsProvider>
+                {/* Main Content Area - adjusted for collapsed sidebar (64px) */}
+                <ViewTransitionWrapper>
+                  <ErrorBoundary>
+                    <main id="main-content" tabIndex={-1} className="md:ml-16 min-h-screen pb-16 md:pb-0">
+                      {children}
+                    </main>
+                  </ErrorBoundary>
+                </ViewTransitionWrapper>
+              </KeyboardShortcutsProvider>
+            </ReaderSettingsProvider>
+          </QueryClientProvider>
         </LanguageProvider>
       </body>
     </html>
