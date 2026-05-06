@@ -14,6 +14,7 @@ import { Toast, useToast } from '@/components/ui/Toast';
 import { Search, Plus, ChevronDown } from 'lucide-react';
 import type { Series, SeriesSortOption } from '@/lib/types';
 import type { NewSeriesData } from '@/lib/types/forms';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 // ============================================================================
 // Hardcoded Data
@@ -77,6 +78,7 @@ const TEMP_SERIES: Series[] = [
 
 export default function SeriesPage() {
   const router = useRouter();
+  const { selectedLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,36 +158,31 @@ export default function SeriesPage() {
     setIsNewSeriesModalOpen(true);
   };
 
-  const handleCreateSeries = (seriesData: NewSeriesData) => {
-    // Generate new ID
-    const newId = `s${TEMP_SERIES.length + 1}`;
+  const handleCreateSeries = async (seriesData: NewSeriesData) => {
+    try {
+      const response = await fetch('/api/series', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: seriesData.name,
+          description: seriesData.description,
+          languageCode: selectedLanguage,
+        }),
+      });
 
-    // Create series object
-    const newSeries: Series = {
-      id: newId,
-      name: seriesData.name,
-      description: seriesData.description,
-      textCount: seriesData.texts?.length || 0,
-      progress: 0,
-      lastUpdated: 'Just now'
-    };
+      if (!response.ok) {
+        const error = await response.json();
+        showToast(error.error || 'Failed to create series');
+        return;
+      }
 
-    // TODO: Replace with API call
-    TEMP_SERIES.push(newSeries);
+      const { series: created } = await response.json();
 
-    // Show success feedback
-    showToast(
-      seriesData.texts && seriesData.texts.length > 0
-        ? `Series "${seriesData.name}" created with ${seriesData.texts.length} text${seriesData.texts.length > 1 ? 's' : ''}!`
-        : `Series "${seriesData.name}" created successfully!`
-    );
-
-    // Close modal
-    setIsNewSeriesModalOpen(false);
-
-    // Navigate to new series page if texts were imported
-    if (seriesData.texts && seriesData.texts.length > 0) {
-      router.push(`/series/${newId}`);
+      showToast(`Series "${seriesData.name}" created successfully!`);
+      setIsNewSeriesModalOpen(false);
+      router.push(`/series/${created.id}`);
+    } catch {
+      showToast('Failed to create series');
     }
   };
 

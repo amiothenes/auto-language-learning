@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef, use } from 'react';
 import { notFound } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { SeriesHeader } from '@/components/series/SeriesHeader';
 import { SeriesHeaderSkeleton } from '@/components/series/SeriesHeaderSkeleton';
@@ -17,6 +18,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
 import { useSeries } from '@/lib/hooks/useSeries';
+import { useImportText } from '@/lib/hooks/useImportText';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent';
 
@@ -40,6 +43,9 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   if (seriesQuery.isError) notFound();
 
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const importMutation = useImportText();
+  const { selectedLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState('');
   const seriesNameInitialized = useRef(false);
@@ -128,17 +134,23 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     setIsImportModalOpen(true);
   };
 
-  const handleImportTexts = (texts: ImportedTextData[]) => {
-    // TODO: Replace with API call - this is just for demonstration
-    console.log('Importing texts:', texts);
-
-    // Show success feedback
-    showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
-
-    // Close modal
-    setIsImportModalOpen(false);
-
-    // In a real app, we would update the series data here
+  const handleImportTexts = async (texts: ImportedTextData[]) => {
+    try {
+      for (const text of texts) {
+        await importMutation.mutateAsync({
+          title: text.title,
+          content: text.content,
+          tags: text.tags ?? [],
+          languageCode: selectedLanguage,
+          seriesId: id,
+        });
+      }
+      await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
+      showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
+      setIsImportModalOpen(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Import failed');
+    }
   };
 
   const handleConfirmDeleteSeries = () => {

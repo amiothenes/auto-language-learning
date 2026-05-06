@@ -7,6 +7,76 @@ import type { Series } from '@/lib/types/content';
 import type { SeriesListResponse, ApiErrorResponse } from '@/lib/types/api';
 
 // ============================================================================
+// POST /api/series — Create a new series
+// ============================================================================
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json().catch(() => null);
+
+    if (!body) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'Request body must be valid JSON' },
+        { status: 400 }
+      );
+    }
+
+    const { name, description, languageCode } = body as {
+      name?: string;
+      description?: string;
+      languageCode?: string;
+    };
+
+    if (!name?.trim()) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'name is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!languageCode?.trim()) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'languageCode is required' },
+        { status: 400 }
+      );
+    }
+
+    const language = await db.query.languages.findFirst({
+      where: eq(languages.code, languageCode.trim()),
+    });
+
+    if (!language) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Language not found with code: ${languageCode}` },
+        { status: 404 }
+      );
+    }
+
+    const [created] = await db
+      .insert(series)
+      .values({
+        name: name.trim(),
+        description: description?.trim() || null,
+        languageId: language.id,
+      })
+      .returning();
+
+    console.log(`[Series Create] Created series "${created.name}" (${created.id})`);
+
+    return NextResponse.json({ series: { id: created.id, name: created.name } }, { status: 201 });
+  } catch (error) {
+    console.error('[Series Create] Unexpected error:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      {
+        error: 'Internal server error creating series',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================================
 // GET /api/series — List all series for a language
 // ============================================================================
 
