@@ -35,11 +35,20 @@ export const words = pgTable(
   },
   (table) => ({
     uniqueLemmaLanguage: unique().on(table.lemma, table.languageId),
+
+    // Single-column indexes
     statusIdx: index('words_status_idx').on(table.status),
     lemmaIdx: index('words_lemma_idx').on(table.lemma),
     languageIdx: index('words_language_id_idx').on(table.languageId),
     dictFreqIdx: index('words_dictionary_frequency_idx').on(table.dictionaryFrequency),
     userFreqIdx: index('words_user_frequency_idx').on(table.userFrequency),
+
+    // Composite indexes for common query patterns (CRITICAL for performance)
+    // Used by: textProcessor query existing words, update user frequency
+    languageLemmaIdx: index('words_language_lemma_idx').on(table.languageId, table.lemma),
+
+    // Used by: textProcessor calculate known percentage query
+    languageStatusIdx: index('words_language_status_idx').on(table.languageId, table.status),
   })
 );
 

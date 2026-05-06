@@ -44,3 +44,6 @@ next-env.d.ts
 /docs/*
 CLAUDE.md
 .claude
+.claudeignore
+
+.cache

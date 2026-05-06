@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef, use } from 'react';
 import { notFound } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { SeriesHeader } from '@/components/series/SeriesHeader';
 import { SeriesHeaderSkeleton } from '@/components/series/SeriesHeaderSkeleton';
@@ -15,200 +16,10 @@ import { ImportTextsModal } from '@/components/texts/ImportTextsModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
-import type { SeriesDetail, Series } from '@/lib/types';
-import type { NewTextData, ImportedTextData } from '@/lib/types/forms';
-
-// ============================================================================
-// Hardcoded Data
-// ============================================================================
-
-// TODO: Replace with API call
-const TEMP_SERIES_DETAILS: Record<string, SeriesDetail> = {
-  '1': {
-    id: '1',
-    name: 'Russian News Articles',
-    description: 'A collection of current events and breaking news from Russian sources',
-    textCount: 10,
-    totalWords: 24583,
-    overallProgress: 72,
-    lastUpdated: '2 days ago',
-    texts: [
-      {
-        id: 't1',
-        title: 'Breaking: New Economic Reforms Announced',
-        wordCount: 2847,
-        uniqueWordCount: 892,
-        knownPercentage: 78,
-        lastRead: '1 day ago',
-        preview: 'The government has announced a comprehensive package of economic reforms aimed at boosting growth...',
-      },
-      {
-        id: 't2',
-        title: 'Climate Summit Reaches Historic Agreement',
-        wordCount: 1923,
-        uniqueWordCount: 645,
-        knownPercentage: 82,
-        lastRead: '2 days ago',
-        preview: 'World leaders gathered in Moscow to finalize a landmark agreement on climate action and sustainability...',
-      },
-      {
-        id: 't3',
-        title: 'Tech Giant Unveils Revolutionary AI System',
-        wordCount: 3156,
-        uniqueWordCount: 1024,
-        knownPercentage: 65,
-        lastRead: '3 days ago',
-        preview: 'A leading technology company has revealed its latest artificial intelligence breakthrough that promises...',
-      },
-      {
-        id: 't4',
-        title: 'Cultural Festival Attracts Millions of Visitors',
-        wordCount: 1567,
-        uniqueWordCount: 523,
-        knownPercentage: 89,
-        lastRead: '4 days ago',
-        preview: 'The annual international cultural festival drew record crowds this year with performances and exhibitions...',
-      },
-      {
-        id: 't5',
-        title: 'Space Program Announces Mars Mission Timeline',
-        wordCount: 2645,
-        uniqueWordCount: 786,
-        knownPercentage: 71,
-        lastRead: '5 days ago',
-        preview: 'Officials from the space agency provided detailed plans for the upcoming crewed mission to Mars...',
-      },
-      {
-        id: 't6',
-        title: 'Healthcare System Undergoes Major Transformation',
-        wordCount: 2234,
-        uniqueWordCount: 712,
-        knownPercentage: 76,
-        lastRead: '1 week ago',
-        preview: 'A sweeping overhaul of the national healthcare system aims to improve access and reduce costs...',
-      },
-      {
-        id: 't7',
-        title: 'Education Reform: New Curriculum Standards',
-        wordCount: 1876,
-        uniqueWordCount: 598,
-        knownPercentage: 68,
-        lastRead: '1 week ago',
-        preview: 'The Ministry of Education has introduced updated curriculum standards for primary and secondary schools...',
-      },
-      {
-        id: 't8',
-        title: 'Transportation Infrastructure Investment Plan',
-        wordCount: 2987,
-        uniqueWordCount: 923,
-        knownPercentage: 73,
-        lastRead: '2 weeks ago',
-        preview: 'A massive infrastructure investment plan focuses on modernizing railways, highways, and public transit...',
-      },
-      {
-        id: 't9',
-        title: 'Regional Elections: Voter Turnout Analysis',
-        wordCount: 2156,
-        uniqueWordCount: 687,
-        knownPercentage: 61,
-        lastRead: '2 weeks ago',
-        preview: 'Political analysts examine the factors behind record voter participation in recent regional elections...',
-      },
-      {
-        id: 't10',
-        title: 'Agricultural Sector Embraces Smart Farming',
-        wordCount: 1192,
-        uniqueWordCount: 412,
-        knownPercentage: 85,
-        lastRead: '3 weeks ago',
-        preview: 'Modern technology is transforming traditional farming practices with drones, sensors, and data analytics...',
-      },
-    ],
-  },
-  '2': {
-    id: '2',
-    name: 'Spanish Short Stories',
-    description: 'Classic and contemporary short fiction from Spanish-speaking authors',
-    textCount: 8,
-    totalWords: 18456,
-    overallProgress: 45,
-    lastUpdated: '5 days ago',
-    texts: [
-      {
-        id: 't11',
-        title: 'El jardín de senderos que se bifurcan',
-        wordCount: 3245,
-        uniqueWordCount: 1123,
-        knownPercentage: 52,
-        lastRead: '5 days ago',
-        preview: 'En la tercera página de mi narración se lee que «Liddell Hart conjetura que el próximo...',
-      },
-      {
-        id: 't12',
-        title: 'La casa de Asterión',
-        wordCount: 1567,
-        uniqueWordCount: 542,
-        knownPercentage: 48,
-        lastRead: '1 week ago',
-        preview: 'Sé que me acusan de soberbia, y tal vez de misantropía, y tal vez de locura...',
-      },
-      {
-        id: 't13',
-        title: 'Continuidad de los parques',
-        wordCount: 987,
-        uniqueWordCount: 378,
-        knownPercentage: 61,
-        lastRead: '1 week ago',
-        preview: 'Había empezado a leer la novela unos días antes. La abandonó por negocios urgentes...',
-      },
-      {
-        id: 't14',
-        title: 'La noche boca arriba',
-        wordCount: 2834,
-        uniqueWordCount: 892,
-        knownPercentage: 43,
-        lastRead: '2 weeks ago',
-        preview: 'Y salían en ciertas épocas a cazar enemigos; le llamaban la guerra florida...',
-      },
-      {
-        id: 't15',
-        title: 'Casa tomada',
-        wordCount: 2156,
-        uniqueWordCount: 723,
-        knownPercentage: 39,
-        lastRead: '2 weeks ago',
-        preview: 'Nos gustaba la casa porque aparte de espaciosa y antigua guardaba los recuerdos...',
-      },
-      {
-        id: 't16',
-        title: 'El Sur',
-        wordCount: 2678,
-        uniqueWordCount: 856,
-        knownPercentage: 46,
-        lastRead: '3 weeks ago',
-        preview: 'El hombre que desembarcó en Buenos Aires en 1871 se llamaba Johannes Dahlmann...',
-      },
-      {
-        id: 't17',
-        title: 'Las ruinas circulares',
-        wordCount: 2345,
-        uniqueWordCount: 789,
-        knownPercentage: 35,
-        lastRead: '3 weeks ago',
-        preview: 'Nadie lo vio desembarcar en la unánime noche, nadie vio la canoa de bambú...',
-      },
-      {
-        id: 't18',
-        title: 'El Aleph',
-        wordCount: 2644,
-        uniqueWordCount: 912,
-        knownPercentage: 41,
-        lastRead: '1 month ago',
-        preview: 'La candente mañana de febrero en que Beatriz Viterbo murió, después de una imperiosa...',
-      },
-    ],
-  },
-};
+import type { ImportedTextData } from '@/lib/types/forms';
+import { useSeries } from '@/lib/hooks/useSeries';
+import { useImportText } from '@/lib/hooks/useImportText';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent';
 
@@ -225,17 +36,19 @@ interface SeriesDetailPageProps {
 export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   // Unwrap the params Promise using React.use()
   const { id } = use(params);
-  const [isLoading, setIsLoading] = useState(true);
-  const seriesData = TEMP_SERIES_DETAILS[id];
+  const seriesQuery = useSeries(id);
+  const seriesData = seriesQuery.data;
+  const isLoading = seriesQuery.isLoading;
 
-  // If series not found after loading, show 404
-  if (!seriesData && !isLoading) {
-    notFound();
-  }
+  if (seriesQuery.isError) notFound();
 
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const importMutation = useImportText();
+  const { selectedLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
-  const [seriesName, setSeriesName] = useState(seriesData?.name || '');
+  const [seriesName, setSeriesName] = useState('');
+  const seriesNameInitialized = useRef(false);
   const [sortBy, setSortBy] = useState<SortOption>('title-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteSeriesTarget, setDeleteSeriesTarget] = useState<{ id: string; name: string } | null>(null);
@@ -244,14 +57,13 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
-  // Simulate data loading with 2-second delay
+  // Initialize series name once from DB — preserves in-progress edits on refetch
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    if (seriesData && !seriesNameInitialized.current) {
+      seriesNameInitialized.current = true;
+      setSeriesName(seriesData.name);
+    }
+  }, [seriesData]);
 
   // Close sort dropdown when clicking outside
   useEffect(() => {
@@ -300,7 +112,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     }
 
     return texts;
-  }, [seriesData.texts, sortBy]);
+  }, [seriesData, sortBy]);
 
   const handleTitleUpdate = (newTitle: string) => {
     setSeriesName(newTitle);
@@ -312,34 +124,33 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     setIsNewTextModalOpen(true);
   };
 
-  const handleCreateText = (textData: NewTextData) => {
-    // TODO: Replace with API call - this is just for demonstration
-    console.log('Creating text:', textData);
-
-    // Show success feedback
-    showToast(`Text "${textData.title}" added successfully!`);
-
-    // Close modal
+  const handleCreateText = (textId: string) => {
+    showToast(`Text added successfully!`);
     setIsNewTextModalOpen(false);
-
-    // In a real app, we would update the series data here
+    console.log('Created text id:', textId);
   };
 
   const handleImport = () => {
     setIsImportModalOpen(true);
   };
 
-  const handleImportTexts = (texts: ImportedTextData[]) => {
-    // TODO: Replace with API call - this is just for demonstration
-    console.log('Importing texts:', texts);
-
-    // Show success feedback
-    showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
-
-    // Close modal
-    setIsImportModalOpen(false);
-
-    // In a real app, we would update the series data here
+  const handleImportTexts = async (texts: ImportedTextData[]) => {
+    try {
+      for (const text of texts) {
+        await importMutation.mutateAsync({
+          title: text.title,
+          content: text.content,
+          tags: text.tags ?? [],
+          languageCode: selectedLanguage,
+          seriesId: id,
+        });
+      }
+      await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
+      showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
+      setIsImportModalOpen(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Import failed');
+    }
   };
 
   const handleConfirmDeleteSeries = () => {
@@ -521,10 +332,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         onClose={() => setIsNewTextModalOpen(false)}
         onAdd={handleCreateText}
         prefilledSeriesId={id}
-        availableSeries={Object.values(TEMP_SERIES_DETAILS).map((s) => ({
-          id: s.id,
-          name: s.name,
-        }))}
+        availableSeries={seriesData ? [{ id: seriesData.id, name: seriesData.name }] : []}
       />
 
       {/* Import Texts Modal */}
@@ -533,7 +341,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         onClose={() => setIsImportModalOpen(false)}
         onImport={handleImportTexts}
         seriesId={id}
-        seriesName={seriesData?.name || ''}
+        seriesName={seriesName}
       />
 
       {/* Toast Notification */}

@@ -1,3 +1,8 @@
+import { config } from 'dotenv';
+
+// Load environment variables from .env.local
+config({ path: '.env.local' });
+
 import { db } from './index';
 import {
   languages,
@@ -115,6 +120,17 @@ const seedLanguages = [
     googleTTSCode: 'ru-RU',
     characterSubstitutions: {},
     sentenceSplitRegex: '[.!?]+',
+  },
+  {
+    id: 'lang_korean',
+    code: 'ko',
+    name: 'Korean',
+    isRTL: false,
+    dictURI: 'https://krdict.korean.go.kr/eng/dicSearch/search?nation=eng&nationCode=6&ParaWordNo=&mainSearchWord={word}',
+    translateURI: 'https://translate.google.com/?sl=ko&tl=en&text={word}',
+    googleTTSCode: 'ko-KR',
+    characterSubstitutions: {},
+    sentenceSplitRegex: '[.!?\u3002]+',
   },
 ];
 

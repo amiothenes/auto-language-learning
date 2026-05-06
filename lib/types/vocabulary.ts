@@ -89,8 +89,10 @@ export enum VocabularyStatus {
  * ```
  */
 export type WordData = {
-  /** Unique identifier for this word occurrence */
+  /** Unique identifier for this word occurrence (instance ID) */
   id: string;
+  /** Lemma-level word ID — used for status mutation API calls */
+  wordId: string;
   /** Surface form displayed to user (e.g., "habló") */
   surface: string;
   /** Root lemma form - source of truth for all stats (e.g., "hablar") */
