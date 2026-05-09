@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
     const seriesId = searchParams.get('seriesId');
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? Math.max(1, parseInt(limitParam, 10)) : undefined;
 
     // ========================================================================
     // 1. Validate required params
@@ -67,6 +69,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [desc(texts.createdAt)],
+      ...(limit !== undefined ? { limit } : {}),
     });
 
     // ========================================================================

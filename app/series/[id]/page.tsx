@@ -114,10 +114,18 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     return texts;
   }, [seriesData, sortBy]);
 
-  const handleTitleUpdate = (newTitle: string) => {
+  const handleTitleUpdate = async (newTitle: string) => {
     setSeriesName(newTitle);
-    console.log('Updated series title:', newTitle);
-    // TODO: Update via API
+    try {
+      const res = await fetch(`/api/series/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTitle }),
+      });
+      if (!res.ok) throw new Error('Failed to update series name');
+    } catch {
+      showToast('Failed to save series name');
+    }
   };
 
   const handleAddText = () => {
@@ -125,9 +133,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleCreateText = (textId: string) => {
-    showToast(`Text added successfully!`);
     setIsNewTextModalOpen(false);
-    console.log('Created text id:', textId);
+    router.push(`/reader/${textId}`);
   };
 
   const handleImport = () => {
@@ -153,20 +160,27 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     }
   };
 
-  const handleConfirmDeleteSeries = () => {
-    if (deleteSeriesTarget) {
-      console.log('Deleted series:', deleteSeriesTarget.id);
-      // TODO: Implement actual delete via API
+  const handleConfirmDeleteSeries = async () => {
+    if (!deleteSeriesTarget) return;
+    try {
+      const res = await fetch(`/api/series/${deleteSeriesTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete series');
       setDeleteSeriesTarget(null);
       router.push('/series');
+    } catch {
+      showToast('Failed to delete series');
     }
   };
 
-  const handleConfirmDeleteText = () => {
-    if (deleteTextTarget) {
-      console.log('Deleted text:', deleteTextTarget.id);
-      // TODO: Implement actual delete via API
+  const handleConfirmDeleteText = async () => {
+    if (!deleteTextTarget) return;
+    try {
+      const res = await fetch(`/api/texts/${deleteTextTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete text');
       setDeleteTextTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ['series', id] });
+    } catch {
+      showToast('Failed to delete text');
     }
   };
 

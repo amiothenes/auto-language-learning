@@ -4,6 +4,7 @@ import { words } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
 
 // ============================================================================
 // PATCH /api/words/[id] — Update word vocabulary status
@@ -41,6 +42,8 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    await syncAllTextsForWord(id);
 
     return NextResponse.json({ wordId: updated.id, status: updated.status });
   } catch (error) {

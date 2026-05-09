@@ -12,65 +12,10 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NewSeriesModal } from '@/components/series/NewSeriesModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { Search, Plus, ChevronDown } from 'lucide-react';
-import type { Series, SeriesSortOption } from '@/lib/types';
+import type { SeriesSortOption } from '@/lib/types';
 import type { NewSeriesData } from '@/lib/types/forms';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-
-// ============================================================================
-// Hardcoded Data
-// ============================================================================
-
-// TODO: Replace with API call
-const TEMP_SERIES: Series[] = [
-  {
-    id: '1',
-    name: 'Russian News Articles',
-    description: 'A collection of current events and breaking news from Russian sources',
-    textCount: 12,
-    progress: 72,
-    lastUpdated: '2 days ago',
-  },
-  {
-    id: '2',
-    name: 'Spanish Short Stories',
-    description: 'Classic and contemporary short fiction from Spanish-speaking authors',
-    textCount: 8,
-    progress: 45,
-    lastUpdated: '5 days ago',
-  },
-  {
-    id: '3',
-    name: 'French Poetry Collection',
-    description: 'Selected poems from French literary tradition',
-    textCount: 15,
-    progress: 89,
-    lastUpdated: '1 week ago',
-  },
-  {
-    id: '4',
-    name: 'German Technical Articles',
-    description: 'Technical documentation and articles about software development',
-    textCount: 6,
-    progress: 34,
-    lastUpdated: '3 days ago',
-  },
-  {
-    id: '5',
-    name: 'Italian Cooking Recipes',
-    description: 'Traditional Italian recipes and culinary guides',
-    textCount: 10,
-    progress: 56,
-    lastUpdated: '1 day ago',
-  },
-  {
-    id: '6',
-    name: 'Japanese Business Writing',
-    description: 'Professional business communication examples and templates',
-    textCount: 4,
-    progress: 12,
-    lastUpdated: '2 weeks ago',
-  },
-];
+import { useSeriesList } from '@/lib/hooks/useSeriesList';
 
 // ============================================================================
 // Series Page Component
@@ -80,22 +25,14 @@ export default function SeriesPage() {
   const router = useRouter();
   const { selectedLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const seriesQuery = useSeriesList();
+  const isLoading = seriesQuery.isLoading;
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
-
-  // Simulate data loading with 2-second delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Close sort dropdown when clicking outside
   useEffect(() => {
@@ -113,7 +50,7 @@ export default function SeriesPage() {
 
   // Filter and sort series
   const filteredAndSortedSeries = useMemo(() => {
-    let result = [...TEMP_SERIES];
+    let result = [...(seriesQuery.data ?? [])];
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -152,7 +89,7 @@ export default function SeriesPage() {
     }
 
     return result;
-  }, [searchQuery, sortBy]);
+  }, [searchQuery, sortBy, seriesQuery.data]);
 
   const handleNewSeries = () => {
     setIsNewSeriesModalOpen(true);
@@ -186,11 +123,16 @@ export default function SeriesPage() {
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteTarget) {
-      console.log('Deleted series:', deleteTarget.id);
-      // TODO: Implement actual delete via API
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`/api/series/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete series');
+      showToast(`Series "${deleteTarget.name}" deleted`);
       setDeleteTarget(null);
+      await seriesQuery.refetch();
+    } catch {
+      showToast('Failed to delete series');
     }
   };
 

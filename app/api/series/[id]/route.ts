@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { series } from '@/lib/db/schema';
+import { series, texts } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { formatRelativeTime } from '@/lib/utils';
 import type { Text, SeriesDetail } from '@/lib/types/content';
@@ -106,6 +106,87 @@ export async function GET(
         error: 'Internal server error fetching series',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================================
+// PATCH /api/series/[id] — Update series name or description
+// ============================================================================
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const { name, description } = body as { name?: string; description?: string };
+
+    if (!name && description === undefined) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'At least one field (name or description) is required' },
+        { status: 400 }
+      );
+    }
+
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (name !== undefined) updates.name = name.trim();
+    if (description !== undefined) updates.description = description;
+
+    const [updated] = await db
+      .update(series)
+      .set(updates)
+      .where(eq(series.id, id))
+      .returning({ id: series.id, name: series.name });
+
+    if (!updated) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Series not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ series: updated });
+  } catch (error) {
+    console.error('[Series Update] Unexpected error:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      { error: 'Internal server error updating series' },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================================
+// DELETE /api/series/[id] — Delete series (texts become uncategorized)
+// ============================================================================
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // texts.seriesId has onDelete: 'set null' in schema — DB handles orphaning automatically
+    const [deleted] = await db
+      .delete(series)
+      .where(eq(series.id, id))
+      .returning({ id: series.id });
+
+    if (!deleted) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Series not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error('[Series Delete] Unexpected error:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      { error: 'Internal server error deleting series' },
       { status: 500 }
     );
   }

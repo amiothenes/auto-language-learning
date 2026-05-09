@@ -85,3 +85,37 @@ export async function GET(
     );
   }
 }
+
+// ============================================================================
+// DELETE /api/texts/[id] — Delete text (cascades to sentences + wordInstances)
+// ============================================================================
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // sentences and wordInstances have onDelete: 'cascade' — DB handles cleanup
+    const [deleted] = await db
+      .delete(texts)
+      .where(eq(texts.id, id))
+      .returning({ id: texts.id });
+
+    if (!deleted) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Text not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error('[Text Delete] Unexpected error:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      { error: 'Internal server error deleting text' },
+      { status: 500 }
+    );
+  }
+}

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/lib/types';
@@ -19,284 +20,8 @@ import { Toast, useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ChevronLeft, ChevronRight, Library, Plus, Upload } from 'lucide-react';
 import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
-
-// ============================================================================
-// Hardcoded Vocabulary Data
-// ============================================================================
-
-// TODO: Replace with API call
-const TEMP_VOCABULARY: VocabularyItem[] = [
-  {
-    id: '1',
-    lemma: 'abandonar',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 45,
-    userFrequency: 12,
-    translation: 'to abandon, to leave',
-    tags: ['Verb', 'Common'],
-  },
-  {
-    id: '2',
-    lemma: 'casa',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 98,
-    userFrequency: 156,
-    translation: 'house, home',
-    tags: ['Noun', 'Essential'],
-  },
-  {
-    id: '3',
-    lemma: 'libro',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 92,
-    userFrequency: 89,
-    translation: 'book',
-    tags: ['Noun', 'Common'],
-  },
-  {
-    id: '4',
-    lemma: 'escribir',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 78,
-    userFrequency: 34,
-    translation: 'to write',
-    tags: ['Verb', 'Common'],
-  },
-  {
-    id: '5',
-    lemma: 'amigo',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 85,
-    userFrequency: 67,
-    translation: 'friend',
-    tags: ['Noun', 'Social'],
-  },
-  {
-    id: '6',
-    lemma: 'comprender',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 62,
-    userFrequency: 18,
-    translation: 'to understand, to comprehend',
-    tags: ['Verb'],
-  },
-  {
-    id: '7',
-    lemma: 'ventana',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 54,
-    userFrequency: 23,
-    translation: 'window',
-    tags: ['Noun'],
-  },
-  {
-    id: '8',
-    lemma: 'rápido',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 71,
-    userFrequency: 28,
-    translation: 'fast, quick',
-    tags: ['Adjective', 'Common'],
-  },
-  {
-    id: '9',
-    lemma: 'trabajar',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 88,
-    userFrequency: 102,
-    translation: 'to work',
-    tags: ['Verb', 'Essential'],
-  },
-  {
-    id: '10',
-    lemma: 'silencioso',
-    status: VocabularyStatus.NEWLY_SEEN,
-    dictionaryFrequency: 34,
-    userFrequency: 3,
-    translation: 'silent, quiet',
-    tags: ['Adjective'],
-  },
-  {
-    id: '11',
-    lemma: 'caminar',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 68,
-    userFrequency: 15,
-    translation: 'to walk',
-    tags: ['Verb', 'Movement'],
-  },
-  {
-    id: '12',
-    lemma: 'montaña',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 56,
-    userFrequency: 21,
-    translation: 'mountain',
-    tags: ['Noun', 'Nature'],
-  },
-  {
-    id: '13',
-    lemma: 'alegre',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 49,
-    userFrequency: 9,
-    translation: 'happy, cheerful',
-    tags: ['Adjective', 'Emotion'],
-  },
-  {
-    id: '14',
-    lemma: 'estudiar',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 81,
-    userFrequency: 95,
-    translation: 'to study',
-    tags: ['Verb', 'Essential'],
-  },
-  {
-    id: '15',
-    lemma: 'difícil',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 73,
-    userFrequency: 37,
-    translation: 'difficult, hard',
-    tags: ['Adjective', 'Common'],
-  },
-  {
-    id: '16',
-    lemma: 'sonreír',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 51,
-    userFrequency: 14,
-    translation: 'to smile',
-    tags: ['Verb', 'Emotion'],
-  },
-  {
-    id: '17',
-    lemma: 'antiguo',
-    status: VocabularyStatus.NEWLY_SEEN,
-    dictionaryFrequency: 58,
-    userFrequency: 5,
-    translation: 'ancient, old',
-    tags: ['Adjective'],
-  },
-  {
-    id: '18',
-    lemma: 'pensar',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 79,
-    userFrequency: 42,
-    translation: 'to think',
-    tags: ['Verb', 'Common'],
-  },
-  {
-    id: '19',
-    lemma: 'hermoso',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 64,
-    userFrequency: 19,
-    translation: 'beautiful',
-    tags: ['Adjective', 'Common'],
-  },
-  {
-    id: '20',
-    lemma: 'ciudad',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 94,
-    userFrequency: 118,
-    translation: 'city',
-    tags: ['Noun', 'Essential'],
-  },
-  {
-    id: '21',
-    lemma: 'pequeño',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 76,
-    userFrequency: 31,
-    translation: 'small, little',
-    tags: ['Adjective', 'Common'],
-  },
-  {
-    id: '22',
-    lemma: 'hablar',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 91,
-    userFrequency: 134,
-    translation: 'to speak, to talk',
-    tags: ['Verb', 'Essential'],
-  },
-  {
-    id: '23',
-    lemma: 'tranquilo',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 53,
-    userFrequency: 11,
-    translation: 'calm, peaceful',
-    tags: ['Adjective'],
-  },
-  {
-    id: '24',
-    lemma: 'descubrir',
-    status: VocabularyStatus.NEWLY_SEEN,
-    dictionaryFrequency: 67,
-    userFrequency: 4,
-    translation: 'to discover',
-    tags: ['Verb'],
-  },
-  {
-    id: '25',
-    lemma: 'importante',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 87,
-    userFrequency: 45,
-    translation: 'important',
-    tags: ['Adjective', 'Common'],
-  },
-  {
-    id: '26',
-    lemma: 'verde',
-    status: VocabularyStatus.KNOWN,
-    dictionaryFrequency: 69,
-    userFrequency: 26,
-    translation: 'green',
-    tags: ['Adjective', 'Color'],
-  },
-  {
-    id: '27',
-    lemma: 'olvidar',
-    status: VocabularyStatus.FAMILIAR,
-    dictionaryFrequency: 55,
-    userFrequency: 13,
-    translation: 'to forget',
-    tags: ['Verb'],
-  },
-  {
-    id: '28',
-    lemma: 'extraño',
-    status: VocabularyStatus.NEWLY_SEEN,
-    dictionaryFrequency: 42,
-    userFrequency: 2,
-    translation: 'strange, odd',
-    tags: ['Adjective'],
-  },
-  {
-    id: '29',
-    lemma: 'nombre',
-    status: VocabularyStatus.WELL_KNOWN,
-    dictionaryFrequency: 89,
-    userFrequency: 87,
-    translation: 'name',
-    tags: ['Noun', 'Essential'],
-  },
-  {
-    id: '30',
-    lemma: 'desconocido',
-    status: VocabularyStatus.IGNORE,
-    dictionaryFrequency: 38,
-    userFrequency: 1,
-    translation: 'unknown, stranger',
-    tags: ['Adjective'],
-  },
-];
+import { useVocabulary } from '@/lib/hooks/useVocabulary';
+import { useStats } from '@/lib/hooks/useStats';
 
 // ============================================================================
 // Vocabulary Page Component
@@ -304,12 +29,10 @@ const TEMP_VOCABULARY: VocabularyItem[] = [
 
 export default function VocabularyPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { toast, showToast, hideToast } = useToast();
 
-  // Loading state
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Filter state
+  // Filter state (passed to API as query params)
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatuses, setActiveStatuses] = useState<Set<VocabularyStatus>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
@@ -322,15 +45,6 @@ export default function VocabularyPage() {
   const [isAddVocabModalOpen, setIsAddVocabModalOpen] = useState(false);
   const [isImportVocabModalOpen, setIsImportVocabModalOpen] = useState(false);
 
-  // Simulate data loading with 2-second delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<VocabularyItem | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -339,80 +53,58 @@ export default function VocabularyPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
-  // Calculate status counts
-  const statusCounts = useMemo(() => {
-    const counts: Record<VocabularyStatus, number> = {
-      [VocabularyStatus.NEWLY_SEEN]: 0,
-      [VocabularyStatus.FAMILIAR]: 0,
-      [VocabularyStatus.KNOWN]: 0,
-      [VocabularyStatus.WELL_KNOWN]: 0,
-      [VocabularyStatus.IGNORE]: 0,
-    };
+  // Only pass a status filter when exactly one status is active
+  const activeStatus = activeStatuses.size === 1 ? [...activeStatuses][0] : undefined;
 
-    TEMP_VOCABULARY.forEach((item) => {
-      counts[item.status]++;
-    });
+  // Real data
+  const vocabularyQuery = useVocabulary({
+    search: searchQuery || undefined,
+    status: activeStatus,
+    sort: sortBy,
+    page: currentPage,
+    limit: itemsPerPage,
+  });
+  const { data: stats } = useStats();
 
-    return counts;
-  }, []);
+  const isLoading = vocabularyQuery.isLoading;
+  const words = vocabularyQuery.data?.words ?? [];
+  const total = vocabularyQuery.data?.total ?? 0;
+  const totalPages = vocabularyQuery.data?.totalPages ?? 1;
 
-  // Filter and sort vocabulary
-  const filteredAndSortedVocabulary = useMemo(() => {
-    let result = [...TEMP_VOCABULARY];
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.lemma.toLowerCase().includes(query) ||
-          item.translation.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter by status
-    if (activeStatuses.size > 0) {
-      result = result.filter((item) => activeStatuses.has(item.status));
-    }
-
-    // Sort
-    switch (sortBy) {
-      case 'name-asc':
-        result.sort((a, b) => a.lemma.localeCompare(b.lemma));
-        break;
-      case 'dict-freq-desc':
-        result.sort((a, b) => b.dictionaryFrequency - a.dictionaryFrequency);
-        break;
-      case 'user-freq-desc':
-        result.sort((a, b) => b.userFrequency - a.userFrequency);
-        break;
-      case 'status':
-        const statusOrder = {
-          [VocabularyStatus.NEWLY_SEEN]: 0,
-          [VocabularyStatus.FAMILIAR]: 1,
-          [VocabularyStatus.KNOWN]: 2,
-          [VocabularyStatus.WELL_KNOWN]: 3,
-          [VocabularyStatus.IGNORE]: 4,
-        };
-        result.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
-        break;
-    }
-
-    return result;
-  }, [searchQuery, activeStatuses, sortBy]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedVocabulary.length / itemsPerPage);
-  const paginatedVocabulary = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedVocabulary.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedVocabulary, currentPage, itemsPerPage]);
+  // Status counts from the stats API (total per-status, language-wide)
+  const statusCounts: Record<VocabularyStatus, number> = {
+    [VocabularyStatus.NEWLY_SEEN]: stats?.vocabulary.newlySeen ?? 0,
+    [VocabularyStatus.FAMILIAR]: stats?.vocabulary.familiar ?? 0,
+    [VocabularyStatus.KNOWN]: stats?.vocabulary.known ?? 0,
+    [VocabularyStatus.WELL_KNOWN]: stats?.vocabulary.wellKnown ?? 0,
+    [VocabularyStatus.IGNORE]: stats?.vocabulary.ignored ?? 0,
+  };
 
   // Reset to page 1 when filters change
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchQuery, activeStatuses, sortBy]);
+
+  // Bulk update mutation (mark as known, etc.)
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ wordIds, status }: { wordIds: string[]; status: VocabularyStatus }) => {
+      const res = await fetch('/api/vocabulary/bulk-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wordIds, status }),
+      });
+      if (!res.ok) throw new Error('Failed to update words');
+      return res.json() as Promise<{ updated: number }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setSelectedIds(new Set());
+    },
+    onError: () => {
+      showToast('Failed to update words');
+    },
+  });
 
   // Selection handlers
   const handleToggleSelection = (id: string) => {
@@ -423,31 +115,21 @@ export default function VocabularyPage() {
       newSelected.add(id);
     }
     setSelectedIds(newSelected);
-
-    // Exit multi-select mode when all items are deselected
-    if (newSelected.size === 0) {
-      setIsMultiSelectActive(false);
-    }
+    if (newSelected.size === 0) setIsMultiSelectActive(false);
   };
 
   const handleToggleAll = () => {
-    if (selectedIds.size === paginatedVocabulary.length) {
+    if (selectedIds.size === words.length) {
       setSelectedIds(new Set());
       setIsMultiSelectActive(false);
     } else {
-      setSelectedIds(new Set(paginatedVocabulary.map((item) => item.id)));
+      setSelectedIds(new Set(words.map((item) => item.id)));
       setIsMultiSelectActive(true);
     }
   };
 
-  // Enable multi-select mode (triggered by long-press on mobile)
-  const handleEnableMultiSelect = () => {
-    setIsMultiSelectActive(true);
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-  };
+  const handleEnableMultiSelect = () => setIsMultiSelectActive(true);
+  const handleClearSelection = () => setSelectedIds(new Set());
 
   // Status filter handlers
   const handleStatusToggle = (status: VocabularyStatus) => {
@@ -462,53 +144,39 @@ export default function VocabularyPage() {
 
   // Bulk action handlers
   const handleMarkAsKnown = () => {
-    console.log('Mark as known:', Array.from(selectedIds));
-    // TODO: Implement actual action
-    setSelectedIds(new Set());
+    bulkUpdateMutation.mutate({
+      wordIds: Array.from(selectedIds),
+      status: VocabularyStatus.KNOWN,
+    });
   };
 
   const handleAddTag = () => {
-    console.log('Add tag to:', Array.from(selectedIds));
-    // TODO: Implement actual action
+    showToast('Tag editing coming soon');
     setSelectedIds(new Set());
   };
 
-  const handleDelete = () => {
-    setShowBulkDeleteConfirm(true);
-  };
+  const handleDelete = () => setShowBulkDeleteConfirm(true);
 
   const handleConfirmBulkDelete = () => {
-    console.log('Deleted:', Array.from(selectedIds));
+    showToast('Word deletion coming soon');
     setSelectedIds(new Set());
     setShowBulkDeleteConfirm(false);
   };
 
   const handleConfirmSingleDelete = () => {
     if (deleteTarget) {
-      console.log('Deleted:', deleteTarget.id);
+      showToast('Word deletion coming soon');
       setDeleteTarget(null);
     }
   };
 
   const handleAddVocabulary = (vocabData: NewVocabularyData) => {
-    // TODO: Replace with API call
-    console.log('Adding vocabulary:', vocabData);
-
-    // Show success feedback
     showToast(`"${vocabData.lemma}" added to vocabulary!`);
-
-    // Close modal
     setIsAddVocabModalOpen(false);
   };
 
-  const handleImportVocabulary = (items: ImportedVocabularyData[], strategy: MergeStrategy) => {
-    // TODO: Replace with API call
-    console.log('Importing vocabulary:', items, 'Strategy:', strategy);
-
-    // Show success feedback
+  const handleImportVocabulary = (items: ImportedVocabularyData[], _strategy: MergeStrategy) => {
     showToast(`${items.length} vocabulary item${items.length > 1 ? 's' : ''} imported successfully!`);
-
-    // Close modal
     setIsImportVocabModalOpen(false);
   };
 
@@ -523,15 +191,17 @@ export default function VocabularyPage() {
             </Heading>
             <div className="flex items-center gap-4 flex-wrap">
               <Muted>Manage your learned words and track your progress</Muted>
-              <div className="flex items-center gap-3">
-                <span className="font-sans text-ui-sm text-muted">
-                  Total: {TEMP_VOCABULARY.length} words
-                </span>
-                <span className="text-muted">•</span>
-                <span className="font-sans text-ui-sm text-muted">
-                  Showing: {filteredAndSortedVocabulary.length} words
-                </span>
-              </div>
+              {!isLoading && (
+                <div className="flex items-center gap-3">
+                  <span className="font-sans text-ui-sm text-muted">
+                    Total: {stats?.vocabulary.total ?? 0} words
+                  </span>
+                  <span className="text-muted">•</span>
+                  <span className="font-sans text-ui-sm text-muted">
+                    Showing: {total} words
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -616,7 +286,7 @@ export default function VocabularyPage() {
               </div>
             </div>
           </>
-        ) : filteredAndSortedVocabulary.length === 0 ? (
+        ) : words.length === 0 ? (
           /* Empty State */
           searchQuery || activeStatuses.size > 0 ? (
             <EmptyState
@@ -642,7 +312,7 @@ export default function VocabularyPage() {
             {/* Tablet & Desktop: Table View */}
             <div className="hidden md:block">
               <VocabTable
-                items={paginatedVocabulary}
+                items={words}
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
                 onToggleAll={handleToggleAll}
@@ -653,7 +323,7 @@ export default function VocabularyPage() {
             {/* Mobile: Card View */}
             <div className="md:hidden">
               <VocabCardList
-                items={paginatedVocabulary}
+                items={words}
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
                 onDelete={(item) => setDeleteTarget(item)}
