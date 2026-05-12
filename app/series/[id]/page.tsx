@@ -17,6 +17,7 @@ import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
+import type { ImportTextResponse } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
@@ -132,9 +133,14 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     setIsNewTextModalOpen(true);
   };
 
-  const handleCreateText = (seriesId: string) => {
-    setIsNewTextModalOpen(false);
-    router.push(`/series/${seriesId}`);
+  const handleCreateText = (result: ImportTextResponse) => {
+    const partCount = result.texts.length;
+    const totalWords = result.texts.reduce((s, t) => s + t.wordCount, 0);
+    const msg = partCount > 1
+      ? `Imported as ${partCount} parts · ${totalWords.toLocaleString()} words total`
+      : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString()} words`;
+    showToast(msg);
+    queryClient.invalidateQueries({ queryKey: ['series', id] });
   };
 
   const handleImport = () => {
@@ -143,17 +149,23 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
   const handleImportTexts = async (texts: ImportedTextData[]) => {
     try {
+      const results: ImportTextResponse[] = [];
       for (const text of texts) {
-        await importMutation.mutateAsync({
+        const result = await importMutation.mutateAsync({
           title: text.title,
           content: text.content,
           tags: text.tags ?? [],
           languageCode: selectedLanguage,
           seriesId: id,
         });
+        results.push(result);
       }
       await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
-      showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
+      const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
+      const msg = totalParts > texts.length
+        ? `${texts.length} file${texts.length > 1 ? 's' : ''} imported as ${totalParts} parts`
+        : `${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully`;
+      showToast(msg);
       setIsImportModalOpen(false);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Import failed');

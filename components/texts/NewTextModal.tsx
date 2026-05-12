@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { NewTextData } from '@/lib/types/forms';
+import type { ImportTextResponse } from '@/lib/types/api';
 
 // ============================================================================
 // NewTextModal Component
@@ -15,7 +16,7 @@ import type { NewTextData } from '@/lib/types/forms';
 interface NewTextModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd?: (seriesId: string) => void; // Optional callback after successful import
+  onAdd?: (result: ImportTextResponse) => void;
   prefilledSeriesId?: string; // Pre-select series if provided
   availableSeries: Array<{ id: string; name: string }>; // List of series for dropdown
 }
@@ -149,6 +150,14 @@ export function NewTextModal({
     );
   }, [formData]);
 
+  const wordCount = useMemo(() => {
+    const text = formData.content.trim();
+    if (!text) return 0;
+    return text.split(/\s+/).filter(Boolean).length;
+  }, [formData.content]);
+
+  const estimatedParts = wordCount > 750 ? Math.ceil(wordCount / 750) : 1;
+
   // Parse tags from comma-separated input
   const parseTags = (input: string): string[] => {
     return input
@@ -176,7 +185,7 @@ export function NewTextModal({
           tags,
         });
 
-        onAdd?.(result.seriesId);
+        onAdd?.(result);
         onClose();
       } catch {
         // Error state displayed via mutation.isError — no extra handling needed
@@ -216,10 +225,10 @@ export function NewTextModal({
               <div className="absolute inset-0 animate-shimmer" />
               <div className="relative text-center">
                 <p className="font-sans text-ui-sm font-medium text-ink">
-                  Processing text...
+                  {estimatedParts > 1 ? `Processing ${estimatedParts} parts...` : 'Processing text...'}
                 </p>
                 <p className="font-sans text-ui-xs text-muted mt-1">
-                  This may take a few seconds
+                  {estimatedParts > 1 ? 'Running NLP on each part — may take a moment' : 'This may take a few seconds'}
                 </p>
               </div>
             </div>
@@ -308,8 +317,13 @@ export function NewTextModal({
                   <span className="text-red-600">
                     Minimum 10 characters required ({contentLength}/10)
                   </span>
+                ) : estimatedParts > 1 ? (
+                  <span>
+                    {wordCount.toLocaleString()} words{' '}
+                    <span className="text-amber-600 font-medium">· will split into ~{estimatedParts} parts</span>
+                  </span>
                 ) : (
-                  `${contentLength} characters`
+                  wordCount > 0 ? `${wordCount.toLocaleString()} words` : `${contentLength} characters`
                 )}
               </p>
             </div>
@@ -349,7 +363,7 @@ export function NewTextModal({
                 size="md"
                 disabled={!isFormValid || mutation.isPending}
               >
-                {mutation.isPending ? 'Importing...' : 'Add Text'}
+                {mutation.isPending ? 'Importing...' : 'Import Text'}
               </Button>
             </div>
           </form>
