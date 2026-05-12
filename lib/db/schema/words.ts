@@ -11,7 +11,7 @@ export const words = pgTable(
     lemma: text('lemma').notNull(),
     languageId: text('language_id')
       .notNull()
-      .references(() => languages.id),
+      .references(() => languages.id, { onDelete: 'restrict' }),
 
     // Core vocabulary data
     status: vocabularyStatusEnum('status').default('NEWLY_SEEN').notNull(),

@@ -13,7 +13,7 @@ export const texts = pgTable(
     content: text('content').notNull(),
     languageId: text('language_id')
       .notNull()
-      .references(() => languages.id),
+      .references(() => languages.id, { onDelete: 'restrict' }),
     seriesId: text('series_id').references(() => series.id, { onDelete: 'set null' }),
 
     audioURI: text('audio_uri'),
