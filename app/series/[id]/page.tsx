@@ -132,9 +132,9 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     setIsNewTextModalOpen(true);
   };
 
-  const handleCreateText = (textId: string) => {
+  const handleCreateText = (seriesId: string) => {
     setIsNewTextModalOpen(false);
-    router.push(`/reader/${textId}`);
+    router.push(`/series/${seriesId}`);
   };
 
   const handleImport = () => {

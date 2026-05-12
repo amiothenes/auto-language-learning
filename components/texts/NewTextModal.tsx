@@ -15,7 +15,7 @@ import type { NewTextData } from '@/lib/types/forms';
 interface NewTextModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd?: (textId: string) => void; // Optional callback after successful import
+  onAdd?: (seriesId: string) => void; // Optional callback after successful import
   prefilledSeriesId?: string; // Pre-select series if provided
   availableSeries: Array<{ id: string; name: string }>; // List of series for dropdown
 }
@@ -176,8 +176,7 @@ export function NewTextModal({
           tags,
         });
 
-        // Notify parent of newly created text ID for state refresh
-        onAdd?.(result.text.id);
+        onAdd?.(result.seriesId);
         onClose();
       } catch {
         // Error state displayed via mutation.isError — no extra handling needed

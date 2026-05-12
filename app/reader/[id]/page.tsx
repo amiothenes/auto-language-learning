@@ -13,9 +13,11 @@ import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import Link from 'next/link';
 import { useText } from '@/lib/hooks/useText';
 import { useWordInstances } from '@/lib/hooks/useWordInstances';
 import { useUpdateWordStatus } from '@/lib/hooks/useUpdateWordStatus';
+import { useAdjacentTexts } from '@/lib/hooks/useAdjacentTexts';
 
 // ============================================================================
 // Reader Page Component
@@ -33,6 +35,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const textQuery = useText(id);
   const instancesQuery = useWordInstances(id);
   const updateWordStatus = useUpdateWordStatus(id);
+  const adjacentQuery = useAdjacentTexts(id);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
@@ -417,6 +420,27 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 loadError={instancesQuery.error?.message ?? null}
               />
             )
+          )}
+
+          {adjacentQuery.data && (adjacentQuery.data.prev || adjacentQuery.data.next) && (
+            <nav className="flex justify-between w-full max-w-prose mt-8 pt-4 border-t border-border">
+              {adjacentQuery.data.prev ? (
+                <Link
+                  href={`/reader/${adjacentQuery.data.prev.id}`}
+                  className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  ← {adjacentQuery.data.prev.title}
+                </Link>
+              ) : <span />}
+              {adjacentQuery.data.next ? (
+                <Link
+                  href={`/reader/${adjacentQuery.data.next.id}`}
+                  className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  {adjacentQuery.data.next.title} →
+                </Link>
+              ) : <span />}
+            </nav>
           )}
         </main>
 

@@ -14,7 +14,10 @@ export const texts = pgTable(
     languageId: text('language_id')
       .notNull()
       .references(() => languages.id, { onDelete: 'restrict' }),
-    seriesId: text('series_id').references(() => series.id, { onDelete: 'set null' }),
+    seriesId: text('series_id')
+      .notNull()
+      .references(() => series.id, { onDelete: 'cascade' }),
+    order: integer('order').notNull().default(1),
 
     audioURI: text('audio_uri'),
     sourceURI: text('source_uri'),

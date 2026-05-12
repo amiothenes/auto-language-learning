@@ -57,7 +57,7 @@ function applyCharacterSubstitutions(
  * @param sentenceSplitRegex - Language-specific regex pattern
  * @returns Array of sentences with their start positions
  */
-function splitIntoSentences(
+export function splitIntoSentences(
   text: string,
   sentenceSplitRegex: string
 ): Array<{ text: string; startPosition: number }> {
