@@ -14,6 +14,11 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const adminKey = request.headers.get('x-admin-key')
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();

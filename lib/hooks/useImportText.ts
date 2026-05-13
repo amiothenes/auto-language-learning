@@ -31,7 +31,10 @@ export function useImportText() {
     mutationFn: async (data: ImportTextRequest): Promise<ImportTextResponse> => {
       const response = await fetch('/api/texts/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+        },
         body: JSON.stringify(data),
       });
 

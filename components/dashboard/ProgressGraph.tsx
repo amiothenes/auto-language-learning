@@ -12,7 +12,7 @@ export function ProgressGraph({ currentPercentage }: ProgressGraphProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-end justify-between gap-2">
-        <Heading size="2xl" weight="bold" as="p">
+        <Heading size="2xl" weight="bold">
           {clamped.toFixed(1)}%
         </Heading>
         <Muted size="xs" className="mb-1">

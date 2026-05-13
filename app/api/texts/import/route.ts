@@ -21,6 +21,11 @@ import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  const adminKey = request.headers.get('x-admin-key')
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const startTime = Date.now();
 
   try {
