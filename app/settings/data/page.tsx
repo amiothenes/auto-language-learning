@@ -6,7 +6,7 @@
 // ============================================================================
 
 import { useState } from 'react';
-import { Download, AlertTriangle } from 'lucide-react';
+import { Download, AlertTriangle, Upload } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -14,6 +14,10 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 export default function DataSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
+
+  const [lwtFile, setLwtFile] = useState<File | null>(null);
+  const [lwtStatus, setLwtStatus] = useState<string | null>(null);
+  const [lwtLoading, setLwtLoading] = useState(false);
 
   const handleExportCSV = () => {
     console.log('Exporting as CSV...');
@@ -44,6 +48,30 @@ export default function DataSettingsPage() {
     } catch (error) {
       console.error('Failed to delete data:', error);
     }
+  };
+
+  const handleLwtImport = async () => {
+    if (!lwtFile) return;
+    setLwtLoading(true);
+    setLwtStatus(null);
+    const form = new FormData();
+    form.append('file', lwtFile);
+    try {
+      const res = await fetch('/api/vocabulary/import-lwt', {
+        method: 'POST',
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLwtStatus(`Error: ${data.error}${data.details ? ` — ${data.details}` : ''}`);
+      } else {
+        setLwtStatus(`Imported ${data.imported} words. Skipped ${data.skipped}.`);
+      }
+    } catch {
+      setLwtStatus('Error: Request failed. Check console for details.');
+    }
+    setLwtLoading(false);
   };
 
   const isDeleteEnabled = deleteInput === 'DELETE';
@@ -90,6 +118,39 @@ export default function DataSettingsPage() {
               Complete backup of all data including vocabulary, progress, and settings
             </p>
           </div>
+        </div>
+      </SettingSection>
+
+      {/* LWT Import Section */}
+      <SettingSection
+        title="Import LWT Vocabulary"
+        description="Bulk-import vocabulary from a Learning With Texts .tsv export"
+      >
+        <div className="space-y-3">
+          <input
+            type="file"
+            accept=".tsv"
+            onChange={(e) => {
+              setLwtFile(e.target.files?.[0] ?? null);
+              setLwtStatus(null);
+            }}
+            className="block w-full font-sans text-ui-sm text-ink file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:font-sans file:text-ui-sm file:font-medium file:bg-surface file:text-ink hover:file:bg-surface/80 cursor-pointer"
+          />
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={<Upload size={18} strokeWidth={2} />}
+            onClick={handleLwtImport}
+            disabled={!lwtFile || lwtLoading}
+            className="w-full justify-start"
+          >
+            <span className="flex-1 text-left">
+              {lwtLoading ? 'Importing…' : 'Import from LWT (.tsv)'}
+            </span>
+          </Button>
+          {lwtStatus && (
+            <p className="font-sans text-ui-sm text-muted ml-1">{lwtStatus}</p>
+          )}
         </div>
       </SettingSection>
 
