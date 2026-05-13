@@ -40,7 +40,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    fetch(`/api/texts/${id}/view`, { method: 'POST' })
+    fetch(`/api/texts/${id}/view`, {
+      method: 'POST',
+      headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+    })
       .then((res) => res.json())
       .then((data: { viewCount: number }) => {
         queryClient.setQueryData(['text', id], (old: TextData | undefined) =>

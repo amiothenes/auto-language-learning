@@ -17,11 +17,12 @@ import {
   users,
   settings,
 } from './schema';
+import type { NewLanguage } from './schema';
 import { eq } from 'drizzle-orm';
 import { VocabularyStatus } from '../types/vocabulary';
 
 // ========== LANGUAGE DATA ==========
-const seedLanguages = [
+const seedLanguages: NewLanguage[] = [
   {
     id: 'lang_english',
     code: 'en',

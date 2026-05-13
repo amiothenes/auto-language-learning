@@ -120,7 +120,10 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     try {
       const res = await fetch(`/api/series/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+        },
         body: JSON.stringify({ name: newTitle }),
       });
       if (!res.ok) throw new Error('Failed to update series name');
@@ -175,7 +178,10 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const handleConfirmDeleteSeries = async () => {
     if (!deleteSeriesTarget) return;
     try {
-      const res = await fetch(`/api/series/${deleteSeriesTarget.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/series/${deleteSeriesTarget.id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+      });
       if (!res.ok) throw new Error('Failed to delete series');
       setDeleteSeriesTarget(null);
       router.push('/series');
@@ -187,7 +193,10 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const handleConfirmDeleteText = async () => {
     if (!deleteTextTarget) return;
     try {
-      const res = await fetch(`/api/texts/${deleteTextTarget.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/texts/${deleteTextTarget.id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+      });
       if (!res.ok) throw new Error('Failed to delete text');
       setDeleteTextTarget(null);
       await queryClient.invalidateQueries({ queryKey: ['series', id] });

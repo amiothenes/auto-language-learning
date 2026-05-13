@@ -90,7 +90,10 @@ export default function VocabularyPage() {
     mutationFn: async ({ wordIds, status }: { wordIds: string[]; status: VocabularyStatus }) => {
       const res = await fetch('/api/vocabulary/bulk-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+        },
         body: JSON.stringify({ wordIds, status }),
       });
       if (!res.ok) throw new Error('Failed to update words');

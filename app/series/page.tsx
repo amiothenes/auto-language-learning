@@ -99,7 +99,10 @@ export default function SeriesPage() {
     try {
       const response = await fetch('/api/series', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+        },
         body: JSON.stringify({
           name: seriesData.name,
           description: seriesData.description,
@@ -126,7 +129,10 @@ export default function SeriesPage() {
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/series/${deleteTarget.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/series/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+      });
       if (!res.ok) throw new Error('Failed to delete series');
       showToast(`Series "${deleteTarget.name}" deleted`);
       setDeleteTarget(null);

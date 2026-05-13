@@ -73,10 +73,9 @@ export const spanishHandler: LanguageHandler = {
         'pude': 'poder', 'pudiste': 'poder', 'pudo': 'poder', 'pudimos': 'poder', 'pudisteis': 'poder', 'pudieron': 'poder',
         'podido': 'poder', 'pudiendo': 'poder',
 
-        // ir (to go)
+        // ir (to go) — preterite forms (fui/fue/fuimos etc.) shared with ser; ser takes precedence
         'voy': 'ir', 'vas': 'ir', 'va': 'ir', 'vamos': 'ir', 'vais': 'ir', 'van': 'ir',
         'iba': 'ir', 'ibas': 'ir', 'íbamos': 'ir', 'ibais': 'ir', 'iban': 'ir',
-        'fui': 'ir', 'fuiste': 'ir', 'fue': 'ir', 'fuimos': 'ir', 'fuisteis': 'ir', 'fueron': 'ir',
         'ido': 'ir', 'yendo': 'ir',
 
         // dar (to give)

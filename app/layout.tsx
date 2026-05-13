@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${ebGaramond.variable} antialiased bg-desk`}
+        className="antialiased bg-desk"
       >
         <LanguageProvider>
           <QueryClientProvider>

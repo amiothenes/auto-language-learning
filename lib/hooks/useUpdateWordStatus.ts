@@ -8,7 +8,10 @@ export function useUpdateWordStatus(textId: string) {
     mutationFn: async ({ wordId, status }: { wordId: string; status: VocabularyStatus }) => {
       const res = await fetch(`/api/words/${wordId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+        },
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error('Failed to update word status');
