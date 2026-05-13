@@ -67,7 +67,7 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
             Your vocabulary growth over time
           </Muted>
         </div>
-        <ProgressGraph />
+        <ProgressGraph currentPercentage={fluency} />
       </Card>
 
       {/* Stats Cards - Refined & Elegant */}
