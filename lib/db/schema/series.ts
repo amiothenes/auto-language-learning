@@ -10,7 +10,7 @@ export const series = pgTable(
       .$defaultFn(() => createId()),
     name: text('name').notNull(),
     description: text('description'),
-    languageId: text('language_id').references(() => languages.id, { onDelete: 'set null' }),
+    languageId: text('language_id').notNull().references(() => languages.id, { onDelete: 'restrict' }),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

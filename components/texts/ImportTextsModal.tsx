@@ -375,13 +375,16 @@ export function ImportTextsModal({
             </p>
             <ul className="font-sans text-ui-xs text-muted space-y-0.5 ml-4 list-disc">
               <li>
-                <strong>.txt</strong> - Each file becomes one text
+                <strong>.txt</strong> - Each file becomes one text (may split if long)
               </li>
               <li>
                 <strong>.csv</strong> - Must have "title" and "content" columns
               </li>
               <li>
                 <strong>.json</strong> - Array of objects with "title" and "content" fields
+              </li>
+              <li>
+                Texts over <strong>750 words</strong> are automatically split into ordered parts
               </li>
             </ul>
           </div>
@@ -419,9 +422,18 @@ export function ImportTextsModal({
                       <p className="font-sans text-ui-xs text-muted truncate">
                         {text.content.slice(0, 100)}...
                       </p>
-                      <p className="font-sans text-ui-xs text-muted mt-1">
-                        {text.content.split(/\s+/).length} words
-                      </p>
+                      {(() => {
+                        const wc = text.content.split(/\s+/).filter(Boolean).length;
+                        const parts = wc > 750 ? Math.ceil(wc / 750) : 1;
+                        return (
+                          <p className="font-sans text-ui-xs text-muted mt-1">
+                            {wc.toLocaleString()} words
+                            {parts > 1 && (
+                              <span className="ml-1 text-amber-600 font-medium">· ~{parts} parts after split</span>
+                            )}
+                          </p>
+                        );
+                      })()}
                     </div>
                     <button
                       onClick={() => handleRemoveText(index)}

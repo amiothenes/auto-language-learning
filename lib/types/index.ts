@@ -85,8 +85,5 @@ export type {
 
 /**
  * API request/response types.
- *
- * Future: Will contain types for backend API integration.
- * Currently empty as the app runs frontend-only with hardcoded data.
  */
-// export * from './api'; // Commented out until api.ts has actual exports
+export * from './api';

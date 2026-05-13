@@ -164,7 +164,8 @@ export async function processTextForImport(
   title: string,
   content: string,
   languageId: string,
-  seriesId?: string | null,
+  seriesId: string,
+  order?: number,
   progressCallback?: ProgressCallback
 ): Promise<ProcessedTextResult> {
   const startTime = Date.now();
@@ -352,11 +353,7 @@ export async function processTextForImport(
     // PHASE 2: DATABASE OPERATIONS (Inside Transaction)
     // ========================================================================
 
-    const nlpTime = Date.now() - startTime;
-    console.log(`[Performance] NLP Processing: ${nlpTime}ms (tokenize + lemmatize + romanize)`);
-
     try {
-      const dbStartTime = Date.now();
       const result = await db.transaction(async (tx) => {
         // Step 6: Query Existing Words (65-70%)
         reportProgress(progressCallback, 'querying_db', 65, 'Checking existing vocabulary');
@@ -365,12 +362,9 @@ export async function processTextForImport(
         const uniqueLemmas = [...new Set(Array.from(lemmaResults.values()).map((r) => r.lemma))];
 
         // Batch query existing words (NOT N+1 queries)
-        const queryStartTime = Date.now();
         const existingWords = await tx.query.words.findMany({
           where: and(eq(words.languageId, languageId), inArray(words.lemma, uniqueLemmas)),
         });
-        const queryTime = Date.now() - queryStartTime;
-        console.log(`[DB Profiling] Query existing words: ${queryTime}ms (${uniqueLemmas.length} lemmas, ${existingWords.length} found)`);
 
         // Create map: lemma → Word record
         const existingWordsMap = new Map(existingWords.map((w) => [w.lemma, w]));
@@ -409,10 +403,7 @@ export async function processTextForImport(
           });
 
           // Bulk insert with returning
-          const insertStartTime = Date.now();
           const insertedWords = await tx.insert(words).values(newWordsData).returning();
-          const insertTime = Date.now() - insertStartTime;
-          console.log(`[DB Profiling] Insert new words: ${insertTime}ms (${newLemmas.length} words)`);
 
           // Add to map for later use
           insertedWords.forEach((word) => {
@@ -439,7 +430,6 @@ export async function processTextForImport(
         if (existingLemmas.length > 0) {
           // Batch update using single SQL query (10-100x faster than N individual queries)
           // This uses a single UPDATE with WHERE IN instead of Promise.all with N queries
-          const updateStartTime = Date.now();
           await tx
             .update(words)
             .set({
@@ -452,8 +442,6 @@ export async function processTextForImport(
                 inArray(words.lemma, existingLemmas)
               )
             );
-          const updateTime = Date.now() - updateStartTime;
-          console.log(`[DB Profiling] Update user frequency: ${updateTime}ms (${existingLemmas.length} words)`);
 
           reportProgress(
             progressCallback,
@@ -473,7 +461,8 @@ export async function processTextForImport(
             title,
             content,
             languageId,
-            seriesId: seriesId || null,
+            seriesId,
+            order: order ?? 1,
             wordCount,
             uniqueWordCount,
             knownPercentage: 0, // Will calculate next
@@ -491,10 +480,7 @@ export async function processTextForImport(
           order: s.order,
         }));
 
-        const sentencesStartTime = Date.now();
         const insertedSentences = await tx.insert(sentences).values(sentencesData).returning();
-        const sentencesTime = Date.now() - sentencesStartTime;
-        console.log(`[DB Profiling] Insert sentences: ${sentencesTime}ms (${sentencesData.length} sentences)`);
 
         // Create map: order → sentence ID
         const sentenceIdMap = new Map(insertedSentences.map((s) => [s.order, s.id]));
@@ -524,14 +510,9 @@ export async function processTextForImport(
 
         // Bulk insert in batches of 500 (prevent memory issues on large texts)
         const INSTANCE_BATCH_SIZE = 500;
-        const instancesStartTime = Date.now();
-        let totalInstanceTime = 0;
-
         for (let i = 0; i < wordInstancesData.length; i += INSTANCE_BATCH_SIZE) {
           const batch = wordInstancesData.slice(i, i + INSTANCE_BATCH_SIZE);
-          const batchStartTime = Date.now();
           await tx.insert(wordInstances).values(batch);
-          totalInstanceTime += Date.now() - batchStartTime;
 
           const progress = 85 + Math.floor(7 * ((i + batch.length) / wordInstancesData.length));
           reportProgress(
@@ -542,15 +523,11 @@ export async function processTextForImport(
           );
         }
 
-        const instancesTotalTime = Date.now() - instancesStartTime;
-        console.log(`[DB Profiling] Insert word instances: ${instancesTotalTime}ms (${wordInstancesData.length} instances, ${Math.ceil(wordInstancesData.length / INSTANCE_BATCH_SIZE)} batches, avg ${Math.round(totalInstanceTime / Math.ceil(wordInstancesData.length / INSTANCE_BATCH_SIZE))}ms/batch)`);
-
 
         // Step 12: Calculate Known Percentage (92-95%)
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
         // Query word statuses for all unique lemmas in this text
-        const knownStartTime = Date.now();
         const wordStatuses = await tx.query.words.findMany({
           where: and(eq(words.languageId, languageId), inArray(words.lemma, uniqueLemmas)),
           columns: {
@@ -558,7 +535,6 @@ export async function processTextForImport(
             status: true,
           },
         });
-        const knownQueryTime = Date.now() - knownStartTime;
 
         // Count known words (KNOWN or WELL_KNOWN)
         const knownCount = wordStatuses.filter(
@@ -570,7 +546,6 @@ export async function processTextForImport(
           uniqueWordCount > 0 ? Math.round((knownCount / uniqueWordCount) * 100) : 0;
 
         // Update text with calculated percentage
-        const updateTextStartTime = Date.now();
         await tx
           .update(texts)
           .set({
@@ -578,9 +553,6 @@ export async function processTextForImport(
             updatedAt: new Date(),
           })
           .where(eq(texts.id, textId));
-        const updateTextTime = Date.now() - updateTextStartTime;
-
-        console.log(`[DB Profiling] Calculate known percentage: ${knownQueryTime}ms query + ${updateTextTime}ms update (${knownCount}/${uniqueWordCount} known = ${knownPercentage}%)`);
 
 
         reportProgress(
@@ -592,11 +564,6 @@ export async function processTextForImport(
 
         // Step 13: Return Result (95-100%)
         const processingTime = Date.now() - startTime;
-        const dbTime = Date.now() - dbStartTime;
-
-        console.log(`[Performance] Database Operations: ${dbTime}ms (transaction committed)`);
-        console.log(`[Performance] Total Processing: ${processingTime}ms (NLP: ${nlpTime}ms, DB: ${dbTime}ms)`);
-        console.log(`[Performance] Throughput: ${Math.round(wordCount / (processingTime / 1000))} words/second`);
 
         reportProgress(progressCallback, 'complete', 100, 'Import complete');
 

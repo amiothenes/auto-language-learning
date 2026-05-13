@@ -122,9 +122,6 @@ async function loadModel(): Promise<TokenClassificationPipeline> {
   // Load model
   isLoading = true;
   try {
-    console.log('[POS Tagger] Loading model:', MODEL_NAME);
-    const startTime = Date.now();
-
     cachedPipeline = await pipeline(
       'token-classification',
       MODEL_NAME,
@@ -133,9 +130,6 @@ async function loadModel(): Promise<TokenClassificationPipeline> {
         cache_dir: './.cache/transformers',
       }
     ) as TokenClassificationPipeline;
-
-    const loadTime = Date.now() - startTime;
-    console.log(`[POS Tagger] Model loaded in ${loadTime}ms`);
 
     return cachedPipeline;
   } finally {

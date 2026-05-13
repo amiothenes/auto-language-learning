@@ -6,34 +6,7 @@ import { TextListItem } from './TextListItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Plus, Library } from 'lucide-react';
 import { SkeletonText } from '@/components/ui/Skeleton';
-
-// TODO: Replace with API call
-const recentTexts = [
-  {
-    id: '1',
-    title: 'El gato en la casa',
-    series: 'Spanish Short Stories',
-    wordCount: 234,
-    knownPercentage: 72,
-    lastViewed: '2 hours ago',
-  },
-  {
-    id: '2',
-    title: 'El gato en la casa',
-    series: 'Spanish Short Stories',
-    wordCount: 234,
-    knownPercentage: 72,
-    lastViewed: '2 hours ago',
-  },
-  {
-    id: '3',
-    title: 'El gato en la casa',
-    series: 'Spanish Short Stories',
-    wordCount: 234,
-    knownPercentage: 72,
-    lastViewed: '2 hours ago',
-  },
-];
+import { useTexts } from '@/lib/hooks/useTexts';
 
 interface RecentTextsListProps {
   isLoading?: boolean;
@@ -58,9 +31,14 @@ function TextListItemSkeleton() {
   );
 }
 
-export function RecentTextsList({ isLoading = false }: RecentTextsListProps) {
+export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentTextsListProps) {
   const router = useRouter();
-  const hasRecentTexts = recentTexts.length > 0;
+  const { data: texts, isLoading: isLoadingTexts } = useTexts(5, {
+    sortBy: 'lastViewedAt',
+    onlyRead: true,
+  });
+  const isLoading = isLoadingProp || isLoadingTexts;
+  const hasRecentTexts = (texts?.length ?? 0) > 0;
 
   return (
     <section className="bg-paper rounded-card border border-border shadow-raised p-4 md:p-6 space-y-4">
@@ -73,7 +51,10 @@ export function RecentTextsList({ isLoading = false }: RecentTextsListProps) {
             Continue reading where you left off
           </Muted>
         </div>
-        <button className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer">
+        <button
+          onClick={() => router.push('/series')}
+          className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer"
+        >
           <span className="hidden md:inline">Add New Text</span>
           <Plus size={20} className="md:hidden" strokeWidth={2} />
         </button>
@@ -98,29 +79,41 @@ export function RecentTextsList({ isLoading = false }: RecentTextsListProps) {
           }}
           secondaryAction={{
             label: "Add New Text",
-            onClick: () => console.log('Add text'),
+            onClick: () => router.push('/series'),
           }}
-          className="min-h-[300px]"
+          className="min-h-75"
         />
       ) : (
         <div className="space-y-2 md:space-y-3">
-          {recentTexts.map((text) => (
+          {texts!.map((text) => (
             <TextListItem
               key={text.id}
               title={text.title}
-              series={text.series}
+              series={text.seriesName ?? '—'}
               wordCount={text.wordCount}
               knownPercentage={text.knownPercentage}
-              lastViewed={text.lastViewed}
-              onClick={() => {}}
+              lastViewed={text.lastRead}
+              onClick={() => router.push(`/reader/${text.id}`)}
             />
           ))}
+          {texts!.length < 3 && (
+            <button
+              onClick={() => router.push('/series')}
+              className="w-full p-4 border-2 border-dashed border-border rounded-lg text-muted text-ui-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Plus size={16} strokeWidth={2} />
+              Add another text
+            </button>
+          )}
         </div>
       )}
 
       {hasRecentTexts && !isLoading && (
         <div className="pt-4 border-t border-border text-center">
-          <button className="text-primary font-sans font-medium text-ui-base hover:underline cursor-pointer">
+          <button
+            className="text-primary font-sans font-medium text-ui-base hover:underline cursor-pointer"
+            onClick={() => router.push('/series')}
+          >
             View All Texts →
           </button>
         </div>

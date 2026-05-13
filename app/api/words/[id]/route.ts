@@ -4,6 +4,7 @@ import { words } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
 
 // ============================================================================
 // PATCH /api/words/[id] — Update word vocabulary status
@@ -13,6 +14,11 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const adminKey = request.headers.get('x-admin-key')
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -41,6 +47,8 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    await syncAllTextsForWord(id);
 
     return NextResponse.json({ wordId: updated.id, status: updated.status });
   } catch (error) {

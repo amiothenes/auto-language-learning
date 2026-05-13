@@ -13,8 +13,11 @@ export const texts = pgTable(
     content: text('content').notNull(),
     languageId: text('language_id')
       .notNull()
-      .references(() => languages.id),
-    seriesId: text('series_id').references(() => series.id, { onDelete: 'set null' }),
+      .references(() => languages.id, { onDelete: 'restrict' }),
+    seriesId: text('series_id')
+      .notNull()
+      .references(() => series.id, { onDelete: 'cascade' }),
+    order: integer('order').notNull().default(1),
 
     audioURI: text('audio_uri'),
     sourceURI: text('source_uri'),
@@ -23,6 +26,7 @@ export const texts = pgTable(
     wordCount: integer('word_count').default(0).notNull(),
     uniqueWordCount: integer('unique_word_count').default(0).notNull(),
     knownPercentage: real('known_percentage').default(0).notNull(),
+    viewCount: integer('view_count').default(0).notNull(),
 
     lastViewedAt: timestamp('last_viewed_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

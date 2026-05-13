@@ -13,26 +13,19 @@ import {
   processTextForImport,
   TextProcessingError,
 } from '@/lib/nlp/textProcessor';
+import { splitIntoChunks } from '@/lib/nlp/textChunker';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
 
 // ============================================================================
 // POST /api/texts/import - Import text with NLP processing
 // ============================================================================
 
-/**
- * Import a text into the database with complete NLP processing
- *
- * This endpoint:
- * 1. Validates the request payload
- * 2. Verifies language and series exist
- * 3. Processes text through NLP pipeline (tokenization, lemmatization, romanization)
- * 4. Creates database records (text, sentences, words, word instances)
- * 5. Handles tag creation and association
- * 6. Returns complete text data with statistics
- *
- * @see processTextForImport in lib/nlp/textProcessor.ts for NLP pipeline details
- */
 export async function POST(request: NextRequest) {
+  const adminKey = request.headers.get('x-admin-key')
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const startTime = Date.now();
 
   try {
@@ -44,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       return NextResponse.json<ApiErrorResponse>(
         { error: 'Invalid JSON in request body' },
         { status: 400 }
@@ -53,7 +46,6 @@ export async function POST(request: NextRequest) {
 
     const { title, content, languageCode, seriesId, tags: tagNames } = body;
 
-    // Validate required fields
     if (!title || title.trim().length === 0) {
       return NextResponse.json<ApiErrorResponse>(
         { error: 'Title is required and cannot be empty' },
@@ -102,8 +94,10 @@ export async function POST(request: NextRequest) {
     console.log(`[Text Import] Language resolved: ${language.name} (id: ${language.id})`);
 
     // ========================================================================
-    // 3. Verify Series Exists (if provided)
+    // 3. Resolve Series (verify provided, or auto-create)
     // ========================================================================
+
+    let resolvedSeriesId: string;
 
     if (seriesId) {
       const seriesRecord = await db.query.series.findFirst({
@@ -117,97 +111,106 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      resolvedSeriesId = seriesRecord.id;
       console.log(`[Text Import] Series verified: ${seriesRecord.name}`);
+    } else {
+      const [newSeries] = await db
+        .insert(series)
+        .values({ name: title.trim(), languageId: language.id })
+        .returning();
+      resolvedSeriesId = newSeries.id;
+      console.log(`[Text Import] Series auto-created: ${newSeries.id} ("${newSeries.name}")`);
     }
 
     // ========================================================================
-    // 4. Process Text Through NLP Pipeline
+    // 4. Split Content into Chunks + Process Each
     // ========================================================================
 
-    let result;
+    const chunks = splitIntoChunks(content.trim());
+    const isMultiChunk = chunks.length > 1;
 
-    try {
-      result = await processTextForImport(
-        title.trim(),
-        content.trim(),
-        language.id,
-        seriesId || null
-      );
+    console.log(`[Text Import] Split into ${chunks.length} chunk(s)`);
 
-      console.log(
-        `[Text Import] NLP processing complete: ${result.wordCount} words, ` +
-        `${result.uniqueWordCount} unique, ${result.knownPercentage}% known, ` +
-        `${result.processingTime}ms`
-      );
-    } catch (error) {
-      if (error instanceof TextProcessingError) {
-        console.error(`[Text Import] Processing failed at stage "${error.stage}":`, error.message);
-        return NextResponse.json<ApiErrorResponse>(
-          {
-            error: 'Text processing failed',
-            details: error.message,
-            stage: error.stage,
-          },
-          { status: 400 }
+    type ChunkResult = Awaited<ReturnType<typeof processTextForImport>>;
+    const results: ChunkResult[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkTitle = isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim();
+
+      try {
+        const result = await processTextForImport(
+          chunkTitle,
+          chunks[i],
+          language.id,
+          resolvedSeriesId,
+          i + 1
         );
-      }
 
-      throw error; // Re-throw unexpected errors
+        console.log(
+          `[Text Import] Chunk ${i + 1}/${chunks.length} done: ${result.wordCount} words, ` +
+          `${result.processingTime}ms`
+        );
+
+        results.push(result);
+      } catch (error) {
+        if (error instanceof TextProcessingError) {
+          console.error(`[Text Import] Chunk ${i + 1} failed at stage "${error.stage}":`, error.message);
+          return NextResponse.json<ApiErrorResponse>(
+            {
+              error: 'Text processing failed',
+              details: error.message,
+              stage: error.stage,
+            },
+            { status: 400 }
+          );
+        }
+        throw error;
+      }
     }
 
     // ========================================================================
-    // 5. Handle Tags (Create New + Link Existing)
+    // 5. Handle Tags (linked to first text page only)
     // ========================================================================
 
     let processedTags: Array<{ id: string; name: string }> = [];
+    const firstTextId = results[0].textId;
 
     if (tagNames && tagNames.length > 0) {
       try {
-        // Filter and validate tag names
         const validTagNames = tagNames
           .map((name) => name.trim())
           .filter((name) => name.length > 0 && name.length <= 30)
-          .slice(0, 10); // Max 10 tags
+          .slice(0, 10);
 
         if (validTagNames.length > 0) {
-          // Query existing tags
           const existingTags = await db.query.tags.findMany({
             where: inArray(tags.name, validTagNames),
           });
 
           const existingTagNames = new Set(existingTags.map((t) => t.name));
-
-          // Identify new tags that need to be created
           const newTagNames = validTagNames.filter((name) => !existingTagNames.has(name));
 
           let newTags: Array<{ id: string; name: string }> = [];
 
-          // Create new tags
           if (newTagNames.length > 0) {
             const newTagsData: NewTag[] = newTagNames.map((name) => ({ name }));
             newTags = await db.insert(tags).values(newTagsData).returning();
-
             console.log(`[Text Import] Created ${newTags.length} new tags:`, newTagNames);
           }
 
-          // Combine all tags (existing + new)
           const allTags = [...existingTags, ...newTags];
           processedTags = allTags.map((t) => ({ id: t.id, name: t.name }));
 
-          // Create textTags relationships
           const textTagsData: NewTextTag[] = allTags.map((tag) => ({
-            textId: result.textId,
+            textId: firstTextId,
             tagId: tag.id,
           }));
 
           await db.insert(textTags).values(textTagsData);
-
-          console.log(`[Text Import] Linked ${allTags.length} tags to text`);
+          console.log(`[Text Import] Linked ${allTags.length} tags to first text page`);
         }
       } catch (error) {
         console.error('[Text Import] Tag processing error:', error);
-        // Don't fail the entire import if tag processing fails
-        // Text was already created successfully
       }
     }
 
@@ -216,32 +219,28 @@ export async function POST(request: NextRequest) {
     // ========================================================================
 
     const totalTime = Date.now() - startTime;
-
-    console.log(`[Text Import] Import complete: ${result.textId} (${totalTime}ms total)`);
+    console.log(`[Text Import] Import complete: ${results.length} page(s) in ${totalTime}ms`);
 
     const response: ImportTextResponse = {
       success: true,
-      text: {
-        id: result.textId,
-        title: title.trim(),
-        wordCount: result.wordCount,
-        uniqueWordCount: result.uniqueWordCount,
-        knownPercentage: result.knownPercentage,
-      },
+      seriesId: resolvedSeriesId,
+      texts: results.map((r, i) => ({
+        id: r.textId,
+        title: isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim(),
+        wordCount: r.wordCount,
+        uniqueWordCount: r.uniqueWordCount,
+        knownPercentage: r.knownPercentage,
+      })),
       statistics: {
-        newWordsCreated: result.newWordsCreated,
-        sentencesCreated: result.sentencesCreated,
-        processingTime: result.processingTime,
+        newWordsCreated: results.reduce((sum, r) => sum + r.newWordsCreated, 0),
+        sentencesCreated: results.reduce((sum, r) => sum + r.sentencesCreated, 0),
+        processingTime: results.reduce((sum, r) => sum + r.processingTime, 0),
       },
       tags: processedTags,
     };
 
     return NextResponse.json<ImportTextResponse>(response, { status: 201 });
   } catch (error) {
-    // ========================================================================
-    // Unexpected Error Handler
-    // ========================================================================
-
     console.error('[Text Import] Unexpected error:', error);
 
     return NextResponse.json<ApiErrorResponse>(
@@ -258,35 +257,23 @@ export async function POST(request: NextRequest) {
 // GET /api/texts/import - API Documentation
 // ============================================================================
 
-/**
- * Returns API documentation for the text import endpoint
- */
 export async function GET() {
   return NextResponse.json({
     endpoint: '/api/texts/import',
     method: 'POST',
-    description: 'Import a text with complete NLP processing and database storage',
+    description: 'Import a text with complete NLP processing. Auto-creates a series if none provided. Auto-splits long texts into ordered pages.',
     requestBody: {
       title: 'string (required, 1-200 chars)',
       content: 'string (required, min 10 chars)',
-      languageId: 'string (required, FK to languages)',
-      seriesId: 'string (optional, FK to series)',
+      languageCode: 'string (required)',
+      seriesId: 'string (optional, FK to series — auto-created if omitted)',
       tags: 'string[] (optional, max 10 tags, each max 30 chars)',
     },
     responses: {
-      201: 'Text imported successfully',
+      201: 'Import successful — returns seriesId + texts array (N pages)',
       400: 'Invalid request or text processing failed',
       404: 'Language or series not found',
       500: 'Internal server error',
     },
-    processingSteps: [
-      'Tokenization',
-      'Lemmatization',
-      'Romanization (if needed)',
-      'Database record creation',
-      'Tag association',
-      'Statistics calculation',
-    ],
-    performance: 'Target: < 3 seconds for 2000-word texts',
   });
 }

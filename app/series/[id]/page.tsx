@@ -17,6 +17,7 @@ import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
+import type { ImportTextResponse } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
@@ -114,20 +115,32 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     return texts;
   }, [seriesData, sortBy]);
 
-  const handleTitleUpdate = (newTitle: string) => {
+  const handleTitleUpdate = async (newTitle: string) => {
     setSeriesName(newTitle);
-    console.log('Updated series title:', newTitle);
-    // TODO: Update via API
+    try {
+      const res = await fetch(`/api/series/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTitle }),
+      });
+      if (!res.ok) throw new Error('Failed to update series name');
+    } catch {
+      showToast('Failed to save series name');
+    }
   };
 
   const handleAddText = () => {
     setIsNewTextModalOpen(true);
   };
 
-  const handleCreateText = (textId: string) => {
-    showToast(`Text added successfully!`);
-    setIsNewTextModalOpen(false);
-    console.log('Created text id:', textId);
+  const handleCreateText = (result: ImportTextResponse) => {
+    const partCount = result.texts.length;
+    const totalWords = result.texts.reduce((s, t) => s + t.wordCount, 0);
+    const msg = partCount > 1
+      ? `Imported as ${partCount} parts · ${totalWords.toLocaleString()} words total`
+      : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString()} words`;
+    showToast(msg);
+    queryClient.invalidateQueries({ queryKey: ['series', id] });
   };
 
   const handleImport = () => {
@@ -136,37 +149,50 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
   const handleImportTexts = async (texts: ImportedTextData[]) => {
     try {
+      const results: ImportTextResponse[] = [];
       for (const text of texts) {
-        await importMutation.mutateAsync({
+        const result = await importMutation.mutateAsync({
           title: text.title,
           content: text.content,
           tags: text.tags ?? [],
           languageCode: selectedLanguage,
           seriesId: id,
         });
+        results.push(result);
       }
       await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
-      showToast(`${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully!`);
+      const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
+      const msg = totalParts > texts.length
+        ? `${texts.length} file${texts.length > 1 ? 's' : ''} imported as ${totalParts} parts`
+        : `${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully`;
+      showToast(msg);
       setIsImportModalOpen(false);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Import failed');
     }
   };
 
-  const handleConfirmDeleteSeries = () => {
-    if (deleteSeriesTarget) {
-      console.log('Deleted series:', deleteSeriesTarget.id);
-      // TODO: Implement actual delete via API
+  const handleConfirmDeleteSeries = async () => {
+    if (!deleteSeriesTarget) return;
+    try {
+      const res = await fetch(`/api/series/${deleteSeriesTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete series');
       setDeleteSeriesTarget(null);
       router.push('/series');
+    } catch {
+      showToast('Failed to delete series');
     }
   };
 
-  const handleConfirmDeleteText = () => {
-    if (deleteTextTarget) {
-      console.log('Deleted text:', deleteTextTarget.id);
-      // TODO: Implement actual delete via API
+  const handleConfirmDeleteText = async () => {
+    if (!deleteTextTarget) return;
+    try {
+      const res = await fetch(`/api/texts/${deleteTextTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete text');
       setDeleteTextTarget(null);
+      await queryClient.invalidateQueries({ queryKey: ['series', id] });
+    } catch {
+      showToast('Failed to delete text');
     }
   };
 

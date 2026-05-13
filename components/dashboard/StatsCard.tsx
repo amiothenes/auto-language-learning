@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { ProgressGraph } from '@/components/dashboard/ProgressGraph';
 import { Target, BookOpen, CheckCircle2, BookMarked } from 'lucide-react';
 import { Skeleton, SkeletonText, SkeletonCircle } from '@/components/ui/Skeleton';
+import { useStats } from '@/lib/hooks/useStats';
 
 interface StatsCardProps {
   isLoading?: boolean;
@@ -41,10 +42,18 @@ function StatsCardSkeleton() {
   );
 }
 
-export function StatsCard({ isLoading = false }: StatsCardProps) {
+export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) {
+  const { data: stats, isLoading: isLoadingStats } = useStats();
+  const isLoading = isLoadingProp || isLoadingStats;
+
   if (isLoading) {
     return <StatsCardSkeleton />;
   }
+
+  const fluency = stats?.overallKnownPercentage ?? 0;
+  const totalWords = stats?.vocabulary.total ?? 0;
+  const knownWords = (stats?.vocabulary.known ?? 0) + (stats?.vocabulary.wellKnown ?? 0);
+  const textsRead = stats?.texts.read ?? 0;
 
   return (
     <div className="space-y-6">
@@ -58,7 +67,7 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
             Your vocabulary growth over time
           </Muted>
         </div>
-        <ProgressGraph />
+        <ProgressGraph currentPercentage={fluency} />
       </Card>
 
       {/* Stats Cards - Refined & Elegant */}
@@ -74,7 +83,7 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
             </Muted>
             <div className="flex items-baseline gap-2">
               <Heading size="xl" weight="bold" as="h3">
-                66.7%
+                {fluency.toFixed(1)}%
               </Heading>
             </div>
           </div>
@@ -91,11 +100,8 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
             </Muted>
             <div className="flex items-baseline gap-2">
               <Heading size="xl" weight="bold" as="h3">
-                1,234
+                {totalWords.toLocaleString()}
               </Heading>
-              <Body size="xs" className="text-primary">
-                +47
-              </Body>
             </div>
           </div>
         </div>
@@ -111,11 +117,13 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
             </Muted>
             <div className="flex items-baseline gap-2">
               <Heading size="xl" weight="bold" as="h3">
-                823
+                {knownWords.toLocaleString()}
               </Heading>
-              <Body size="xs" className="text-primary">
-                66.7%
-              </Body>
+              {totalWords > 0 && (
+                <Body size="xs" className="text-primary">
+                  {fluency.toFixed(1)}%
+                </Body>
+              )}
             </div>
           </div>
         </div>
@@ -131,11 +139,8 @@ export function StatsCard({ isLoading = false }: StatsCardProps) {
             </Muted>
             <div className="flex items-baseline gap-2">
               <Heading size="xl" weight="bold" as="h3">
-                24
+                {textsRead}
               </Heading>
-              <Body size="xs" className="text-primary">
-                +3
-              </Body>
             </div>
           </div>
         </div>

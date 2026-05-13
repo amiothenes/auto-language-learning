@@ -12,9 +12,6 @@ import type { TextDetailResponse, ApiErrorResponse } from '@/lib/types/api';
 /**
  * Returns complete text data for the reader page.
  * Includes title, content, series info, word counts, tags, and known percentage.
- *
- * Note: viewCount is not tracked in the current schema — returns 0.
- * TODO: add view_count column to texts table to track this.
  */
 export async function GET(
   _request: NextRequest,
@@ -66,7 +63,7 @@ export async function GET(
       seriesName: text.series?.name ?? '',
       wordCount: text.wordCount,
       uniqueWordCount: text.uniqueWordCount,
-      viewCount: 0, // TODO: add view_count column to texts table
+      viewCount: text.viewCount,
       knownPercentage: text.knownPercentage,
       tags: text.tags.map((tt) => tt.tag.name),
       content: text.content,
@@ -81,6 +78,45 @@ export async function GET(
         error: 'Internal server error fetching text',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================================
+// DELETE /api/texts/[id] — Delete text (cascades to sentences + wordInstances)
+// ============================================================================
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const adminKey = request.headers.get('x-admin-key')
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { id } = await params;
+
+    // sentences and wordInstances have onDelete: 'cascade' — DB handles cleanup
+    const [deleted] = await db
+      .delete(texts)
+      .where(eq(texts.id, id))
+      .returning({ id: texts.id });
+
+    if (!deleted) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Text not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error('[Text Delete] Unexpected error:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      { error: 'Internal server error deleting text' },
       { status: 500 }
     );
   }

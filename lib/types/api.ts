@@ -35,23 +35,26 @@ export interface ImportTextRequest {
 export interface ImportTextResponse {
   success: true;
 
-  /** Created text metadata */
-  text: {
+  /** The series used (auto-created if no seriesId was in the request) */
+  seriesId: string;
+
+  /** All created text pages (1 for short texts, N for auto-split long texts) */
+  texts: Array<{
     id: string;
     title: string;
     wordCount: number;
     uniqueWordCount: number;
     knownPercentage: number;
-  };
+  }>;
 
-  /** Processing statistics */
+  /** Processing statistics aggregated across all chunks */
   statistics: {
     newWordsCreated: number;
     sentencesCreated: number;
     processingTime: number;
   };
 
-  /** Tags associated with the text */
+  /** Tags associated with the first text page */
   tags: Array<{ id: string; name: string }>;
 }
 
@@ -70,6 +73,16 @@ export interface ApiErrorResponse {
 }
 
 // ============================================================================
+// LWT Vocabulary Import API — POST /api/vocabulary/import-lwt
+// ============================================================================
+
+export interface ImportLwtResponse {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+// ============================================================================
 // Languages API
 // ============================================================================
 
@@ -82,6 +95,18 @@ export interface LanguageItem {
 
 export interface LanguagesListResponse {
   languages: LanguageItem[];
+}
+
+export interface CreateLanguageRequest {
+  name: string;
+  code: string;
+  isRTL?: boolean;
+  dictURI?: string;
+  googleTTSCode?: string;
+}
+
+export interface CreateLanguageResponse {
+  language: LanguageItem;
 }
 
 // ============================================================================
