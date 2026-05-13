@@ -26,6 +26,7 @@ export const texts = pgTable(
     wordCount: integer('word_count').default(0).notNull(),
     uniqueWordCount: integer('unique_word_count').default(0).notNull(),
     knownPercentage: real('known_percentage').default(0).notNull(),
+    viewCount: integer('view_count').default(0).notNull(),
 
     lastViewedAt: timestamp('last_viewed_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

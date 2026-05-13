@@ -22,6 +22,13 @@
       "when": 1769975163088,
       "tag": "0002_swift_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778689912365,
+      "tag": "0003_add_view_count",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,8 @@ import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
 import { WordTooltip } from '@/components/reader/WordTooltip';
 import { TextInfoSkeleton, ReaderContentSkeleton, WordDetailsPanelSkeleton } from '@/components/reader/ReaderSkeleton';
 import { VocabularyStatus } from '@/lib/types';
-import type { WordData } from '@/lib/types';
+import type { WordData, TextData } from '@/lib/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import Link from 'next/link';
@@ -36,6 +37,18 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const instancesQuery = useWordInstances(id);
   const updateWordStatus = useUpdateWordStatus(id);
   const adjacentQuery = useAdjacentTexts(id);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    fetch(`/api/texts/${id}/view`, { method: 'POST' })
+      .then((res) => res.json())
+      .then((data: { viewCount: number }) => {
+        queryClient.setQueryData(['text', id], (old: TextData | undefined) =>
+          old ? { ...old, viewCount: data.viewCount } : old
+        );
+      })
+      .catch(() => {});
+  }, [id, queryClient]);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);

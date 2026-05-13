@@ -12,9 +12,6 @@ import type { TextDetailResponse, ApiErrorResponse } from '@/lib/types/api';
 /**
  * Returns complete text data for the reader page.
  * Includes title, content, series info, word counts, tags, and known percentage.
- *
- * Note: viewCount is not tracked in the current schema — returns 0.
- * TODO: add view_count column to texts table to track this.
  */
 export async function GET(
   _request: NextRequest,
@@ -66,7 +63,7 @@ export async function GET(
       seriesName: text.series?.name ?? '',
       wordCount: text.wordCount,
       uniqueWordCount: text.uniqueWordCount,
-      viewCount: 0, // TODO: add view_count column to texts table
+      viewCount: text.viewCount,
       knownPercentage: text.knownPercentage,
       tags: text.tags.map((tt) => tt.tag.name),
       content: text.content,
