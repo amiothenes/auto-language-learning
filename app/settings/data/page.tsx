@@ -19,34 +19,25 @@ export default function DataSettingsPage() {
   const [lwtStatus, setLwtStatus] = useState<string | null>(null);
   const [lwtLoading, setLwtLoading] = useState(false);
 
-  const handleExportCSV = () => {
-    console.log('Exporting as CSV...');
-    // TODO: Implement actual CSV export
-  };
-
-  const handleExportJSON = () => {
-    console.log('Exporting as JSON...');
-    // TODO: Implement actual JSON export
-  };
-
-  const handleExportZIP = () => {
-    console.log('Exporting as ZIP...');
-    // TODO: Implement actual ZIP export with all data
-  };
-
-  const handleDeleteAllData = () => {
-    console.log('Deleting all data...');
-    // Clear localStorage
+  const handleDeleteAllData = async () => {
     try {
+      const res = await fetch('/api/data', {
+        method: 'DELETE',
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Failed to delete data:', err);
+        alert('Failed to delete data. Check the console for details.');
+        return;
+      }
       localStorage.clear();
-      console.log('All data deleted successfully');
-      // Reset delete input and close dialog
       setDeleteInput('');
       setShowDeleteConfirm(false);
-      // Refresh the page to reflect changes
       window.location.reload();
     } catch (error) {
       console.error('Failed to delete data:', error);
+      alert('Failed to delete data. Check the console for details.');
     }
   };
 
@@ -84,38 +75,44 @@ export default function DataSettingsPage() {
         description="Download your vocabulary and progress data"
       >
         <div className="space-y-3">
-          <Button
-            variant="secondary"
-            size="md"
-            leftIcon={<Download size={18} strokeWidth={2} />}
-            onClick={handleExportCSV}
-            className="w-full justify-start"
-          >
-            <span className="flex-1 text-left">Export as CSV</span>
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="md"
-            leftIcon={<Download size={18} strokeWidth={2} />}
-            onClick={handleExportJSON}
-            className="w-full justify-start"
-          >
-            <span className="flex-1 text-left">Export as JSON</span>
-          </Button>
+          <div>
+            <Button
+              variant="secondary"
+              size="md"
+              disabled
+              leftIcon={<Download size={18} strokeWidth={2} />}
+              className="w-full justify-start"
+            >
+              <span className="flex-1 text-left">Export as CSV</span>
+            </Button>
+            <p className="font-sans text-ui-xs text-muted mt-1 ml-1">Coming soon</p>
+          </div>
 
           <div>
             <Button
               variant="secondary"
               size="md"
+              disabled
               leftIcon={<Download size={18} strokeWidth={2} />}
-              onClick={handleExportZIP}
+              className="w-full justify-start"
+            >
+              <span className="flex-1 text-left">Export as JSON</span>
+            </Button>
+            <p className="font-sans text-ui-xs text-muted mt-1 ml-1">Coming soon</p>
+          </div>
+
+          <div>
+            <Button
+              variant="secondary"
+              size="md"
+              disabled
+              leftIcon={<Download size={18} strokeWidth={2} />}
               className="w-full justify-start"
             >
               <span className="flex-1 text-left">Export as ZIP</span>
             </Button>
-            <p className="font-sans text-ui-xs text-muted mt-2 ml-1">
-              Complete backup of all data including vocabulary, progress, and settings
+            <p className="font-sans text-ui-xs text-muted mt-1 ml-1">
+              Coming soon — complete backup including vocabulary, progress, and settings
             </p>
           </div>
         </div>
@@ -162,7 +159,7 @@ export default function DataSettingsPage() {
       >
         <div className="space-y-4">
           <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded">
-            <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
+            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
             <div className="flex-1">
               <h3 className="font-sans text-ui-base font-semibold text-red-900 mb-1">
                 Delete All Data

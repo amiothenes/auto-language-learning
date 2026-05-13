@@ -36,10 +36,9 @@ export default function DisplaySettingsPage() {
     { value: 'large', label: 'A+', description: '20px - Comfortable reading' },
   ];
 
-  // Color scheme options
+  // Color scheme options — dark mode is not yet implemented
   const colorSchemeOptions: RadioOption[] = [
     { value: 'light', label: 'Light', description: 'Academic-Naturalist palette' },
-    { value: 'dark', label: 'Dark', description: 'Coming soon' },
   ];
 
   // Dashboard layout options
@@ -113,6 +112,12 @@ export default function DisplaySettingsPage() {
             name="colorScheme"
           />
         </SettingRow>
+        <div className="opacity-50 pointer-events-none select-none flex items-center justify-between py-1 px-1">
+          <div>
+            <p className="font-sans text-ui-sm font-medium text-ink">Dark mode</p>
+            <p className="font-sans text-ui-xs text-muted">Coming soon</p>
+          </div>
+        </div>
       </SettingSection>
 
       {/* Dashboard Settings Section (UI Mockup) */}
@@ -120,36 +125,45 @@ export default function DisplaySettingsPage() {
         title="Dashboard Settings"
         description="Customize your dashboard experience"
       >
-        <SettingRow label="Layout" description="Choose how content is displayed">
-          <RadioGroup
-            options={layoutOptions}
-            value={dashboardLayout}
-            onChange={(value) => setDashboardLayout(value as 'grid' | 'list')}
-            name="dashboardLayout"
-          />
-        </SettingRow>
+        <div className="opacity-50 pointer-events-none select-none">
+          <SettingRow label="Layout" description="Choose how content is displayed">
+            <RadioGroup
+              options={layoutOptions}
+              value={dashboardLayout}
+              onChange={(value) => setDashboardLayout(value as 'grid' | 'list')}
+              name="dashboardLayout"
+            />
+          </SettingRow>
+          <p className="font-sans text-ui-xs text-muted mt-1 ml-0.5">Coming soon</p>
+        </div>
 
-        <SettingRow
-          label="Texts Count"
-          description="Number of texts to display per page"
-        >
-          <Select
-            options={textsCountOptions}
-            value={textsCount}
-            onChange={setTextsCount}
-          />
-        </SettingRow>
+        <div className="opacity-50 pointer-events-none select-none">
+          <SettingRow
+            label="Texts Count"
+            description="Number of texts to display per page"
+          >
+            <Select
+              options={textsCountOptions}
+              value={textsCount}
+              onChange={setTextsCount}
+            />
+          </SettingRow>
+          <p className="font-sans text-ui-xs text-muted mt-1 ml-0.5">Coming soon</p>
+        </div>
 
-        <SettingRow
-          label="Graph Range"
-          description="Time range for progress graphs"
-        >
-          <Select
-            options={graphRangeOptions}
-            value={graphRange}
-            onChange={setGraphRange}
-          />
-        </SettingRow>
+        <div className="opacity-50 pointer-events-none select-none">
+          <SettingRow
+            label="Graph Range"
+            description="Time range for progress graphs"
+          >
+            <Select
+              options={graphRangeOptions}
+              value={graphRange}
+              onChange={setGraphRange}
+            />
+          </SettingRow>
+          <p className="font-sans text-ui-xs text-muted mt-1 ml-0.5">Coming soon</p>
+        </div>
       </SettingSection>
 
       {/* Auto-save Notice */}

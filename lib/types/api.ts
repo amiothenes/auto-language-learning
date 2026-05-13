@@ -97,6 +97,18 @@ export interface LanguagesListResponse {
   languages: LanguageItem[];
 }
 
+export interface CreateLanguageRequest {
+  name: string;
+  code: string;
+  isRTL?: boolean;
+  dictURI?: string;
+  googleTTSCode?: string;
+}
+
+export interface CreateLanguageResponse {
+  language: LanguageItem;
+}
+
 // ============================================================================
 // Texts List API  — GET /api/texts
 // ============================================================================
