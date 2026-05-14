@@ -218,8 +218,11 @@ export async function processTextForImport(
       );
     }
 
-    // Filter to word tokens only (exclude punctuation)
-    const wordTokens = tokens.filter((t) => t.isWord);
+    // Filter to word tokens only, and require at least one letter (guards against
+    // numeric tokens from hyphenated strings like "1990-х" if the regex ever matches them)
+    const wordTokens = tokens
+      .filter((t) => t.isWord)
+      .filter((t) => /[\p{L}]/u.test(t.surfaceForm));
 
     if (wordTokens.length === 0) {
       throw new TextProcessingError(

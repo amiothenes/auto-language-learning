@@ -132,9 +132,8 @@ function tokenizeSentence(
   const processedSentence =
     languageCode === 'ar' ? stripDiacritics(normalizedSentence) : normalizedSentence;
 
-  // Word boundary regex (Unicode-aware)
-  // Matches sequences of letters and numbers, preserving hyphens within words
-  const wordPattern = /[\p{L}\p{N}]+(?:[-'][\p{L}\p{N}]+)*/gu;
+  // Word boundary regex (Unicode-aware, letters only — numbers are not vocabulary items)
+  const wordPattern = /[\p{L}]+(?:[-'][\p{L}]+)*/gu;
 
   let match: RegExpExecArray | null;
   let tokenIndex = 0;
@@ -270,8 +269,8 @@ export function quickTokenize(
     return [];
   }
 
-  // Unicode-aware word matching
-  const words = content.match(/[\p{L}\p{N}]+(?:[-'][\p{L}\p{N}]+)*/gu) || [];
+  // Unicode-aware word matching (letters only)
+  const words = content.match(/[\p{L}]+(?:[-'][\p{L}]+)*/gu) || [];
 
   return words;
 }

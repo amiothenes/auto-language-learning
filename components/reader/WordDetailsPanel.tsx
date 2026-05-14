@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { StatusDots } from './StatusDots';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 import { WordData, VocabularyStatus } from './Word';
@@ -40,8 +41,7 @@ export function WordDetailsPanel({
    */
   const handleStatusChange = (newStatus: VocabularyStatus) => {
     if (!wordData) return;
-    console.log(`Status changed: ${wordData.surface} -> ${newStatus}`);
-    onStatusChange?.(wordData.id, newStatus);
+    onStatusChange?.(wordData.wordId, newStatus);
   };
 
   /**
@@ -208,7 +208,10 @@ export function WordDetailsPanel({
 
           {/* Status Selector */}
           <div className="pt-2 border-t border-border pb-4">
-            <Muted className="text-ui-xs mb-2.5">Learning Status</Muted>
+            <div className="flex items-center justify-between mb-2.5">
+              <Muted className="text-ui-xs">Learning Status</Muted>
+              <StatusDots status={wordData.status} />
+            </div>
             <div className="space-y-2">
               {Object.values(VocabularyStatus).map((status) => (
                 <button

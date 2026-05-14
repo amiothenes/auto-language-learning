@@ -272,7 +272,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     setIsRightPanelOpen(true);
   };
 
-  const handleStatusChange = (_instanceId: string, newStatus: VocabularyStatus) => {
+  const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
     if (!selectedWord) return;
 
     const oldStatus = selectedWord.status;
@@ -315,7 +315,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
     // Persist to DB — rollback optimistic update on error
     updateWordStatus.mutate(
-      { wordId: selectedWord.wordId, status: newStatus },
+      { wordId, status: newStatus },
       {
         onError: () => {
           setVocabularyStats(prevStats);

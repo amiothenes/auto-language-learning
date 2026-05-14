@@ -3,6 +3,7 @@
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/ui/Button';
 import { WordData, VocabularyStatus } from './Word';
+import { StatusDots } from './StatusDots';
 import { X, ExternalLink, ArrowRight } from 'lucide-react';
 
 // ============================================================================
@@ -36,7 +37,7 @@ export function WordTooltip({
   onViewDetails,
   isExiting = false,
 }: WordTooltipProps) {
-  const { label, dotColor } = STATUS_CONFIG[wordData.status];
+  const { label } = STATUS_CONFIG[wordData.status];
   const cleanSurface = wordData.surface.replace(/[.,!?;:«»„"]/g, '');
 
   const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
@@ -53,10 +54,10 @@ export function WordTooltip({
         className="w-80 p-4"
         aria-label={`Word details for ${wordData.lemma}`}
       >
-        {/* Header: status label + close */}
+        {/* Header: status progression dots + label + close */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+            <StatusDots status={wordData.status} />
             <span className="font-sans text-ui-xs text-muted font-medium uppercase tracking-wide">
               {label}
             </span>
@@ -97,7 +98,7 @@ export function WordTooltip({
         <div className="flex items-center gap-2 mb-3">
           <QuickActions
             status={wordData.status}
-            onStatusChange={(newStatus) => onStatusChange(wordData.id, newStatus)}
+            onStatusChange={(newStatus) => onStatusChange(wordData.wordId, newStatus)}
           />
         </div>
 

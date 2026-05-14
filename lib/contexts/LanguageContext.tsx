@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { Language, LanguageContextType } from '@/lib/types';
 
 // ============================================================================
@@ -13,6 +13,9 @@ export const languages: Language[] = [
   { code: 'ru', name: 'Russian' },
 ];
 
+const STORAGE_KEY = 'verbista_selected_language';
+const validCodes = new Set(languages.map((l) => l.code));
+
 // ============================================================================
 // Context
 // ============================================================================
@@ -20,8 +23,16 @@ export const languages: Language[] = [
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [selectedLanguage, setSelectedLanguage] = useState('es');
+  const [selectedLanguage, setSelectedLanguageRaw] = useState<string>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored && validCodes.has(stored) ? stored : 'es';
+  });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const setSelectedLanguage = useCallback((code: string) => {
+    localStorage.setItem(STORAGE_KEY, code);
+    setSelectedLanguageRaw(code);
+  }, []);
 
   const currentLanguage = languages.find((lang) => lang.code === selectedLanguage);
 

@@ -30,26 +30,9 @@ export function ReaderContent({
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
 
-  // Deterministic hash fallback — used for tokens with no DB match (punctuation, etc.)
-  const hashString = (str: string): number => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash);
-  };
-
-  const getDeterministicStatus = (word: string): VocabularyStatus => {
-    const hash = hashString(word);
-    const normalized = (hash % 100) / 100;
-    if (normalized < 0.25) return VocabularyStatus.NEWLY_SEEN;
-    if (normalized < 0.55) return VocabularyStatus.FAMILIAR;
-    if (normalized < 0.80) return VocabularyStatus.KNOWN;
-    if (normalized < 0.95) return VocabularyStatus.WELL_KNOWN;
-    return VocabularyStatus.IGNORE;
-  };
+  // Fallback for tokens with no DB match (standalone punctuation, etc.) — no highlight
+  const getDeterministicStatus = (_word: string): VocabularyStatus =>
+    VocabularyStatus.WELL_KNOWN;
 
   const formatInflection = (inflectionData: Record<string, unknown>): string => {
     const parts: string[] = [];
@@ -93,7 +76,17 @@ export function ReaderContent({
       const token = match[0];
       const tokenPosition = paraStart + match.index;
       const cleanToken = token.replace(/[.,!?;:«»„"]/g, '');
-      const instance = positionMap.get(tokenPosition);
+
+      // Primary lookup by position. If it misses, the NLP tokenizer may have stored the
+      // word starting inside leading punctuation (e.g. «слово» → NLP position = index of с,
+      // not index of «). Skip leading non-letter chars and retry.
+      let instance = positionMap.get(tokenPosition);
+      if (!instance) {
+        const leadingNonWord = token.match(/^[^\p{L}]+/u);
+        if (leadingNonWord) {
+          instance = positionMap.get(tokenPosition + leadingNonWord[0].length);
+        }
+      }
 
       const wordData: WordData = {
         id: instance?.instanceId ?? `${paraIndex}-${words.length}`,

@@ -8,6 +8,7 @@
 import type { LanguageHandler } from '../types';
 import { englishHandler } from './en';
 import { spanishHandler } from './es';
+import { russianHandler } from './ru';
 import { fallbackHandler } from './fallback';
 
 /**
@@ -19,10 +20,10 @@ import { fallbackHandler } from './fallback';
 export const languageHandlers: Record<string, LanguageHandler> = {
   'en': englishHandler,
   'es': spanishHandler,
+  'ru': russianHandler,
   // Additional languages can be added here:
   // 'fr': frenchHandler,
   // 'de': germanHandler,
-  // 'ru': russianHandler,
   // 'zh': chineseHandler,
   // 'ja': japaneseHandler,
   // 'ar': arabicHandler,
