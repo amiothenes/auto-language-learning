@@ -1,15 +1,21 @@
 'use client';
 
-import { Word, WordData, VocabularyStatus } from './Word';
+import { Word, WordData } from './Word';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { cn } from '@/lib/utils';
 import type { WordInstanceItem } from '@/lib/types/api';
 
 // ============================================================================
 // ReaderContent Component
-// Parses text into words and renders interactive Word components.
-// Word instances come from the DB (pre-computed at import time).
+// Renders text by walking pre-computed wordInstances as position-ordered
+// boundaries. Gap characters between word positions are emitted as plain text.
+// No second tokenizer — positions come exclusively from the NLP pipeline that
+// ran at import time.
 // ============================================================================
+
+type RenderToken =
+  | { type: 'text'; content: string }
+  | { type: 'word'; data: WordData; key: string };
 
 interface ReaderContentProps {
   content: string;
@@ -30,10 +36,6 @@ export function ReaderContent({
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
 
-  // Fallback for tokens with no DB match (standalone punctuation, etc.) — no highlight
-  const getDeterministicStatus = (_word: string): VocabularyStatus =>
-    VocabularyStatus.WELL_KNOWN;
-
   const formatInflection = (inflectionData: Record<string, unknown>): string => {
     const parts: string[] = [];
     if (inflectionData.tense) parts.push(String(inflectionData.tense));
@@ -46,10 +48,6 @@ export function ReaderContent({
     if (inflectionData.aspect) parts.push(String(inflectionData.aspect));
     return parts.length > 0 ? parts.join(', ') : 'base form';
   };
-
-  // Build position → instance map for O(1) lookup when tokenizing
-  const positionMap = new Map<number, WordInstanceItem>();
-  wordInstances?.forEach((inst) => positionMap.set(inst.position, inst));
 
   // Compute paragraph start positions in the full content string
   const rawParagraphs = content.split('\n\n');
@@ -66,47 +64,62 @@ export function ReaderContent({
 
   const paragraphs = rawParagraphs.filter((p) => p.trim());
 
+  // Gap-filling: walk wordInstances (already sorted by position ASC from the API)
+  // as an ordered oracle. Emit gap text for everything between word boundaries.
   const parsedContent = paragraphs.map((paragraph, paraIndex) => {
     const paraStart = paragraphStarts[paraIndex];
-    const tokenRegex = /\S+/g;
-    let match;
-    const words: WordData[] = [];
+    const paraEnd = paraStart + paragraph.length;
+    const tokens: RenderToken[] = [];
+    let cursor = paraStart;
 
-    while ((match = tokenRegex.exec(paragraph)) !== null) {
-      const token = match[0];
-      const tokenPosition = paraStart + match.index;
-      const cleanToken = token.replace(/[.,!?;:«»„"]/g, '');
+    const paraInstances =
+      wordInstances?.filter(
+        (inst) => inst.position >= paraStart && inst.position < paraEnd
+      ) ?? [];
 
-      // Primary lookup by position. If it misses, the NLP tokenizer may have stored the
-      // word starting inside leading punctuation (e.g. «слово» → NLP position = index of с,
-      // not index of «). Skip leading non-letter chars and retry.
-      let instance = positionMap.get(tokenPosition);
-      if (!instance) {
-        const leadingNonWord = token.match(/^[^\p{L}]+/u);
-        if (leadingNonWord) {
-          instance = positionMap.get(tokenPosition + leadingNonWord[0].length);
-        }
+    for (const inst of paraInstances) {
+      // Defensive: existing DB records may have positions pointing one char before the
+      // word (into inter-sentence whitespace) due to a tokenizer trim bug now fixed.
+      // Advance past any non-letter characters to find the actual word start.
+      let wordStart = inst.position;
+      while (
+        wordStart - paraStart < paragraph.length &&
+        !/\p{L}/u.test(paragraph[wordStart - paraStart])
+      ) {
+        wordStart++;
+      }
+
+      if (wordStart > cursor) {
+        tokens.push({
+          type: 'text',
+          content: paragraph.slice(cursor - paraStart, wordStart - paraStart),
+        });
       }
 
       const wordData: WordData = {
-        id: instance?.instanceId ?? `${paraIndex}-${words.length}`,
-        wordId: instance?.wordId ?? '',
-        surface: token,
-        lemma: instance?.lemma ?? cleanToken.toLowerCase(),
-        pos: instance?.pos ?? 'UNKNOWN',
-        inflection: instance?.inflectionData
-          ? formatInflection(instance.inflectionData)
+        id: inst.instanceId,
+        wordId: inst.wordId,
+        surface: inst.surface,
+        lemma: inst.lemma,
+        pos: inst.pos ?? 'UNKNOWN',
+        inflection: inst.inflectionData
+          ? formatInflection(inst.inflectionData as Record<string, unknown>)
           : 'base form',
-        translation: instance?.translation ?? '—',
-        dictionaryFrequency: instance?.dictionaryFrequency ?? 0,
-        userFrequency: instance?.userFrequency ?? 1,
-        status: instance?.status ?? getDeterministicStatus(cleanToken),
+        translation: inst.translation ?? '—',
+        dictionaryFrequency: inst.dictionaryFrequency,
+        userFrequency: inst.userFrequency,
+        status: inst.status,
       };
 
-      words.push(wordData);
+      tokens.push({ type: 'word', data: wordData, key: inst.instanceId });
+      cursor = wordStart + inst.surface.length;
     }
 
-    return { id: `paragraph-${paraIndex}`, words };
+    if (cursor - paraStart < paragraph.length) {
+      tokens.push({ type: 'text', content: paragraph.slice(cursor - paraStart) });
+    }
+
+    return { id: `paragraph-${paraIndex}`, tokens };
   });
 
   const fontSizeClass = {
@@ -117,7 +130,7 @@ export function ReaderContent({
 
   if (isLoading) {
     return (
-      <article className={cn('w-full max-w-[45rem] space-y-6 transition-all duration-200', fontSizeClass)}>
+      <article className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-3">
             <div className="animate-shimmer h-5 rounded w-full" />
@@ -135,7 +148,7 @@ export function ReaderContent({
 
   if (loadError) {
     return (
-      <article className={cn('w-full max-w-[45rem] space-y-6 transition-all duration-200', fontSizeClass)}>
+      <article className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
         <div className="p-4 bg-paper rounded-lg border border-border">
           <p className="font-sans text-ui-sm text-ink font-medium mb-2">Failed to load word data</p>
           <p className="font-sans text-ui-xs text-muted">{loadError}</p>
@@ -148,26 +161,26 @@ export function ReaderContent({
   }
 
   return (
-    <article className={cn('w-full max-w-[45rem] space-y-6 transition-all duration-200', fontSizeClass)}>
-      {parsedContent.map((paragraph, paragraphIndex) => (
+    <article className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
+      {parsedContent.map((paragraph) => (
         <p
           key={paragraph.id}
           className="font-serif text-ink leading-relaxed"
         >
-          {paragraph.words.map((wordData, index) => (
-            <span key={wordData.id}>
+          {paragraph.tokens.map((token, i) =>
+            token.type === 'text' ? (
+              <span key={`t-${i}`}>{token.content}</span>
+            ) : (
               <Word
-                data={wordData}
+                key={token.key}
+                data={token.data}
                 onClick={onWordClick}
-                isSelected={selectedWordId === wordData.id}
+                isSelected={selectedWordId === token.data.id}
                 highlightIntensity={settings.highlightIntensity}
                 showWellKnownWords={settings.showWellKnownWords}
               />
-              {index < paragraph.words.length - 1 &&
-                !paragraph.words[index + 1].surface.match(/^[.,!?;:«»„"]/) &&
-                ' '}
-            </span>
-          ))}
+            )
+          )}
         </p>
       ))}
     </article>

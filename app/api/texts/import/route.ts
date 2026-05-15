@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     const results: ChunkResult[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunkTitle = isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim();
+      const chunkTitle = isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim(); //TODO change titles to what i need (later)
 
       try {
         const result = await processTextForImport(

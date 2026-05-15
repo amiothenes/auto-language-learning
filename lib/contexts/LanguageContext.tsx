@@ -24,8 +24,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [selectedLanguage, setSelectedLanguageRaw] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'ru';
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored && validCodes.has(stored) ? stored : 'es';
+    return stored && validCodes.has(stored) ? stored : 'ru';
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 

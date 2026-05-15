@@ -70,12 +70,14 @@ export function splitIntoSentences(
   // Find all sentence boundaries
   while ((match = regex.exec(text)) !== null) {
     const sentenceEnd = match.index + match[0].length;
-    const sentenceText = text.slice(lastIndex, sentenceEnd).trim();
+    const rawSlice = text.slice(lastIndex, sentenceEnd);
+    const leadingWhitespace = rawSlice.length - rawSlice.trimStart().length;
+    const sentenceText = rawSlice.trim();
 
     if (sentenceText.length > 0) {
       sentences.push({
         text: sentenceText,
-        startPosition: lastIndex,
+        startPosition: lastIndex + leadingWhitespace,
       });
     }
 
@@ -83,11 +85,13 @@ export function splitIntoSentences(
   }
 
   // Add remaining text as final sentence
-  const remainingText = text.slice(lastIndex).trim();
+  const remainingRaw = text.slice(lastIndex);
+  const remainingLeading = remainingRaw.length - remainingRaw.trimStart().length;
+  const remainingText = remainingRaw.trim();
   if (remainingText.length > 0) {
     sentences.push({
       text: remainingText,
-      startPosition: lastIndex,
+      startPosition: lastIndex + remainingLeading,
     });
   }
 
