@@ -22,14 +22,9 @@ import {
   type NewWordInstance,
 } from '@/lib/db/schema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
-import {
-  tokenizeText,
-  lemmatizeBatch,
-  romanizeBatch,
-  requiresRomanization,
-  type Token,
-  type LemmatizeResult,
-} from '@/lib/nlp';
+import { romanizeBatch, requiresRomanization } from '@/lib/nlp';
+import { processWithSpacy } from '@/lib/nlp/spacyClient';
+import type { LemmatizeResult } from '@/lib/nlp';
 
 // ============================================================================
 // Type Definitions
@@ -199,30 +194,29 @@ export async function processTextForImport(
 
     const needsRomanization = requiresRomanization(language.code);
 
-    // Step 2: Tokenization (5-15%)
-    reportProgress(progressCallback, 'tokenizing', 5, 'Tokenizing text');
+    // Steps 2+3: NLP via spaCy microservice — tokenization + lemmatization in one call (5-50%)
+    reportProgress(progressCallback, 'tokenizing', 5, 'Processing text with NLP service');
 
-    let tokens: Token[];
+    let spacyResult: Awaited<ReturnType<typeof processWithSpacy>>;
     try {
-      tokens = await tokenizeText(content, {
-        languageCode: language.code,
-        sentenceSplitRegex: language.sentenceSplitRegex || undefined,
-        characterSubstitutions: (language.characterSubstitutions as Record<string, string>) || undefined,
-        isRTL: language.isRTL,
-      });
+      spacyResult = await processWithSpacy(content, language.code);
     } catch (error) {
       throw new TextProcessingError(
-        `Tokenization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `NLP service failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'tokenizing',
         error instanceof Error ? error : undefined
       );
     }
 
-    // Filter to word tokens only, and require at least one letter (guards against
-    // numeric tokens from hyphenated strings like "1990-х" if the regex ever matches them)
-    const wordTokens = tokens
-      .filter((t) => t.isWord)
-      .filter((t) => /[\p{L}]/u.test(t.surfaceForm));
+    // Normalize spaCy tokens to the minimal shape used downstream
+    const wordTokens = spacyResult.tokens
+      .filter((t) => t.is_word)
+      .map((t) => ({
+        surfaceForm: t.surface,
+        cleanForm: t.surface.toLowerCase(),
+        position: t.position,
+        sentenceIndex: t.sentence_index,
+      }));
 
     if (wordTokens.length === 0) {
       throw new TextProcessingError(
@@ -231,50 +225,25 @@ export async function processTextForImport(
       );
     }
 
-    // Extract unique clean forms for lemmatization
+    // Build lemmaResults Map: cleanForm → LemmatizeResult (last occurrence wins for homographs)
+    const lemmaResults = new Map<string, LemmatizeResult>();
+    for (const token of spacyResult.tokens.filter((t) => t.is_word)) {
+      lemmaResults.set(token.surface.toLowerCase(), {
+        lemma: token.lemma,
+        pos: token.pos,
+        inflectionData: token.morph,
+        confidence: 0.95,
+      });
+    }
+
     const uniqueCleanForms = [...new Set(wordTokens.map((t) => t.cleanForm))];
 
     reportProgress(
       progressCallback,
-      'tokenizing',
-      15,
-      `Tokenized ${wordTokens.length} words (${uniqueCleanForms.length} unique)`
+      'lemmatizing',
+      50,
+      `Processed ${wordTokens.length} words (${uniqueCleanForms.length} unique) via NLP service`
     );
-
-    // Step 3: Batch Lemmatization (15-50%)
-    const LEMMA_BATCH_SIZE = 50;
-    const lemmaResults = new Map<string, LemmatizeResult>();
-
-    try {
-      for (let i = 0; i < uniqueCleanForms.length; i += LEMMA_BATCH_SIZE) {
-        const batch = uniqueCleanForms.slice(i, i + LEMMA_BATCH_SIZE);
-
-        const response = await lemmatizeBatch({
-          words: batch,
-          languageCode: language.code,
-        });
-
-        // Map cleanForm → LemmatizeResult
-        batch.forEach((word, idx) => {
-          lemmaResults.set(word, response.results[idx]);
-        });
-
-        // Report progress per batch
-        const batchProgress = 15 + Math.floor(35 * ((i + batch.length) / uniqueCleanForms.length));
-        reportProgress(
-          progressCallback,
-          'lemmatizing',
-          batchProgress,
-          `Lemmatized ${i + batch.length} / ${uniqueCleanForms.length} unique words`
-        );
-      }
-    } catch (error) {
-      throw new TextProcessingError(
-        `Lemmatization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'lemmatizing',
-        error instanceof Error ? error : undefined
-      );
-    }
 
     // Step 4: Batch Romanization (50-60%)
     const romanizations = new Map<string, string | null>();
@@ -310,40 +279,13 @@ export async function processTextForImport(
       );
     }
 
-    // Step 5: Extract Sentences from Tokens (60-65%)
+    // Step 5: Sentences from spaCy response (60-65%)
     reportProgress(progressCallback, 'romanizing', 63, 'Extracting sentences');
 
-    // Group tokens by sentenceIndex
-    const sentenceMap = new Map<number, Token[]>();
-    wordTokens.forEach((token) => {
-      if (!sentenceMap.has(token.sentenceIndex)) {
-        sentenceMap.set(token.sentenceIndex, []);
-      }
-      sentenceMap.get(token.sentenceIndex)!.push(token);
-    });
-
-    // Extract sentence text from original content using token positions
-    const sentenceData: Array<{
-      content: string;
-      order: number;
-      tokens: Token[];
-    }> = [];
-
-    for (const [index, sentenceTokens] of sentenceMap) {
-      const firstToken = sentenceTokens[0];
-      const lastToken = sentenceTokens[sentenceTokens.length - 1];
-      const sentenceStart = firstToken.position;
-      const sentenceEnd = lastToken.position + lastToken.surfaceForm.length;
-
-      sentenceData.push({
-        content: content.slice(sentenceStart, sentenceEnd).trim(),
-        order: index,
-        tokens: sentenceTokens,
-      });
-    }
-
-    // Sort by order
-    sentenceData.sort((a, b) => a.order - b.order);
+    const sentenceData: Array<{ content: string; order: number }> =
+      spacyResult.sentences
+        .map((s) => ({ content: s.text, order: s.index }))
+        .sort((a, b) => a.order - b.order);
 
     reportProgress(
       progressCallback,
@@ -507,6 +449,7 @@ export async function processTextForImport(
             sentenceId: sentenceId || null,
             surfaceForm: token.surfaceForm,
             position: token.position,
+            pos: lemmaResult.pos !== 'X' ? lemmaResult.pos : null,
             inflectionData: lemmaResult.inflectionData as Record<string, unknown>,
           };
         });

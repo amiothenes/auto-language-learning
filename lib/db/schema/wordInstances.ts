@@ -17,6 +17,7 @@ export const wordInstances = pgTable(
 
     surfaceForm: text('surface_form').notNull(),
     position: integer('position').notNull(),
+    pos: text('pos'),
     inflectionData: json('inflection_data').$type<Record<string, unknown>>(),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -26,6 +27,7 @@ export const wordInstances = pgTable(
     wordIdx: index('word_instances_word_id_idx').on(table.wordId),
     sentenceIdx: index('word_instances_sentence_id_idx').on(table.sentenceId),
     positionIdx: index('word_instances_position_idx').on(table.position),
+    posIdx: index('word_instances_pos_idx').on(table.pos),
   })
 );
 

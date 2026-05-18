@@ -1,46 +1,13 @@
 /**
  * NLP Module - Public API
  *
- * Multilingual lemmatization, tokenization, romanization, and POS tagging
- * using Transformers.js with Universal Dependencies patterns.
- *
- * **Main Functions:**
- * - `lemmatizeWord()` - Lemmatize a single word
- * - `lemmatizeBatch()` - Lemmatize multiple words efficiently
- * - `tokenizeText()` - Split text into tokens with position metadata
- * - `romanize()` - Romanize non-Latin scripts (Chinese, Japanese, Arabic, Russian, Korean)
- *
- * **Performance:**
- * - Lemmatization: < 100ms per word (with cache)
- * - Tokenization: < 500ms for 5000-word text
- * - Romanization: < 50ms per word (with cache)
- * - Cache hit rate: 70%+ on repeated text
- *
- * @example
- * import { lemmatizeWord, tokenizeText, romanize } from '@/lib/nlp';
- *
- * // Lemmatize a single word
- * const result = await lemmatizeWord('running', 'en');
- * console.log(result.lemma); // 'run'
- *
- * // Tokenize text
- * const tokens = await tokenizeText('Hello world!', { languageCode: 'en' });
- * console.log(tokens.length); // 2
- *
- * // Romanize non-Latin text
- * const romanized = await romanize('你好', 'zh');
- * console.log(romanized); // 'nǐ hǎo'
+ * Uses spaCy via FastAPI microservice for tokenization, lemmatization, and POS tagging.
+ * Romanization handled locally via language-specific libraries.
  */
 
 // ============================================================================
-// Core Functions
+// Tokenization (kept for quick stats/preview — not used in import pipeline)
 // ============================================================================
-
-export {
-  lemmatizeWord,
-  lemmatizeBatch,
-  lemmatizeWords,
-} from './lemmatizer';
 
 export {
   tokenizeText,
@@ -48,6 +15,10 @@ export {
   getWordCount,
   getUniqueWordCount,
 } from './tokenizer';
+
+// ============================================================================
+// Romanization
+// ============================================================================
 
 export {
   romanize,
@@ -58,6 +29,13 @@ export {
 } from './romanizer';
 
 // ============================================================================
+// spaCy client
+// ============================================================================
+
+export { processWithSpacy } from './spacyClient';
+export type { SpacyToken, SpacySentence, SpacyResult } from './spacyClient';
+
+// ============================================================================
 // Type Exports
 // ============================================================================
 
@@ -66,41 +44,19 @@ export type {
   Token,
   TokenizeOptions,
 
-  // Lemmatization types
+  // Lemmatization types (type still used by textProcessor internally)
   LemmatizeResult,
-  LemmatizeBatchRequest,
-  LemmatizeBatchResponse,
-
-  // POS tagging types
-  POSTagResult,
-
-  // Language handler types
-  LanguageHandler,
 
   // Romanization types
   RomanizeHandler,
   RomanizeOptions,
   RomanizeResult,
   ScriptType,
-
-  // Cache types
-  CacheKey,
-  CacheStats,
 } from './types';
 
 // ============================================================================
-// Utility Exports
+// Utilities
 // ============================================================================
-
-export {
-  getCacheStats,
-  clearLemmaCache,
-} from './cache';
-
-export {
-  isLanguageSupported,
-  getSupportedLanguages,
-} from './language-handlers';
 
 export {
   detectScriptType,
