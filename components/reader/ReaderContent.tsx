@@ -37,15 +37,16 @@ export function ReaderContent({
   const { settings } = useReaderSettings();
 
   const formatInflection = (inflectionData: Record<string, unknown>): string => {
+    const d = Object.fromEntries(Object.entries(inflectionData).map(([k, v]) => [k.toLowerCase(), v]));
     const parts: string[] = [];
-    if (inflectionData.tense) parts.push(String(inflectionData.tense));
-    if (inflectionData.mood) parts.push(String(inflectionData.mood));
-    if (inflectionData.person) parts.push(`${inflectionData.person}p`);
-    if (inflectionData.number) parts.push(String(inflectionData.number));
-    if (inflectionData.gender) parts.push(String(inflectionData.gender));
-    if (inflectionData.case) parts.push(String(inflectionData.case));
-    if (inflectionData.voice) parts.push(String(inflectionData.voice));
-    if (inflectionData.aspect) parts.push(String(inflectionData.aspect));
+    if (d.tense) parts.push(String(d.tense));
+    if (d.mood) parts.push(String(d.mood));
+    if (d.person) parts.push(`${d.person}p`);
+    if (d.number) parts.push(String(d.number));
+    if (d.gender) parts.push(String(d.gender));
+    if (d.case) parts.push(String(d.case));
+    if (d.voice) parts.push(String(d.voice));
+    if (d.aspect) parts.push(String(d.aspect));
     return parts.length > 0 ? parts.join(', ') : 'base form';
   };
 
