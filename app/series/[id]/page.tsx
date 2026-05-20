@@ -53,6 +53,12 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const seriesNameInitialized = useRef(false);
   const [sortBy, setSortBy] = useState<SortOption>('title-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`series-sort-${id}`) as SortOption | null;
+    const valid: SortOption[] = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+    if (saved && valid.includes(saved)) setSortBy(saved);
+  }, [id]);
   const [deleteSeriesTarget, setDeleteSeriesTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteTextTarget, setDeleteTextTarget] = useState<{ id: string; title: string } | null>(null);
   const [isNewTextModalOpen, setIsNewTextModalOpen] = useState(false);
@@ -281,6 +287,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                     key={option.value}
                     onClick={() => {
                       setSortBy(option.value);
+                      localStorage.setItem(`series-sort-${id}`, option.value);
                       setIsSortOpen(false);
                     }}
                     className={`w-full px-4 py-3 text-left font-sans text-ui-base transition-colors ${

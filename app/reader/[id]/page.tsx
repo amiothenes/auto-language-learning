@@ -33,10 +33,11 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const router = useRouter();
 
   // ── Data queries ──────────────────────────────────────────────────────────
+  const [adjacentSort, setAdjacentSort] = useState('title-asc');
   const textQuery = useText(id);
   const instancesQuery = useWordInstances(id);
   const updateWordStatus = useUpdateWordStatus(id);
-  const adjacentQuery = useAdjacentTexts(id);
+  const adjacentQuery = useAdjacentTexts(id, adjacentSort);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -134,6 +135,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   }, [wordInstances, textData, paragraphs]);
 
   // ── Effects ───────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (textData?.seriesId) {
+      const saved = localStorage.getItem(`series-sort-${textData.seriesId}`);
+      const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+      if (saved && valid.includes(saved)) setAdjacentSort(saved);
+    }
+  }, [textData?.seriesId]);
 
   // Initialize vocabulary stats once when text data first loads
   useEffect(() => {
@@ -423,7 +432,28 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </aside>
 
         {/* ── MAIN READER AREA ── */}
-        <main className="order-1 xl:order-2 flex justify-center px-4 pt-20 pb-8 xl:pt-12 xl:pb-12 xl:px-8">
+        <main className="order-1 xl:order-2 flex flex-col items-center px-4 pt-20 pb-8 xl:pt-12 xl:pb-12 xl:px-8">
+          {adjacentQuery.data && (adjacentQuery.data.prev || adjacentQuery.data.next) && (textData?.wordCount ?? 0) >= 226 && (
+            <nav className="flex justify-between w-full max-w-prose mb-6 pb-4 border-b border-border">
+              {adjacentQuery.data.prev ? (
+                <Link
+                  href={`/reader/${adjacentQuery.data.prev.id}`}
+                  className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  ← {adjacentQuery.data.prev.title}
+                </Link>
+              ) : <span />}
+              {adjacentQuery.data.next ? (
+                <Link
+                  href={`/reader/${adjacentQuery.data.next.id}`}
+                  className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  {adjacentQuery.data.next.title} →
+                </Link>
+              ) : <span />}
+            </nav>
+          )}
+
           {isLoading ? (
             <ReaderContentSkeleton />
           ) : (
