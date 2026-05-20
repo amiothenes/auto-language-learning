@@ -19,16 +19,21 @@ export interface SpacyResult {
   sentences: SpacySentence[];
 }
 
+function stripBracketAnnotations(raw: string): string {
+  return raw.replace(/\[[^\]]*\]/g, '');
+}
+
 export async function processWithSpacy(
   text: string,
   languageCode: string
 ): Promise<SpacyResult> {
   const url = process.env.NLP_SERVICE_URL ?? 'http://localhost:8000';
+  const cleanedText = stripBracketAnnotations(text);
 
   const res = await fetch(`${url}/process`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, language: languageCode }),
+    body: JSON.stringify({ text: cleanedText, language: languageCode }),
   });
 
   if (!res.ok) {
