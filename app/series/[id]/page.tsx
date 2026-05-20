@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NewTextModal } from '@/components/texts/NewTextModal';
 import { ImportTextsModal } from '@/components/texts/ImportTextsModal';
+import { EditTextModal } from '@/components/texts/EditTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Plus, Upload, ChevronDown } from 'lucide-react';
@@ -56,6 +57,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const [deleteTextTarget, setDeleteTextTarget] = useState<{ id: string; title: string } | null>(null);
   const [isNewTextModalOpen, setIsNewTextModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [editTextTarget, setEditTextTarget] = useState<{ id: string; title: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
   // Initialize series name once from DB — preserves in-progress edits on refetch
@@ -333,6 +335,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                 lastRead={text.lastRead}
                 preview={text.preview}
                 onDelete={setDeleteTextTarget}
+                onEdit={setEditTextTarget}
               />
             ))}
           </div>
@@ -377,6 +380,17 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         onImport={handleImportTexts}
         seriesId={id}
         seriesName={seriesName}
+      />
+
+      {/* Edit Text Modal */}
+      <EditTextModal
+        isOpen={editTextTarget !== null}
+        onClose={() => setEditTextTarget(null)}
+        textId={editTextTarget?.id ?? ''}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ['series', id] });
+          setEditTextTarget(null);
+        }}
       />
 
       {/* Toast Notification */}

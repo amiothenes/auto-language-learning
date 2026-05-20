@@ -1,16 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { MiniMap } from './MiniMap';
-import { 
-  ChevronLeft, 
-  BookOpen, 
-  Library, 
-  Download, 
-  Pencil 
+import { EditTextModal } from '@/components/texts/EditTextModal';
+import {
+  ChevronLeft,
+  BookOpen,
+  Library,
+  Download,
+  Pencil
 } from 'lucide-react';
 
 // ============================================================================
@@ -20,6 +23,7 @@ import {
 // ============================================================================
 
 interface TextInfoProps {
+  textId: string;
   title: string;
   wordCount: number;
   uniqueWordCount: number;
@@ -36,6 +40,7 @@ interface TextInfoProps {
 }
 
 export function TextInfo({
+  textId,
   title,
   wordCount,
   uniqueWordCount,
@@ -50,15 +55,16 @@ export function TextInfo({
   onRightPanelToggle,
   isRightPanelOpen = false,
 }: TextInfoProps) {
-  
+  const queryClient = useQueryClient();
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
   const handleExport = () => {
     console.log('Export text:', title);
     // TODO: Implement export functionality
   };
 
   const handleEditText = () => {
-    console.log('Open edit text screen for:', title);
-    // TODO: Implement edit text modal/page
+    setIsEditOpen(true);
   };
 
   return (
@@ -193,6 +199,16 @@ export function TextInfo({
           </Button>
         </div>
       )}
+
+      <EditTextModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        textId={textId}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ['text', textId] });
+          setIsEditOpen(false);
+        }}
+      />
     </div>
   );
 }

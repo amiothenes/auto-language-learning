@@ -168,7 +168,8 @@ export function Sidebar() {
 
           {/* Manage Languages Button */}
           <div className="mt-4 pt-4 border-t border-border">
-            <button 
+            <Link
+              href="/settings/languages"
               className="w-full h-10 px-2 bg-transparent border border-border text-ink font-sans font-medium text-ui-base rounded hover:bg-paper active:translate-y-px transition-all duration-200 flex items-center gap-2 overflow-hidden cursor-pointer"
               title="Manage Languages"
             >
@@ -176,7 +177,7 @@ export function Sidebar() {
               <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200 text-ui-sm">
                 Manage Languages
               </span>
-            </button>
+            </Link>
           </div>
         </div>
       </aside>

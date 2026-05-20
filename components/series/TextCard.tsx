@@ -21,6 +21,7 @@ interface TextCardProps {
   lastRead: string;
   preview: string;
   onDelete?: (text: { id: string; title: string }) => void;
+  onEdit?: (text: { id: string; title: string }) => void;
 }
 
 export function TextCard({
@@ -31,6 +32,7 @@ export function TextCard({
   lastRead,
   preview,
   onDelete,
+  onEdit,
 }: TextCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -65,6 +67,9 @@ export function TextCard({
 
     if (action === 'delete' && onDelete) {
       onDelete({ id, title });
+    }
+    if (action === 'edit' && onEdit) {
+      onEdit({ id, title });
     }
   };
 

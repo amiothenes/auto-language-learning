@@ -403,6 +403,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           ) : (
             textData && (
               <TextInfo
+                textId={id}
                 title={textData.title}
                 wordCount={textData.wordCount}
                 uniqueWordCount={textData.uniqueWordCount}

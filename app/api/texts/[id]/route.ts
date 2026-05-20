@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { texts } from '@/lib/db/schema';
+import { texts, tags, textTags } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { TextData } from '@/lib/types/content';
 import type { TextDetailResponse, ApiErrorResponse } from '@/lib/types/api';
@@ -76,6 +76,99 @@ export async function GET(
     return NextResponse.json<ApiErrorResponse>(
       {
         error: 'Internal server error fetching text',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================================
+// PATCH /api/texts/[id] — Update text metadata (title and/or tags)
+// Content is intentionally excluded — editing it would require re-running NLP.
+// ============================================================================
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const adminKey = request.headers.get('x-admin-key');
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { id } = await params;
+    const body = await request.json() as { title?: string; newTags?: string[] };
+
+    if (!body.title && !body.newTags) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'No updatable fields provided' },
+        { status: 400 }
+      );
+    }
+
+    if (body.title !== undefined) {
+      const trimmed = body.title.trim();
+      if (!trimmed) {
+        return NextResponse.json<ApiErrorResponse>(
+          { error: 'Title cannot be empty' },
+          { status: 400 }
+        );
+      }
+      await db.update(texts).set({ title: trimmed }).where(eq(texts.id, id));
+    }
+
+    if (body.newTags !== undefined) {
+      await db.delete(textTags).where(eq(textTags.textId, id));
+
+      for (const name of body.newTags) {
+        const trimmed = name.trim();
+        if (!trimmed) continue;
+
+        const [tag] = await db
+          .insert(tags)
+          .values({ name: trimmed })
+          .onConflictDoUpdate({ target: tags.name, set: { name: trimmed } })
+          .returning({ id: tags.id });
+
+        if (tag) {
+          await db.insert(textTags).values({ textId: id, tagId: tag.id });
+        }
+      }
+    }
+
+    const updated = await db.query.texts.findFirst({
+      where: eq(texts.id, id),
+      with: { series: true, tags: { with: { tag: true } } },
+    });
+
+    if (!updated) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Text not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
+    const textData: TextData = {
+      id: updated.id,
+      title: updated.title,
+      seriesId: updated.seriesId ?? '',
+      seriesName: updated.series?.name ?? '',
+      wordCount: updated.wordCount,
+      uniqueWordCount: updated.uniqueWordCount,
+      viewCount: updated.viewCount,
+      knownPercentage: updated.knownPercentage,
+      tags: updated.tags.map((tt) => tt.tag.name),
+      content: updated.content,
+    };
+
+    return NextResponse.json<TextDetailResponse>({ text: textData });
+  } catch (error) {
+    console.error('[Text PATCH] Unexpected error:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      {
+        error: 'Internal server error updating text',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
