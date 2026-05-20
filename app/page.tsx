@@ -23,7 +23,7 @@ export default function Dashboard() {
         </header>
 
         {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts) */}
-        <div className="flex flex-col lg:grid lg:grid-cols-[35%_65%] gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-[35%_1fr] gap-6">
           {/* LEFT COLUMN: Chart + Stats - Order 3 on mobile, 1 on desktop */}
           <div className="space-y-6 order-3 lg:order-1">
             <StatsCard />

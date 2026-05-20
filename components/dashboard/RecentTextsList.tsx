@@ -52,7 +52,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
           </Muted>
         </div>
         <button
-          onClick={() => router.push('/series')}
+          onClick={() => router.push('/series?new=true')}
           className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer"
         >
           <span className="hidden md:inline">Add New Text</span>
@@ -79,7 +79,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
           }}
           secondaryAction={{
             label: "Add New Text",
-            onClick: () => router.push('/series'),
+            onClick: () => router.push('/series?new=true'),
           }}
           className="min-h-75"
         />
@@ -98,7 +98,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
           ))}
           {texts!.length < 3 && (
             <button
-              onClick={() => router.push('/series')}
+              onClick={() => router.push('/series?new=true')}
               className="w-full p-4 border-2 border-dashed border-border rounded-lg text-muted text-ui-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
               <Plus size={16} strokeWidth={2} />
@@ -112,7 +112,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
         <div className="pt-4 border-t border-border text-center">
           <button
             className="text-primary font-sans font-medium text-ui-base hover:underline cursor-pointer"
-            onClick={() => router.push('/series')}
+            onClick={() => router.push('/series?view=texts')}
           >
             View All Texts →
           </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
@@ -11,11 +11,14 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NewSeriesModal } from '@/components/series/NewSeriesModal';
 import { Toast, useToast } from '@/components/ui/Toast';
-import { Search, Plus, ChevronDown } from 'lucide-react';
+import { TextListItem } from '@/components/dashboard/TextListItem';
+import { SkeletonText } from '@/components/ui/Skeleton';
+import { Search, Plus, ChevronDown, ArrowLeft } from 'lucide-react';
 import type { SeriesSortOption } from '@/lib/types';
 import type { NewSeriesData } from '@/lib/types/forms';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
+import { useTexts } from '@/lib/hooks/useTexts';
 
 // ============================================================================
 // Series Page Component
@@ -23,9 +26,12 @@ import { useSeriesList } from '@/lib/hooks/useSeriesList';
 
 export default function SeriesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewMode = searchParams.get('view');
   const { selectedLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
   const seriesQuery = useSeriesList();
+  const textsQuery = useTexts();
   const isLoading = seriesQuery.isLoading;
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
@@ -33,6 +39,13 @@ export default function SeriesPage() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
+
+  // Auto-open NewSeriesModal when arriving from dashboard "Add New Text"
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setIsNewSeriesModalOpen(true);
+    }
+  }, [searchParams]);
 
   // Close sort dropdown when clicking outside
   useEffect(() => {
@@ -187,6 +200,68 @@ export default function SeriesPage() {
   ] as const;
 
   const currentSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label;
+
+  if (viewMode === 'texts') {
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <header className="space-y-2">
+            <button
+              onClick={() => router.push('/series')}
+              className="flex items-center gap-1 text-muted text-ui-sm font-medium hover:text-primary transition-colors cursor-pointer mb-2"
+            >
+              <ArrowLeft size={16} strokeWidth={2} />
+              Back to Series
+            </button>
+            <Heading size="2xl" as="h1">All Texts</Heading>
+            <Muted>All texts in your library</Muted>
+          </header>
+
+          {textsQuery.isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-desk rounded-lg gap-2">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <SkeletonText width="w-3/5" className="h-5" />
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <SkeletonText width="w-24" className="h-3" />
+                      <SkeletonText width="w-16" className="h-3" />
+                    </div>
+                  </div>
+                  <SkeletonText width="w-16" className="h-4" />
+                </div>
+              ))}
+            </div>
+          ) : !textsQuery.data?.length ? (
+            <EmptyState
+              illustration="pages"
+              title="No texts yet"
+              description="Import texts into a series to start reading"
+              primaryAction={{
+                label: "Browse Series",
+                onClick: () => router.push('/series'),
+              }}
+            />
+          ) : (
+            <div className="space-y-2 md:space-y-3">
+              {textsQuery.data.map((text) => (
+                <TextListItem
+                  key={text.id}
+                  title={text.title}
+                  series={text.seriesName ?? '—'}
+                  wordCount={text.wordCount}
+                  knownPercentage={text.knownPercentage}
+                  lastViewed={text.lastRead}
+                  onClick={() => router.push(`/reader/${text.id}`)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        <Toast message={toast.message} isOpen={toast.isOpen} onClose={hideToast} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8">
