@@ -81,22 +81,24 @@ export async function GET(request: NextRequest) {
 
     const statusMap = Object.fromEntries(statusRows.map((r) => [r.status, r.total]));
 
+    const unknown   = statusMap['UNKNOWN']    ?? 0;
     const newlySeen = statusMap['NEWLY_SEEN'] ?? 0;
-    const familiar = statusMap['FAMILIAR'] ?? 0;
-    const known = statusMap['KNOWN'] ?? 0;
+    const familiar  = statusMap['FAMILIAR']   ?? 0;
+    const known     = statusMap['KNOWN']      ?? 0;
     const wellKnown = statusMap['WELL_KNOWN'] ?? 0;
-    const ignored = statusMap['IGNORE'] ?? 0;
+    const ignored   = statusMap['IGNORE']     ?? 0;
+    // UNKNOWN words excluded from total and overallKnownPercentage
     const total = newlySeen + familiar + known + wellKnown + ignored;
 
     const overallKnownPercentage =
       total > 0 ? Math.round(((known + wellKnown) / total) * 100) : 0;
 
     console.log(
-      `[Stats] Words: ${total} total, ${known + wellKnown} known/well-known (${overallKnownPercentage}%)`
+      `[Stats] Words: ${total} reviewed + ${unknown} unknown, ${known + wellKnown} known/well-known (${overallKnownPercentage}%)`
     );
 
     const response: StatsResponse = {
-      vocabulary: { total, newlySeen, familiar, known, wellKnown, ignored },
+      vocabulary: { total, unknown, newlySeen, familiar, known, wellKnown, ignored },
       texts: {
         total: totalTextsRow?.total ?? 0,
         read: readTextsRow?.total ?? 0,

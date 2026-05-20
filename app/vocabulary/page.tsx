@@ -73,11 +73,12 @@ export default function VocabularyPage() {
 
   // Status counts from the stats API (total per-status, language-wide)
   const statusCounts: Record<VocabularyStatus, number> = {
+    [VocabularyStatus.UNKNOWN]:    stats?.vocabulary.unknown    ?? 0,
     [VocabularyStatus.NEWLY_SEEN]: stats?.vocabulary.newlySeen ?? 0,
-    [VocabularyStatus.FAMILIAR]: stats?.vocabulary.familiar ?? 0,
-    [VocabularyStatus.KNOWN]: stats?.vocabulary.known ?? 0,
-    [VocabularyStatus.WELL_KNOWN]: stats?.vocabulary.wellKnown ?? 0,
-    [VocabularyStatus.IGNORE]: stats?.vocabulary.ignored ?? 0,
+    [VocabularyStatus.FAMILIAR]:   stats?.vocabulary.familiar   ?? 0,
+    [VocabularyStatus.KNOWN]:      stats?.vocabulary.known      ?? 0,
+    [VocabularyStatus.WELL_KNOWN]: stats?.vocabulary.wellKnown  ?? 0,
+    [VocabularyStatus.IGNORE]:     stats?.vocabulary.ignored    ?? 0,
   };
 
   // Reset to page 1 when filters change

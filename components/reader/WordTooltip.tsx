@@ -22,11 +22,12 @@ interface WordTooltipProps {
 
 /** Status label + dot color mapping */
 const STATUS_CONFIG: Record<VocabularyStatus, { label: string; dotColor: string }> = {
-  [VocabularyStatus.NEWLY_SEEN]: { label: 'New Word', dotColor: 'bg-red-500' },
-  [VocabularyStatus.FAMILIAR]: { label: 'Learning', dotColor: 'bg-orange-400' },
-  [VocabularyStatus.KNOWN]: { label: 'Known Word', dotColor: 'bg-green-500' },
+  [VocabularyStatus.UNKNOWN]:    { label: 'Unreviewed', dotColor: 'bg-gray-400' },
+  [VocabularyStatus.NEWLY_SEEN]: { label: 'New Word',   dotColor: 'bg-red-500' },
+  [VocabularyStatus.FAMILIAR]:   { label: 'Learning',   dotColor: 'bg-orange-400' },
+  [VocabularyStatus.KNOWN]:      { label: 'Known Word', dotColor: 'bg-green-500' },
   [VocabularyStatus.WELL_KNOWN]: { label: 'Known Word', dotColor: 'bg-green-500' },
-  [VocabularyStatus.IGNORE]: { label: 'Ignored', dotColor: 'bg-gray-400' },
+  [VocabularyStatus.IGNORE]:     { label: 'Ignored',    dotColor: 'bg-gray-400' },
 };
 
 export function WordTooltip({
@@ -142,6 +143,7 @@ export function WordTooltip({
 
 /** Learning progression order (IGNORE is separate, not on this ladder) */
 const PROGRESSION = [
+  VocabularyStatus.UNKNOWN,
   VocabularyStatus.NEWLY_SEEN,
   VocabularyStatus.FAMILIAR,
   VocabularyStatus.KNOWN,
@@ -149,11 +151,12 @@ const PROGRESSION = [
 ] as const;
 
 const STEP_LABELS: Record<VocabularyStatus, string> = {
+  [VocabularyStatus.UNKNOWN]:    'Unknown',
   [VocabularyStatus.NEWLY_SEEN]: 'Newly Seen',
-  [VocabularyStatus.FAMILIAR]: 'Familiar',
-  [VocabularyStatus.KNOWN]: 'Known',
+  [VocabularyStatus.FAMILIAR]:   'Familiar',
+  [VocabularyStatus.KNOWN]:      'Known',
   [VocabularyStatus.WELL_KNOWN]: 'Well Known',
-  [VocabularyStatus.IGNORE]: 'Ignore',
+  [VocabularyStatus.IGNORE]:     'Ignore',
 };
 
 interface QuickActionsProps {
@@ -162,16 +165,16 @@ interface QuickActionsProps {
 }
 
 function QuickActions({ status, onStatusChange }: QuickActionsProps) {
-  // IGNORE words: offer to re-enter learning flow at Newly Seen
+  // IGNORE words: offer to re-enter learning flow at Unknown (true initial state)
   if (status === VocabularyStatus.IGNORE) {
     return (
       <Button
         size="sm"
         variant="primary"
-        onClick={() => onStatusChange(VocabularyStatus.NEWLY_SEEN)}
+        onClick={() => onStatusChange(VocabularyStatus.UNKNOWN)}
         className="flex-1"
       >
-        Restore to Newly Seen
+        Restore to Unknown
       </Button>
     );
   }
@@ -204,7 +207,7 @@ function QuickActions({ status, onStatusChange }: QuickActionsProps) {
           {STEP_LABELS[stepUp]}
         </Button>
       )}
-      {status === VocabularyStatus.NEWLY_SEEN && (
+      {(status === VocabularyStatus.UNKNOWN || status === VocabularyStatus.NEWLY_SEEN) && (
         <Button
           size="sm"
           variant="ghost"

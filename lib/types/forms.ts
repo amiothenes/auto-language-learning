@@ -20,8 +20,8 @@ import { VocabularyStatus } from './vocabulary';
 export interface NewSeriesData {
   /** Series name (1-100 chars) */
   name: string;
-  /** Brief description of the series (1-500 chars) */
-  description: string;
+  /** Brief description of the series (optional, max 500 chars) */
+  description?: string;
   /** Optional texts imported during series creation (from Step 2) */
   texts?: ImportedTextData[];
 }

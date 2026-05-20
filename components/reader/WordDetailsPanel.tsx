@@ -58,11 +58,12 @@ export function WordDetailsPanel({
    */
   const getStatusButtonStyle = (status: VocabularyStatus, isActive: boolean) => {
     const baseColors: Record<VocabularyStatus, string> = {
+      [VocabularyStatus.UNKNOWN]:    'hsla(0, 0%, 60%, 0.12)',
       [VocabularyStatus.NEWLY_SEEN]: 'hsla(0, 70%, 55%, 0.2)',
-      [VocabularyStatus.FAMILIAR]: 'hsla(45, 85%, 55%, 0.2)',
-      [VocabularyStatus.KNOWN]: 'hsla(145, 60%, 40%, 0.15)',
+      [VocabularyStatus.FAMILIAR]:   'hsla(45, 85%, 55%, 0.2)',
+      [VocabularyStatus.KNOWN]:      'hsla(145, 60%, 40%, 0.15)',
       [VocabularyStatus.WELL_KNOWN]: 'hsla(145, 60%, 40%, 0.08)',
-      [VocabularyStatus.IGNORE]: 'hsla(0, 0%, 50%, 0.1)',
+      [VocabularyStatus.IGNORE]:     'hsla(0, 0%, 50%, 0.1)',
     };
 
     return {
@@ -76,11 +77,12 @@ export function WordDetailsPanel({
    * Status labels
    */
   const statusLabels: Record<VocabularyStatus, string> = {
+    [VocabularyStatus.UNKNOWN]:    'Unknown',
     [VocabularyStatus.NEWLY_SEEN]: 'Newly Seen',
-    [VocabularyStatus.FAMILIAR]: 'Familiar',
-    [VocabularyStatus.KNOWN]: 'Known',
+    [VocabularyStatus.FAMILIAR]:   'Familiar',
+    [VocabularyStatus.KNOWN]:      'Known',
     [VocabularyStatus.WELL_KNOWN]: 'Well Known',
-    [VocabularyStatus.IGNORE]: 'Ignore',
+    [VocabularyStatus.IGNORE]:     'Ignore',
   };
 
   // Large Desktop: render on right side with slide animation and reserved space

@@ -205,6 +205,7 @@ export interface SeriesDetailResponse {
 export interface StatsResponse {
   vocabulary: {
     total: number;
+    unknown: number;
     newlySeen: number;
     familiar: number;
     known: number;

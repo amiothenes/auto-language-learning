@@ -23,6 +23,11 @@ interface VocabTableProps {
 // ============================================================================
 
 const STATUS_CONFIG = {
+  [VocabularyStatus.UNKNOWN]: {
+    label: 'Unknown',
+    bgColor: 'hsla(0, 0%, 60%, 0.25)',
+    textColor: '#6E6D6A',
+  },
   [VocabularyStatus.NEWLY_SEEN]: {
     label: 'Newly Seen',
     bgColor: 'hsla(0, 70%, 55%, 0.6)',

@@ -14,8 +14,9 @@ export async function syncTextStatistics(textId: string): Promise<void> {
     .innerJoin(words, eq(wordInstances.wordId, words.id))
     .where(eq(wordInstances.textId, textId));
 
-  const total = rows.length;
-  const known = rows.filter(
+  const reviewedRows = rows.filter((r) => r.status !== VocabularyStatus.UNKNOWN);
+  const total = reviewedRows.length;
+  const known = reviewedRows.filter(
     (r) => r.status === VocabularyStatus.KNOWN || r.status === VocabularyStatus.WELL_KNOWN
   ).length;
   const knownPercentage = total > 0 ? (known / total) * 100 : 0;

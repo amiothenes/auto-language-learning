@@ -14,7 +14,7 @@ export const words = pgTable(
       .references(() => languages.id, { onDelete: 'restrict' }),
 
     // Core vocabulary data
-    status: vocabularyStatusEnum('status').default('NEWLY_SEEN').notNull(),
+    status: vocabularyStatusEnum('status').default('UNKNOWN').notNull(),
     translation: text('translation'),
     definition: text('definition'),
     romanization: text('romanization'),

@@ -42,6 +42,8 @@ export function Word({
     const opacity = baseOpacity * (highlightIntensity / 100);
     
     switch (status) {
+      case VocabularyStatus.UNKNOWN:
+        return `hsla(0, 0%, 60%, ${opacity})`;
       case VocabularyStatus.NEWLY_SEEN:
         return `hsla(0, 70%, 55%, ${opacity})`;
       case VocabularyStatus.FAMILIAR:

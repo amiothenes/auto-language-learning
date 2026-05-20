@@ -340,7 +340,7 @@ export async function processTextForImport(
             return {
               lemma,
               languageId,
-              status: 'NEWLY_SEEN' as const,
+              status: 'UNKNOWN' as const,
               romanization,
               dictionaryFrequency: 0, // TODO: Integrate frequency dictionary
               userFrequency: 1,
@@ -482,14 +482,16 @@ export async function processTextForImport(
           },
         });
 
-        // Count known words (KNOWN or WELL_KNOWN)
-        const knownCount = wordStatuses.filter(
+        // Exclude UNKNOWN (unreviewed) words from both numerator and denominator
+        const reviewedStatuses = wordStatuses.filter((w) => w.status !== 'UNKNOWN');
+        const knownCount = reviewedStatuses.filter(
           (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN'
         ).length;
+        const reviewedCount = reviewedStatuses.length;
 
-        // Calculate percentage based on unique lemmas (NOT total word count)
+        // Calculate percentage based on reviewed unique lemmas only (excludes UNKNOWN)
         const knownPercentage =
-          uniqueWordCount > 0 ? Math.round((knownCount / uniqueWordCount) * 100) : 0;
+          reviewedCount > 0 ? Math.round((knownCount / reviewedCount) * 100) : 0;
 
         // Update text with calculated percentage
         await tx

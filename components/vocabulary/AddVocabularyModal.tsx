@@ -190,11 +190,12 @@ export function AddVocabularyModal({
 
   // Status options with user-friendly labels
   const statusOptions = [
+    { value: VocabularyStatus.UNKNOWN,    label: 'Unknown' },
     { value: VocabularyStatus.NEWLY_SEEN, label: 'Newly Seen' },
-    { value: VocabularyStatus.FAMILIAR, label: 'Familiar' },
-    { value: VocabularyStatus.KNOWN, label: 'Known' },
+    { value: VocabularyStatus.FAMILIAR,   label: 'Familiar' },
+    { value: VocabularyStatus.KNOWN,      label: 'Known' },
     { value: VocabularyStatus.WELL_KNOWN, label: 'Well Known' },
-    { value: VocabularyStatus.IGNORE, label: 'Ignore' },
+    { value: VocabularyStatus.IGNORE,     label: 'Ignore' },
   ];
 
   if (!mounted || !isOpen) return null;

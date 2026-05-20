@@ -96,6 +96,8 @@ export default function SeriesPage() {
   };
 
   const handleCreateSeries = async (seriesData: NewSeriesData) => {
+    // Step 1: Create the series
+    let created: { id: string; name: string };
     try {
       const response = await fetch('/api/series', {
         method: 'POST',
@@ -105,7 +107,7 @@ export default function SeriesPage() {
         },
         body: JSON.stringify({
           name: seriesData.name,
-          description: seriesData.description,
+          description: seriesData.description ?? '',
           languageCode: selectedLanguage,
         }),
       });
@@ -116,14 +118,49 @@ export default function SeriesPage() {
         return;
       }
 
-      const { series: created } = await response.json();
-
-      showToast(`Series "${seriesData.name}" created successfully!`);
-      setIsNewSeriesModalOpen(false);
-      router.push(`/series/${created.id}`);
+      ({ series: created } = await response.json());
     } catch {
       showToast('Failed to create series');
+      return;
     }
+
+    setIsNewSeriesModalOpen(false);
+
+    // Step 2: Import texts if provided
+    if (seriesData.texts && seriesData.texts.length > 0) {
+      try {
+        for (const text of seriesData.texts) {
+          const importRes = await fetch('/api/texts/import', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+            },
+            body: JSON.stringify({
+              title: text.title,
+              content: text.content,
+              languageCode: selectedLanguage,
+              seriesId: created.id,
+            }),
+          });
+
+          if (!importRes.ok) {
+            const err = await importRes.json();
+            showToast(err.error || 'Series created but text import failed');
+            router.push(`/series/${created.id}`);
+            return;
+          }
+        }
+
+        showToast(`Series "${seriesData.name}" created with text`);
+      } catch {
+        showToast('Series created but text import failed');
+      }
+    } else {
+      showToast(`Series "${seriesData.name}" created`);
+    }
+
+    router.push(`/series/${created.id}`);
   };
 
   const handleConfirmDelete = async () => {

@@ -18,13 +18,16 @@
  *
  * **Status Progression:**
  * ```
- * NEWLY_SEEN → FAMILIAR → KNOWN → WELL_KNOWN
+ * UNKNOWN → NEWLY_SEEN → FAMILIAR → KNOWN → WELL_KNOWN
  * ```
  *
- * **Special Status:**
+ * **Special Statuses:**
+ * - `UNKNOWN`: Word exists in DB but user has not reviewed it yet.
+ *   Excluded from ALL stats calculations (neither numerator nor denominator).
  * - `IGNORE`: User manually excluded (proper nouns, names, etc.)
  *
  * **Visual Highlighting:**
+ * - `UNKNOWN`: Neutral gray tint background
  * - `NEWLY_SEEN`: Red tint background
  * - `FAMILIAR`: Orange tint background
  * - `KNOWN`: Subtle green background
@@ -32,7 +35,9 @@
  * - `IGNORE`: Dashed underline, reduced opacity
  */
 export enum VocabularyStatus {
-  /** First encounter with this lemma */
+  /** Word exists in DB but user has not reviewed it yet — excluded from all stats */
+  UNKNOWN = 'UNKNOWN',
+  /** First encounter acknowledged by user */
   NEWLY_SEEN = 'NEWLY_SEEN',
   /** Seen multiple times, partially learned */
   FAMILIAR = 'FAMILIAR',

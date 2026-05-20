@@ -5,6 +5,7 @@ import { VocabularyStatus } from './Word';
 
 // Maps each status to its filled-dot Tailwind color class
 const STATUS_DOT_COLOR: Record<VocabularyStatus, string> = {
+  [VocabularyStatus.UNKNOWN]:    'bg-gray-400',
   [VocabularyStatus.NEWLY_SEEN]: 'bg-red-500',
   [VocabularyStatus.FAMILIAR]:   'bg-orange-400',
   [VocabularyStatus.KNOWN]:      'bg-green-500',
@@ -14,6 +15,7 @@ const STATUS_DOT_COLOR: Record<VocabularyStatus, string> = {
 
 // How many dots are filled for each status (IGNORE is handled separately)
 const STATUS_LEVEL: Record<VocabularyStatus, number> = {
+  [VocabularyStatus.UNKNOWN]:    0,
   [VocabularyStatus.NEWLY_SEEN]: 1,
   [VocabularyStatus.FAMILIAR]:   2,
   [VocabularyStatus.KNOWN]:      3,

@@ -29,6 +29,13 @@
       "when": 1778689912365,
       "tag": "0003_add_view_count",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779285737065,
+      "tag": "0004_boring_sabretooth",
+      "breakpoints": true
     }
   ]
 }
