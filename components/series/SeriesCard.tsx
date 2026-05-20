@@ -21,6 +21,8 @@ interface SeriesCardProps {
   progress: number;
   lastUpdated: string;
   onDelete?: (series: { id: string; name: string }) => void;
+  onEdit?: (series: { id: string; name: string; description: string }) => void;
+  onAddText?: (series: { id: string; name: string }) => void;
 }
 
 export function SeriesCard({
@@ -31,6 +33,8 @@ export function SeriesCard({
   progress,
   lastUpdated,
   onDelete,
+  onEdit,
+  onAddText,
 }: SeriesCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -63,6 +67,12 @@ export function SeriesCard({
     e.stopPropagation();
     setIsMenuOpen(false);
 
+    if (action === 'edit' && onEdit) {
+      onEdit({ id, name, description });
+    }
+    if (action === 'add-text' && onAddText) {
+      onAddText({ id, name });
+    }
     if (action === 'delete' && onDelete) {
       onDelete({ id, name });
     }

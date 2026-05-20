@@ -10,6 +10,8 @@ import { EmptySeriesState } from '@/components/series/EmptySeriesState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NewSeriesModal } from '@/components/series/NewSeriesModal';
+import { EditSeriesModal } from '@/components/series/EditSeriesModal';
+import { NewTextModal } from '@/components/texts/NewTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { TextListItem } from '@/components/dashboard/TextListItem';
 import { SkeletonText } from '@/components/ui/Skeleton';
@@ -37,6 +39,8 @@ function SeriesPageContent() {
   const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
+  const [addTextTarget, setAddTextTarget] = useState<{ id: string; name: string } | null>(null);
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +107,11 @@ function SeriesPageContent() {
 
     return result;
   }, [searchQuery, sortBy, seriesQuery.data]);
+
+  const availableSeries = useMemo(
+    () => (seriesQuery.data ?? []).map((s) => ({ id: s.id, name: s.name })),
+    [seriesQuery.data]
+  );
 
   const handleNewSeries = () => {
     setIsNewSeriesModalOpen(true);
@@ -174,6 +183,18 @@ function SeriesPageContent() {
     }
 
     router.push(`/series/${created.id}`);
+  };
+
+  const handleSavedSeries = async () => {
+    setEditTarget(null);
+    showToast('Series updated');
+    await seriesQuery.refetch();
+  };
+
+  const handleAddTextDone = () => {
+    setAddTextTarget(null);
+    showToast('Text added');
+    seriesQuery.refetch();
   };
 
   const handleConfirmDelete = async () => {
@@ -364,6 +385,8 @@ function SeriesPageContent() {
                 key={series.id}
                 {...series}
                 onDelete={setDeleteTarget}
+                onEdit={setEditTarget}
+                onAddText={setAddTextTarget}
               />
             ))}
           </div>
@@ -387,6 +410,29 @@ function SeriesPageContent() {
         onClose={() => setIsNewSeriesModalOpen(false)}
         onAdd={handleCreateSeries}
       />
+
+      {/* Edit Series Modal */}
+      {editTarget && (
+        <EditSeriesModal
+          isOpen={true}
+          onClose={() => setEditTarget(null)}
+          seriesId={editTarget.id}
+          initialName={editTarget.name}
+          initialDescription={editTarget.description}
+          onSaved={handleSavedSeries}
+        />
+      )}
+
+      {/* Add Text Modal */}
+      {addTextTarget && (
+        <NewTextModal
+          isOpen={true}
+          onClose={() => setAddTextTarget(null)}
+          prefilledSeriesId={addTextTarget.id}
+          availableSeries={availableSeries}
+          onAdd={handleAddTextDone}
+        />
+      )}
 
       {/* Toast Notification */}
       <Toast
