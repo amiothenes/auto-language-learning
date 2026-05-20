@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/ui/Button';
 import { WordData, VocabularyStatus } from './Word';
 import { StatusDots } from './StatusDots';
-import { X, ExternalLink, ArrowRight } from 'lucide-react';
+import { X, ExternalLink, ArrowRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 // ============================================================================
 // WordTooltip Component
@@ -30,6 +31,30 @@ const STATUS_CONFIG: Record<VocabularyStatus, { label: string; dotColor: string 
   [VocabularyStatus.IGNORE]:     { label: 'Ignored',    dotColor: 'bg-gray-400' },
 };
 
+/** Morph fields shown in the collapsed summary — most universally useful */
+const MORPH_PRIORITY = ['tense', 'case', 'number'] as const;
+
+/** Human-readable labels for morph field keys */
+const MORPH_LABELS: Record<string, string> = {
+  tense: 'Tense', case: 'Case', number: 'Number', mood: 'Mood',
+  gender: 'Gender', voice: 'Voice', aspect: 'Aspect', person: 'Person',
+};
+
+function buildMorphSummary(data: Record<string, unknown>): string {
+  const d = Object.fromEntries(Object.entries(data).map(([k, v]) => [k.toLowerCase(), v]));
+  const parts = MORPH_PRIORITY.filter((k) => d[k]).map((k) => String(d[k]));
+  return parts.length > 0 ? parts.join(', ') : '';
+}
+
+function buildMorphFull(data: Record<string, unknown>): string {
+  const d = Object.fromEntries(Object.entries(data).map(([k, v]) => [k.toLowerCase(), v]));
+  const order = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'];
+  return order
+    .filter((k) => d[k])
+    .map((k) => `${MORPH_LABELS[k] ?? k}: ${d[k]}`)
+    .join(' · ');
+}
+
 export function WordTooltip({
   wordData,
   anchorRect,
@@ -38,11 +63,21 @@ export function WordTooltip({
   onViewDetails,
   isExiting = false,
 }: WordTooltipProps) {
+  const [showFullMorph, setShowFullMorph] = useState(false);
+
   const { label } = STATUS_CONFIG[wordData.status];
   const cleanSurface = wordData.surface.replace(/[.,!?;:«»„"]/g, '');
 
   const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
   const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(cleanSurface)}`;
+
+  const morphSummary = wordData.inflectionData ? buildMorphSummary(wordData.inflectionData) : '';
+  const morphFull = wordData.inflectionData ? buildMorphFull(wordData.inflectionData) : wordData.inflection;
+  const displayForm = showFullMorph ? morphFull : (morphSummary || wordData.inflection);
+  // Only show the "more/less" toggle if there are fields beyond the 3 priority ones
+  const hasExtraMorph = wordData.inflectionData
+    ? Object.keys(wordData.inflectionData).length > MORPH_PRIORITY.length
+    : false;
 
   return (
     <Tooltip
@@ -85,18 +120,32 @@ export function WordTooltip({
         </div>
 
         {/* POS + inflection */}
-        <div className="flex items-center gap-3 text-ui-xs text-muted mb-3 pb-3 border-b border-border">
-          <span className="font-sans">
-            <span className="text-ink font-medium">POS:</span> {wordData.pos}
-          </span>
-          <span className="text-border">|</span>
-          <span className="font-sans">
-            <span className="text-ink font-medium">Form:</span> {wordData.inflection}
-          </span>
+        <div className="text-ui-xs text-muted mb-3 pb-3 border-b border-border space-y-1">
+          <div className="flex items-start gap-3 font-sans flex-wrap">
+            <span className="shrink-0">
+              <span className="text-ink font-medium">POS:</span> {wordData.pos}
+            </span>
+            {displayForm && displayForm !== 'base form' && (
+              <>
+                <span className="text-border shrink-0">|</span>
+                <span>
+                  <span className="text-ink font-medium">Form:</span> {displayForm}
+                </span>
+              </>
+            )}
+          </div>
+          {hasExtraMorph && (
+            <button
+              onClick={() => setShowFullMorph((v) => !v)}
+              className="font-sans text-primary hover:text-primary/80 transition-colors"
+            >
+              {showFullMorph ? 'less ‹' : 'more ›'}
+            </button>
+          )}
         </div>
 
         {/* Quick action buttons */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="mb-3">
           <QuickActions
             status={wordData.status}
             onStatusChange={(newStatus) => onStatusChange(wordData.wordId, newStatus)}
@@ -165,14 +214,14 @@ interface QuickActionsProps {
 }
 
 function QuickActions({ status, onStatusChange }: QuickActionsProps) {
-  // IGNORE words: offer to re-enter learning flow at Unknown (true initial state)
+  // IGNORE words: offer to re-enter learning flow
   if (status === VocabularyStatus.IGNORE) {
     return (
       <Button
         size="sm"
         variant="primary"
         onClick={() => onStatusChange(VocabularyStatus.UNKNOWN)}
-        className="flex-1"
+        className="w-full"
       >
         Restore to Unknown
       </Button>
@@ -184,16 +233,18 @@ function QuickActions({ status, onStatusChange }: QuickActionsProps) {
   const canStepUp = idx < PROGRESSION.length - 1;
   const stepDown = canStepDown ? PROGRESSION[idx - 1] : null;
   const stepUp = canStepUp ? PROGRESSION[idx + 1] : null;
+  const showIgnore = status === VocabularyStatus.UNKNOWN || status === VocabularyStatus.NEWLY_SEEN;
 
   return (
-    <>
+    <div className="flex items-center gap-2">
       {stepDown && (
         <Button
           size="sm"
           variant="secondary"
           onClick={() => onStatusChange(stepDown)}
-          className="flex-1"
+          className="flex-1 flex items-center justify-center gap-1"
         >
+          <ChevronDown size={12} strokeWidth={2.5} />
           {STEP_LABELS[stepDown]}
         </Button>
       )}
@@ -202,21 +253,25 @@ function QuickActions({ status, onStatusChange }: QuickActionsProps) {
           size="sm"
           variant="primary"
           onClick={() => onStatusChange(stepUp)}
-          className="flex-1"
+          className="flex-1 flex items-center justify-center gap-1"
         >
+          <ChevronUp size={12} strokeWidth={2.5} />
           {STEP_LABELS[stepUp]}
         </Button>
       )}
-      {(status === VocabularyStatus.UNKNOWN || status === VocabularyStatus.NEWLY_SEEN) && (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onStatusChange(VocabularyStatus.IGNORE)}
-          className="flex-1"
-        >
-          Ignore
-        </Button>
+      {showIgnore && (
+        <>
+          <span className="h-4 w-px bg-border shrink-0" />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onStatusChange(VocabularyStatus.IGNORE)}
+            className="flex-1"
+          >
+            Ignore
+          </Button>
+        </>
       )}
-    </>
+    </div>
   );
 }

@@ -68,7 +68,7 @@ export async function GET(
       wordId: instance.wordId,
       surface: instance.surfaceForm,
       lemma: instance.word.lemma,
-      pos: null, // POS is stored in pos_tags join table, not on word directly
+      pos: instance.pos ?? null,
       translation: instance.word.translation ?? null,
       romanization: instance.word.romanization ?? null,
       dictionaryFrequency: instance.word.dictionaryFrequency,

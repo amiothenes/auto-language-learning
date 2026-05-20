@@ -110,6 +110,7 @@ export function ReaderContent({
         dictionaryFrequency: inst.dictionaryFrequency,
         userFrequency: inst.userFrequency,
         status: inst.status,
+        inflectionData: inst.inflectionData ?? null,
       };
 
       tokens.push({ type: 'word', data: wordData, key: inst.instanceId });

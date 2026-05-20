@@ -326,7 +326,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     );
   };
 
-  const handleDismissFeedback = () => setFeedbackState(null);
+  const handleDismissFeedback = useCallback(() => setFeedbackState(null), []);
 
   const handleParagraphNavigate = (index: number) => {
     paragraphRefs.current[index]?.scrollIntoView({
@@ -496,7 +496,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           wordData={tooltipWord}
           anchorRect={tooltipAnchorRect}
           onClose={handleTooltipClose}
-          onStatusChange={handleStatusChange}
+          onStatusChange={(wordId, newStatus) => {
+            handleStatusChange(wordId, newStatus);
+            handleTooltipClose();
+          }}
           onViewDetails={handleTooltipViewDetails}
           isExiting={isTooltipExiting}
         />

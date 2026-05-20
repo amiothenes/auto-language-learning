@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,9 +34,11 @@ export function StatusUpdateFeedback({
   const knownWordsDelta = newStats.knownWords - oldStats.knownWords;
   const progressDelta = newStats.textProgress - oldStats.textProgress;
 
-  /**
-   * Animate number from old value to new value
-   */
+  // Keep a stable ref to onDismiss so the animation effect never re-runs just
+  // because the parent recreated the callback (stale-closure guard).
+  const onDismissRef = useRef(onDismiss);
+  useEffect(() => { onDismissRef.current = onDismiss; });
+
   useEffect(() => {
     if (!isVisible) return;
 
@@ -82,14 +84,14 @@ export function StatusUpdateFeedback({
     // Auto-dismiss after 3 seconds
     const dismissTimeout = setTimeout(() => {
       setIsExiting(true);
-      setTimeout(onDismiss, 200); // Wait for fade-out animation
+      setTimeout(() => onDismissRef.current(), 200); // Wait for fade-out animation
     }, 3000);
 
     return () => {
       clearTimeout(animationDelay);
       clearTimeout(dismissTimeout);
     };
-  }, [isVisible, oldStats, newStats, onDismiss]);
+  }, [isVisible, oldStats.knownWords, oldStats.textProgress, newStats.knownWords, newStats.textProgress]);
 
   // Sparkle particle positions (semicircle above toast)
   const sparkles = Array.from({ length: 10 }, (_, i) => {

@@ -114,6 +114,8 @@ export type WordData = {
   userFrequency: number;
   /** Current learning status */
   status: VocabularyStatus;
+  /** Raw morphological features from spaCy — used by tooltip for collapsible "show more" */
+  inflectionData?: Record<string, unknown> | null;
 }
 
 // ============================================================================
