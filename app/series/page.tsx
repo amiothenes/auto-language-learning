@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
@@ -32,6 +33,7 @@ function SeriesPageContent() {
   const viewMode = searchParams.get('view');
   const { selectedLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
+  const queryClient = useQueryClient();
   const seriesQuery = useSeriesList();
   const textsQuery = useTexts();
   const isLoading = seriesQuery.isLoading;
@@ -169,6 +171,7 @@ function SeriesPageContent() {
           if (!importRes.ok) {
             const err = await importRes.json();
             showToast(err.error || 'Series created but text import failed');
+            queryClient.invalidateQueries({ queryKey: ['series-list'] });
             router.push(`/series/${created.id}`);
             return;
           }
@@ -182,6 +185,7 @@ function SeriesPageContent() {
       showToast(`Series "${seriesData.name}" created`);
     }
 
+    queryClient.invalidateQueries({ queryKey: ['series-list'] });
     router.push(`/series/${created.id}`);
   };
 

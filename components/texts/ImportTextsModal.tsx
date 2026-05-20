@@ -14,7 +14,7 @@ import type { ImportedTextData } from '@/lib/types/forms';
 interface ImportTextsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (texts: ImportedTextData[]) => void;
+  onImport: (texts: ImportedTextData[]) => Promise<void>;
   seriesId: string;
   seriesName: string;
 }
@@ -28,6 +28,7 @@ export function ImportTextsModal({
 }: ImportTextsModalProps) {
   const [importedTexts, setImportedTexts] = useState<ImportedTextData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -46,6 +47,8 @@ export function ImportTextsModal({
       setImportedTexts([]);
       setError(null);
       setIsProcessing(false);
+      setIsSubmitting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
   }, [isOpen]);
@@ -73,13 +76,13 @@ export function ImportTextsModal({
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isProcessing) {
+      if (e.key === 'Escape' && !isProcessing && !isSubmitting) {
         onClose();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isProcessing, onClose]);
+  }, [isOpen, isProcessing, isSubmitting, onClose]);
 
   // Focus trap
   useEffect(() => {
@@ -113,10 +116,10 @@ export function ImportTextsModal({
 
   // Backdrop click handler
   const handleBackdropClick = useCallback(() => {
-    if (!isProcessing) {
+    if (!isProcessing && !isSubmitting) {
       onClose();
     }
-  }, [isProcessing, onClose]);
+  }, [isProcessing, isSubmitting, onClose]);
 
   // Parse CSV content
   const parseCSV = (content: string): ImportedTextData[] => {
@@ -281,10 +284,17 @@ export function ImportTextsModal({
   };
 
   // Final submission
-  const handleSubmit = useCallback(() => {
-    if (importedTexts.length === 0) return;
-    onImport(importedTexts);
-  }, [importedTexts, onImport]);
+  const handleSubmit = useCallback(async () => {
+    if (importedTexts.length === 0 || isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onImport(importedTexts);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Import failed');
+      setIsSubmitting(false);
+    }
+  }, [importedTexts, onImport, isSubmitting]);
 
   // Calculate total word count estimate
   const totalWordCount = importedTexts.reduce(
@@ -455,7 +465,7 @@ export function ImportTextsModal({
               variant="ghost"
               size="md"
               onClick={onClose}
-              disabled={isProcessing}
+              disabled={isProcessing || isSubmitting}
             >
               Cancel
             </Button>
@@ -464,9 +474,11 @@ export function ImportTextsModal({
               variant="primary"
               size="md"
               onClick={handleSubmit}
-              disabled={importedTexts.length === 0 || isProcessing}
+              disabled={importedTexts.length === 0 || isProcessing || isSubmitting}
             >
-              Import {importedTexts.length > 0 && `${importedTexts.length} Text${importedTexts.length > 1 ? 's' : ''}`}
+              {isSubmitting
+                ? 'Importing...'
+                : `Import${importedTexts.length > 0 ? ` ${importedTexts.length} Text${importedTexts.length > 1 ? 's' : ''}` : ''}`}
             </Button>
           </div>
         </div>

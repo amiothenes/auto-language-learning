@@ -153,28 +153,24 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleImportTexts = async (texts: ImportedTextData[]) => {
-    try {
-      const results: ImportTextResponse[] = [];
-      for (const text of texts) {
-        const result = await importMutation.mutateAsync({
-          title: text.title,
-          content: text.content,
-          tags: text.tags ?? [],
-          languageCode: selectedLanguage,
-          seriesId: id,
-        });
-        results.push(result);
-      }
-      await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
-      const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
-      const msg = totalParts > texts.length
-        ? `${texts.length} file${texts.length > 1 ? 's' : ''} imported as ${totalParts} parts`
-        : `${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully`;
-      showToast(msg);
-      setIsImportModalOpen(false);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Import failed');
+    const results: ImportTextResponse[] = [];
+    for (const text of texts) {
+      const result = await importMutation.mutateAsync({
+        title: text.title,
+        content: text.content,
+        tags: text.tags ?? [],
+        languageCode: selectedLanguage,
+        seriesId: id,
+      });
+      results.push(result);
     }
+    await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
+    const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
+    const msg = totalParts > texts.length
+      ? `${texts.length} file${texts.length > 1 ? 's' : ''} imported as ${totalParts} parts`
+      : `${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully`;
+    showToast(msg);
+    setIsImportModalOpen(false);
   };
 
   const handleConfirmDeleteSeries = async () => {
@@ -186,6 +182,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       });
       if (!res.ok) throw new Error('Failed to delete series');
       setDeleteSeriesTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
       router.push('/series');
     } catch {
       showToast('Failed to delete series');
@@ -389,6 +386,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         textId={editTextTarget?.id ?? ''}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ['series', id] });
+          queryClient.invalidateQueries({ queryKey: ['text', editTextTarget!.id] });
           setEditTextTarget(null);
         }}
       />
