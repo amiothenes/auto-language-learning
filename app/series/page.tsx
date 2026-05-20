@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
@@ -24,7 +24,7 @@ import { useTexts } from '@/lib/hooks/useTexts';
 // Series Page Component
 // ============================================================================
 
-export default function SeriesPage() {
+function SeriesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewMode = searchParams.get('view');
@@ -395,5 +395,13 @@ export default function SeriesPage() {
         onClose={hideToast}
       />
     </div>
+  );
+}
+
+export default function SeriesPage() {
+  return (
+    <Suspense>
+      <SeriesPageContent />
+    </Suspense>
   );
 }
