@@ -1,8 +1,11 @@
+import logging
 import spacy
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-app = FastAPI()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 _models: dict = {}
 
@@ -13,6 +16,34 @@ MODEL_MAP = {
 }
 
 FALLBACK_MODEL = "xx_ent_wiki_sm"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Eagerly load every model at startup so missing models fail fast."""
+    missing = []
+    for lang, model_name in MODEL_MAP.items():
+        try:
+            _models[lang] = spacy.load(model_name)
+            logger.info("Loaded spaCy model '%s' for language '%s'", model_name, lang)
+        except OSError:
+            missing.append(model_name)
+            logger.error(
+                "spaCy model '%s' (language '%s') is not installed", model_name, lang
+            )
+
+    if missing:
+        raise RuntimeError(
+            f"Required spaCy models are missing and must be installed before starting: "
+            f"{', '.join(missing)}. "
+            f"Run: python -m spacy download <model>"
+        )
+
+    logger.info("All spaCy models loaded successfully: %s", list(_models.keys()))
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 def load_model(lang: str):
