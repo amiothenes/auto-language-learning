@@ -38,9 +38,9 @@ export function Button({
   
   // Variant styles
   const variantStyles = {
-    primary: 'bg-primary text-white shadow-raised hover:opacity-90 hover:shadow-raised-hover active:translate-y-px',
-    secondary: 'bg-paper border border-border text-ink hover:bg-desk transition-colors',
-    ghost: 'bg-transparent text-ink hover:bg-desk hover:underline transition-colors',
+    primary: 'bg-primary text-white shadow-raised enabled:hover:opacity-90 enabled:hover:shadow-raised-hover enabled:active:translate-y-px',
+    secondary: 'bg-paper border border-border text-ink enabled:hover:bg-desk transition-colors',
+    ghost: 'bg-transparent text-ink enabled:hover:bg-desk enabled:hover:underline transition-colors',
   };
   
   // Size styles
