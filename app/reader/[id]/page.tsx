@@ -33,12 +33,20 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const router = useRouter();
 
   // ── Data queries ──────────────────────────────────────────────────────────
-  const [adjacentSort, setAdjacentSort] = useState('title-asc');
+  const queryClient = useQueryClient();
+  const [adjacentSort, setAdjacentSort] = useState<string>(() => {
+    const cachedText = queryClient.getQueryData<TextData>(['text', id]);
+    if (cachedText?.seriesId) {
+      const saved = localStorage.getItem(`series-sort-${cachedText.seriesId}`);
+      const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+      if (saved && valid.includes(saved)) return saved;
+    }
+    return 'title-asc';
+  });
   const textQuery = useText(id);
   const instancesQuery = useWordInstances(id);
   const updateWordStatus = useUpdateWordStatus(id);
   const adjacentQuery = useAdjacentTexts(id, adjacentSort);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetch(`/api/texts/${id}/view`, {
@@ -142,7 +150,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
       if (saved && valid.includes(saved)) setAdjacentSort(saved);
     }
-  }, [textData?.seriesId]);
+  }, [textData?.seriesId, id]);
 
   // Initialize vocabulary stats once when text data first loads
   useEffect(() => {
@@ -432,10 +440,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </aside>
 
         {/* ── MAIN READER AREA ── */}
-        <main className="order-1 xl:order-2 flex flex-col items-center px-4 pt-20 pb-8 xl:pt-12 xl:pb-12 xl:px-8">
-          {adjacentQuery.data && (adjacentQuery.data.prev || adjacentQuery.data.next) && (textData?.wordCount ?? 0) >= 226 && (
+        <main className="order-1 xl:order-2 flex flex-col items-center px-4 pt-20 pb-[50vh] xl:pt-12 xl:px-8">
+          {adjacentQuery.isPending && (textData?.wordCount ?? 0) >= 226 ? (
+            <nav className="invisible flex justify-between w-full max-w-prose mb-6 pb-4 border-b border-border" aria-hidden="true">
+              <span className="font-sans text-ui-sm">.</span>
+            </nav>
+          ) : (adjacentQuery.data?.prev || adjacentQuery.data?.next) && (textData?.wordCount ?? 0) >= 226 ? (
             <nav className="flex justify-between w-full max-w-prose mb-6 pb-4 border-b border-border">
-              {adjacentQuery.data.prev ? (
+              {adjacentQuery.data?.prev ? (
                 <Link
                   href={`/reader/${adjacentQuery.data.prev.id}`}
                   className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors"
@@ -443,7 +455,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                   ← {adjacentQuery.data.prev.title}
                 </Link>
               ) : <span />}
-              {adjacentQuery.data.next ? (
+              {adjacentQuery.data?.next ? (
                 <Link
                   href={`/reader/${adjacentQuery.data.next.id}`}
                   className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors"
@@ -452,7 +464,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 </Link>
               ) : <span />}
             </nav>
-          )}
+          ) : null}
 
           {isLoading ? (
             <ReaderContentSkeleton />
