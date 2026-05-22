@@ -1,8 +1,7 @@
 import spacy
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-
-app = FastAPI()
 
 _models: dict = {}
 
@@ -27,6 +26,15 @@ def load_model(lang: str):
                        f"Run: python -m spacy download {model_name}",
             )
     return _models[lang]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_model("ru")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 class ProcessRequest(BaseModel):
