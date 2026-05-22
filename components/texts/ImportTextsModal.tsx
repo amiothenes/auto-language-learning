@@ -388,10 +388,10 @@ export function ImportTextsModal({
                 <strong>.txt</strong> - Each file becomes one text (may split if long)
               </li>
               <li>
-                <strong>.csv</strong> - Must have "title" and "content" columns
+                <strong>.csv</strong> - Must have &quot;title&quot; and &quot;content&quot; columns
               </li>
               <li>
-                <strong>.json</strong> - Array of objects with "title" and "content" fields
+                <strong>.json</strong> - Array of objects with &quot;title&quot; and &quot;content&quot; fields
               </li>
               <li>
                 Texts over <strong>750 words</strong> are automatically split into ordered parts
