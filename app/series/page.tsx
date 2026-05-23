@@ -48,6 +48,11 @@ function SeriesPageContent() {
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    document.title = 'Verbista — Series';
+    return () => { document.title = 'Verbista'; };
+  }, []);
+
   // Auto-open NewSeriesModal when arriving from dashboard "Add New Text"
   useEffect(() => {
     if (searchParams.get('new') === 'true') {

@@ -83,6 +83,11 @@ export default function VocabularyPage() {
     [VocabularyStatus.IGNORE]:     stats?.vocabulary.ignored    ?? 0,
   };
 
+  useEffect(() => {
+    document.title = 'Verbista — Vocabulary';
+    return () => { document.title = 'Verbista'; };
+  }, []);
+
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);

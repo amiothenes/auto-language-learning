@@ -68,6 +68,13 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const [editTextTarget, setEditTextTarget] = useState<{ id: string; title: string } | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (seriesData?.name) {
+      document.title = `Verbista — ${seriesData.name}`;
+      return () => { document.title = 'Verbista'; };
+    }
+  }, [seriesData?.name]);
+
   // Initialize series name once from DB — preserves in-progress edits on refetch
   useEffect(() => {
     if (seriesData && !seriesNameInitialized.current) {

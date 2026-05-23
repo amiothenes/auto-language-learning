@@ -10,8 +10,8 @@ import { ViewTransitionWrapper } from "@/components/ViewTransitionWrapper";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 export const metadata: Metadata = {
-  title: "Auto Language Learning",
-  description: "A sophisticated language-learning desktop application for tracking vocabulary growth",
+  title: "Verbista",
+  description: "A sophisticated language-learning reader for tracking vocabulary growth",
 };
 
 export default function RootLayout({

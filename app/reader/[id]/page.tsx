@@ -155,6 +155,13 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     }
   }, [textData?.seriesId, id]);
 
+  useEffect(() => {
+    if (textData?.title) {
+      document.title = `Verbista — ${textData.title}`;
+      return () => { document.title = 'Verbista'; };
+    }
+  }, [textData?.title]);
+
   // Initialize vocabulary stats once when text data first loads
   useEffect(() => {
     if (textData && !statsInitialized.current) {
