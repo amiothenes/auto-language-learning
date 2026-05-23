@@ -12,6 +12,7 @@ import { Download, AlertTriangle, Upload } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { LwtLanguageModal } from '@/components/ui/LwtLanguageModal';
 
 export default function DataSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -20,6 +21,8 @@ export default function DataSettingsPage() {
   const [lwtFile, setLwtFile] = useState<File | null>(null);
   const [lwtStatus, setLwtStatus] = useState<string | null>(null);
   const [lwtLoading, setLwtLoading] = useState(false);
+  const [showLwtLangModal, setShowLwtLangModal] = useState(false);
+  const [detectedLangName, setDetectedLangName] = useState('');
 
   const handleDeleteAllData = async () => {
     if (isDemo) return;
@@ -46,10 +49,28 @@ export default function DataSettingsPage() {
 
   const handleLwtImport = async () => {
     if (isDemo || !lwtFile) return;
+    setLwtStatus(null);
+
+    // Parse the file client-side to extract the language name from column 6
+    const text = await lwtFile.text();
+    const lines = text.split('\n').map((l) => l.trimEnd()).filter(Boolean);
+    const firstValidRow = lines.find((line) => line.split('\t').length >= 6);
+    const langName = firstValidRow ? firstValidRow.split('\t')[5].trim() : '';
+
+    setDetectedLangName(langName || 'Unknown');
+    setShowLwtLangModal(true);
+  };
+
+  const handleLwtModalConfirm = async (languageId: string) => {
+    if (!lwtFile) return;
+    setShowLwtLangModal(false);
     setLwtLoading(true);
     setLwtStatus(null);
+
     const form = new FormData();
     form.append('file', lwtFile);
+    form.append('languageId', languageId);
+
     try {
       const res = await fetch('/api/vocabulary/import-lwt', {
         method: 'POST',
@@ -124,12 +145,12 @@ export default function DataSettingsPage() {
       {/* LWT Import Section */}
       <SettingSection
         title="Import LWT Vocabulary"
-        description="Bulk-import vocabulary from a Learning With Texts .tsv export"
+        description="Bulk-import vocabulary from a Learning With Texts .tsv/.txt export"
       >
         <div className="space-y-3">
           <input
             type="file"
-            accept=".tsv"
+            accept=".tsv,.txt"
             onChange={(e) => {
               setLwtFile(e.target.files?.[0] ?? null);
               setLwtStatus(null);
@@ -146,7 +167,7 @@ export default function DataSettingsPage() {
               className="w-full justify-start"
             >
               <span className="flex-1 text-left">
-                {lwtLoading ? 'Importing…' : 'Import from LWT (.tsv)'}
+                {lwtLoading ? 'Importing…' : 'Import from LWT (.tsv / .txt)'}
               </span>
             </Button>
           </span>
@@ -208,6 +229,14 @@ export default function DataSettingsPage() {
           </div>
         </div>
       </SettingSection>
+
+      {/* LWT Language Confirmation Modal */}
+      <LwtLanguageModal
+        isOpen={showLwtLangModal}
+        onClose={() => setShowLwtLangModal(false)}
+        onConfirm={handleLwtModalConfirm}
+        detectedLanguageName={detectedLangName}
+      />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

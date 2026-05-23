@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const languageIdOverride = (formData.get('languageId') as string | null) || null;
+
   const text = await file.text();
   const lines = text.split('\n').map((l) => l.trimEnd()).filter(Boolean);
 
@@ -111,34 +113,48 @@ export async function POST(request: NextRequest) {
   }
 
   // ========================================================================
-  // 2. Resolve languages — case-insensitive name match
+  // 2. Resolve languages
   // ========================================================================
 
-  const uniqueLangNames = [...new Set(parsed.map((r) => r.languageName))];
   const allLanguages = await db.query.languages.findMany();
-
   const langMap = new Map<string, string>(); // languageName (lower) → language_id
 
-  for (const lang of allLanguages) {
-    langMap.set(lang.name.toLowerCase(), lang.id);
-  }
-
-  const mismatches: string[] = [];
-  for (const name of uniqueLangNames) {
-    if (!langMap.has(name.toLowerCase())) {
-      mismatches.push(name);
+  if (languageIdOverride) {
+    // Client confirmed the language — validate the id and apply to all rows
+    const overrideLang = allLanguages.find((l) => l.id === languageIdOverride);
+    if (!overrideLang) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Language id "${languageIdOverride}" not found in database` },
+        { status: 400 }
+      );
     }
-  }
+    for (const row of parsed) {
+      langMap.set(row.languageName.toLowerCase(), languageIdOverride);
+    }
+  } else {
+    // Fall back to case-insensitive name matching from column 6
+    for (const lang of allLanguages) {
+      langMap.set(lang.name.toLowerCase(), lang.id);
+    }
 
-  if (mismatches.length > 0) {
-    const available = allLanguages.map((l) => `"${l.name}" (${l.code})`).join(', ');
-    return NextResponse.json<ApiErrorResponse>(
-      {
-        error: `Language not found in database: ${mismatches.map((m) => `"${m}"`).join(', ')}`,
-        details: `Available languages: ${available}`,
-      },
-      { status: 400 }
-    );
+    const uniqueLangNames = [...new Set(parsed.map((r) => r.languageName))];
+    const mismatches: string[] = [];
+    for (const name of uniqueLangNames) {
+      if (!langMap.has(name.toLowerCase())) {
+        mismatches.push(name);
+      }
+    }
+
+    if (mismatches.length > 0) {
+      const available = allLanguages.map((l) => `"${l.name}" (${l.code})`).join(', ');
+      return NextResponse.json<ApiErrorResponse>(
+        {
+          error: `Language not found in database: ${mismatches.map((m) => `"${m}"`).join(', ')}`,
+          details: `Available languages: ${available}`,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // ========================================================================
