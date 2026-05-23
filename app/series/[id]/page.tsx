@@ -23,6 +23,8 @@ import { useSeries } from '@/lib/hooks/useSeries';
 import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent';
 
 // ============================================================================
@@ -124,6 +126,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   }, [seriesData, sortBy]);
 
   const handleTitleUpdate = async (newTitle: string) => {
+    if (isDemo) return;
     setSeriesName(newTitle);
     try {
       const res = await fetch(`/api/series/${id}`, {
@@ -141,6 +144,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleAddText = () => {
+    if (isDemo) return;
     setIsNewTextModalOpen(true);
   };
 
@@ -155,10 +159,12 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleImport = () => {
+    if (isDemo) return;
     setIsImportModalOpen(true);
   };
 
   const handleImportTexts = async (texts: ImportedTextData[]) => {
+    if (isDemo) return;
     const results: ImportTextResponse[] = [];
     for (const text of texts) {
       const result = await importMutation.mutateAsync({
@@ -180,7 +186,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleConfirmDeleteSeries = async () => {
-    if (!deleteSeriesTarget) return;
+    if (isDemo || !deleteSeriesTarget) return;
     try {
       const res = await fetch(`/api/series/${deleteSeriesTarget.id}`, {
         method: 'DELETE',
@@ -196,7 +202,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleConfirmDeleteText = async () => {
-    if (!deleteTextTarget) return;
+    if (isDemo || !deleteTextTarget) return;
     try {
       const res = await fetch(`/api/texts/${deleteTextTarget.id}`, {
         method: 'DELETE',
@@ -235,7 +241,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             overallProgress={seriesData.overallProgress}
             lastUpdated={seriesData.lastUpdated}
             onTitleUpdate={handleTitleUpdate}
-            onDelete={setDeleteSeriesTarget}
+            onDelete={isDemo ? () => {} : setDeleteSeriesTarget}
           />
         ) : null}
 
@@ -248,24 +254,30 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            variant="primary"
-            size="lg"
-            leftIcon={<Plus size={18} strokeWidth={2} />}
-            onClick={handleAddText}
-            className="sm:flex-1"
-          >
-            Add Text
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            leftIcon={<Upload size={18} strokeWidth={1.5} />}
-            onClick={handleImport}
-            className="sm:flex-1"
-          >
-            Import
-          </Button>
+          <span className="sm:flex-1" title={isDemo ? 'Not available in demo mode' : undefined}>
+            <Button
+              variant="primary"
+              size="lg"
+              leftIcon={<Plus size={18} strokeWidth={2} />}
+              onClick={handleAddText}
+              className="w-full"
+              disabled={isDemo}
+            >
+              Add Text
+            </Button>
+          </span>
+          <span className="sm:flex-1" title={isDemo ? 'Not available in demo mode' : undefined}>
+            <Button
+              variant="secondary"
+              size="lg"
+              leftIcon={<Upload size={18} strokeWidth={1.5} />}
+              onClick={handleImport}
+              className="w-full"
+              disabled={isDemo}
+            >
+              Import
+            </Button>
+          </span>
 
           {/* Sort Dropdown */}
           <div ref={sortRef} className="relative sm:flex-1">
@@ -338,8 +350,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                 knownPercentage={text.knownPercentage}
                 lastRead={text.lastRead}
                 preview={text.preview}
-                onDelete={setDeleteTextTarget}
-                onEdit={setEditTextTarget}
+                onDelete={isDemo ? () => {} : setDeleteTextTarget}
+                onEdit={isDemo ? () => {} : setEditTextTarget}
               />
             ))}
           </div>

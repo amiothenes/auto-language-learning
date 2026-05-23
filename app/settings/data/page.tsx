@@ -6,6 +6,8 @@
 // ============================================================================
 
 import { useState } from 'react';
+
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 import { Download, AlertTriangle, Upload } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +22,7 @@ export default function DataSettingsPage() {
   const [lwtLoading, setLwtLoading] = useState(false);
 
   const handleDeleteAllData = async () => {
+    if (isDemo) return;
     try {
       const res = await fetch('/api/data', {
         method: 'DELETE',
@@ -42,7 +45,7 @@ export default function DataSettingsPage() {
   };
 
   const handleLwtImport = async () => {
-    if (!lwtFile) return;
+    if (isDemo || !lwtFile) return;
     setLwtLoading(true);
     setLwtStatus(null);
     const form = new FormData();
@@ -133,18 +136,20 @@ export default function DataSettingsPage() {
             }}
             className="block w-full font-sans text-ui-sm text-ink file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:font-sans file:text-ui-sm file:font-medium file:bg-surface file:text-ink hover:file:bg-surface/80 cursor-pointer"
           />
-          <Button
-            variant="secondary"
-            size="md"
-            leftIcon={<Upload size={18} strokeWidth={2} />}
-            onClick={handleLwtImport}
-            disabled={!lwtFile || lwtLoading}
-            className="w-full justify-start"
-          >
-            <span className="flex-1 text-left">
-              {lwtLoading ? 'Importing…' : 'Import from LWT (.tsv)'}
-            </span>
-          </Button>
+          <span title={isDemo ? 'Not available in demo mode' : undefined}>
+            <Button
+              variant="secondary"
+              size="md"
+              leftIcon={<Upload size={18} strokeWidth={2} />}
+              onClick={handleLwtImport}
+              disabled={isDemo || !lwtFile || lwtLoading}
+              className="w-full justify-start"
+            >
+              <span className="flex-1 text-left">
+                {lwtLoading ? 'Importing…' : 'Import from LWT (.tsv)'}
+              </span>
+            </Button>
+          </span>
           {lwtStatus && (
             <p className="font-sans text-ui-sm text-muted ml-1">{lwtStatus}</p>
           )}
@@ -183,19 +188,21 @@ export default function DataSettingsPage() {
                   />
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={!isDeleteEnabled}
-                  className={`${
-                    isDeleteEnabled
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : 'bg-red-300 cursor-not-allowed'
-                  }`}
-                >
-                  Delete All Data
-                </Button>
+                <span title={isDemo ? 'Not available in demo mode' : undefined}>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isDemo || !isDeleteEnabled}
+                    className={`${
+                      isDeleteEnabled && !isDemo
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-red-300 cursor-not-allowed'
+                    }`}
+                  >
+                    Delete All Data
+                  </Button>
+                </span>
               </div>
             </div>
           </div>

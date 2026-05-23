@@ -1,9 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 export function useDeleteLanguage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (languageId: string): Promise<void> => {
+      if (isDemo) return;
       const res = await fetch(`/api/languages/${languageId}`, {
         method: 'DELETE',
         headers: {

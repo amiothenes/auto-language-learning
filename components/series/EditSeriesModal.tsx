@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 // ============================================================================
 // EditSeriesModal Component
 // Modal for editing series name + description.
@@ -122,7 +124,7 @@ export function EditSeriesModal({
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!isFormValid) return;
+      if (isDemo || !isFormValid) return;
 
       setSaveError(null);
       setIsSaving(true);
@@ -241,14 +243,16 @@ export function EditSeriesModal({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                disabled={!isFormValid || isSaving}
-              >
-                {isSaving ? 'Saving…' : 'Save Changes'}
-              </Button>
+              <span title={isDemo ? 'Not available in demo mode' : undefined}>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={isDemo || !isFormValid || isSaving}
+                >
+                  {isSaving ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </span>
             </div>
           </form>
         </div>

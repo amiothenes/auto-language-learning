@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 // ============================================================================
 // EditTextModal Component
 // Modal for editing text metadata (title + tags). Content is not editable
@@ -144,7 +146,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!isFormValid) return;
+      if (isDemo || !isFormValid) return;
 
       setSaveError(null);
       setIsSaving(true);
@@ -264,14 +266,16 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  disabled={!isFormValid || isFetching || isSaving}
-                >
-                  {isSaving ? 'Saving…' : 'Save Changes'}
-                </Button>
+                <span title={isDemo ? 'Not available in demo mode' : undefined}>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="md"
+                    disabled={isDemo || !isFormValid || isFetching || isSaving}
+                  >
+                    {isSaving ? 'Saving…' : 'Save Changes'}
+                  </Button>
+                </span>
               </div>
             </form>
           )}

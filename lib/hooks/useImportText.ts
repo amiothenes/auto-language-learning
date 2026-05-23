@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import type { ImportTextRequest, ImportTextResponse } from '@/lib/types/api';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 /**
  * TanStack Query mutation hook for importing text
  *
@@ -29,6 +31,7 @@ import type { ImportTextRequest, ImportTextResponse } from '@/lib/types/api';
 export function useImportText() {
   return useMutation({
     mutationFn: async (data: ImportTextRequest): Promise<ImportTextResponse> => {
+      if (isDemo) return {} as ImportTextResponse;
       const response = await fetch('/api/texts/import', {
         method: 'POST',
         headers: {

@@ -23,6 +23,8 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { useTexts } from '@/lib/hooks/useTexts';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 // ============================================================================
 // Series Page Component
 // ============================================================================
@@ -120,6 +122,7 @@ function SeriesPageContent() {
   };
 
   const handleCreateSeries = async (seriesData: NewSeriesData) => {
+    if (isDemo) return;
     // Step 1: Create the series
     let created: { id: string; name: string };
     try {
@@ -202,7 +205,7 @@ function SeriesPageContent() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return;
+    if (isDemo || !deleteTarget) return;
     try {
       const res = await fetch(`/api/series/${deleteTarget.id}`, {
         method: 'DELETE',
@@ -301,14 +304,17 @@ function SeriesPageContent() {
           </div>
 
           {/* New Series Button */}
-          <Button
-            variant="primary"
-            size="lg"
-            leftIcon={<Plus size={18} strokeWidth={2} />}
-            onClick={handleNewSeries}
-          >
-            New Series
-          </Button>
+          <span title={isDemo ? 'Not available in demo mode' : undefined}>
+            <Button
+              variant="primary"
+              size="lg"
+              leftIcon={<Plus size={18} strokeWidth={2} />}
+              onClick={handleNewSeries}
+              disabled={isDemo}
+            >
+              New Series
+            </Button>
+          </span>
         </header>
 
         {/* Filter Bar */}
@@ -388,9 +394,9 @@ function SeriesPageContent() {
               <SeriesCard
                 key={series.id}
                 {...series}
-                onDelete={setDeleteTarget}
-                onEdit={setEditTarget}
-                onAddText={setAddTextTarget}
+                onDelete={isDemo ? () => {} : setDeleteTarget}
+                onEdit={isDemo ? () => {} : setEditTarget}
+                onAddText={isDemo ? () => {} : setAddTextTarget}
               />
             ))}
           </div>

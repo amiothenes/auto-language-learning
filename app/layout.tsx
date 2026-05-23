@@ -19,6 +19,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
   return (
     <html lang="en">
       <body
@@ -35,6 +37,13 @@ export default function RootLayout({
                 <ViewTransitionWrapper>
                   <ErrorBoundary>
                     <main id="main-content" tabIndex={-1} className="md:ml-16 min-h-screen pb-16 md:pb-0">
+                      {isDemo && (
+                        <div className="w-full bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-center">
+                          <p className="font-sans text-ui-sm text-amber-800">
+                            Demo mode - this is a read-only preview. Clone the repo to use the full app.
+                          </p>
+                        </div>
+                      )}
                       {children}
                     </main>
                   </ErrorBoundary>

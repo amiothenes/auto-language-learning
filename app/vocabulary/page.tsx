@@ -23,6 +23,8 @@ import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@
 import { useVocabulary } from '@/lib/hooks/useVocabulary';
 import { useStats } from '@/lib/hooks/useStats';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 // ============================================================================
 // Vocabulary Page Component
 // ============================================================================
@@ -89,6 +91,7 @@ export default function VocabularyPage() {
   // Bulk update mutation (mark as known, etc.)
   const bulkUpdateMutation = useMutation({
     mutationFn: async ({ wordIds, status }: { wordIds: string[]; status: VocabularyStatus }) => {
+      if (isDemo) return {} as { updated: number };
       const res = await fetch('/api/vocabulary/bulk-update', {
         method: 'POST',
         headers: {
@@ -148,6 +151,7 @@ export default function VocabularyPage() {
 
   // Bulk action handlers
   const handleMarkAsKnown = () => {
+    if (isDemo) return;
     bulkUpdateMutation.mutate({
       wordIds: Array.from(selectedIds),
       status: VocabularyStatus.KNOWN,
@@ -211,22 +215,28 @@ export default function VocabularyPage() {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              size="lg"
-              leftIcon={<Upload size={18} strokeWidth={1.5} />}
-              onClick={() => setIsImportVocabModalOpen(true)}
-            >
-              Import
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              leftIcon={<Plus size={18} strokeWidth={2} />}
-              onClick={() => setIsAddVocabModalOpen(true)}
-            >
-              Add Vocabulary
-            </Button>
+            <span title={isDemo ? 'Not available in demo mode' : undefined}>
+              <Button
+                variant="secondary"
+                size="lg"
+                leftIcon={<Upload size={18} strokeWidth={1.5} />}
+                onClick={() => setIsImportVocabModalOpen(true)}
+                disabled={isDemo}
+              >
+                Import
+              </Button>
+            </span>
+            <span title={isDemo ? 'Not available in demo mode' : undefined}>
+              <Button
+                variant="primary"
+                size="lg"
+                leftIcon={<Plus size={18} strokeWidth={2} />}
+                onClick={() => setIsAddVocabModalOpen(true)}
+                disabled={isDemo}
+              >
+                Add Vocabulary
+              </Button>
+            </span>
           </div>
         </header>
 

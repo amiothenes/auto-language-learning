@@ -20,6 +20,8 @@ import { useWordInstances } from '@/lib/hooks/useWordInstances';
 import { useUpdateWordStatus } from '@/lib/hooks/useUpdateWordStatus';
 import { useAdjacentTexts } from '@/lib/hooks/useAdjacentTexts';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 // ============================================================================
 // Reader Page Component
 // ============================================================================
@@ -49,6 +51,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const adjacentQuery = useAdjacentTexts(id, adjacentSort);
 
   useEffect(() => {
+    if (isDemo) return;
     fetch(`/api/texts/${id}/view`, {
       method: 'POST',
       headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
@@ -290,7 +293,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   };
 
   const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
-    if (!selectedWord) return;
+    if (isDemo || !selectedWord) return;
 
     const oldStatus = selectedWord.status;
     const wasKnown = isKnownStatus(oldStatus);
