@@ -10,6 +10,7 @@ import { useTexts } from '@/lib/hooks/useTexts';
 
 interface RecentTextsListProps {
   isLoading?: boolean;
+  isDemo?: boolean;
 }
 
 function TextListItemSkeleton() {
@@ -31,7 +32,7 @@ function TextListItemSkeleton() {
   );
 }
 
-export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentTextsListProps) {
+export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = false }: RecentTextsListProps) {
   const router = useRouter();
   const { data: texts, isLoading: isLoadingTexts } = useTexts(5, {
     sortBy: 'lastViewedAt',
@@ -52,8 +53,10 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
           </Muted>
         </div>
         <button
-          onClick={() => router.push('/series?new=true')}
-          className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer"
+          onClick={() => !isDemo && router.push('/series?new=true')}
+          disabled={isDemo}
+          title={isDemo ? 'Not available in demo mode' : undefined}
+          className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="hidden md:inline">Add New Text</span>
           <Plus size={20} className="md:hidden" strokeWidth={2} />
@@ -77,7 +80,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
             onClick: () => router.push('/series'),
             icon: <Library size={18} strokeWidth={2} />,
           }}
-          secondaryAction={{
+          secondaryAction={isDemo ? undefined : {
             label: "Add New Text",
             onClick: () => router.push('/series?new=true'),
           }}
@@ -96,7 +99,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
               onClick={() => router.push(`/reader/${text.id}`)}
             />
           ))}
-          {texts!.length < 3 && (
+          {texts!.length < 3 && !isDemo && (
             <button
               onClick={() => router.push('/series?new=true')}
               className="w-full p-4 border-2 border-dashed border-border rounded-lg text-muted text-ui-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center justify-center gap-2"

@@ -6,6 +6,8 @@ import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentTextsList } from '@/components/dashboard/RecentTextsList';
 import { ActionButtons } from '@/components/dashboard/ActionButtons';
 
+const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
 export default function Dashboard() {
   const { currentLanguage } = useLanguage();
 
@@ -31,7 +33,7 @@ export default function Dashboard() {
 
           {/* RIGHT COLUMN: Recent Texts - Order 1 on mobile, 2 on desktop */}
           <div className="space-y-6 order-1 lg:order-2">
-            <RecentTextsList />
+            <RecentTextsList isDemo={isDemo} />
             <ActionButtons className="order-2 lg:order-3" />
           </div>
         </div>
