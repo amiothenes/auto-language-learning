@@ -163,6 +163,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString()} words`;
     showToast(msg);
     queryClient.invalidateQueries({ queryKey: ['series', id] });
+    queryClient.invalidateQueries({ queryKey: ['series-list'] });
   };
 
   const handleImport = () => {
@@ -184,6 +185,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       results.push(result);
     }
     await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
+    queryClient.invalidateQueries({ queryKey: ['series-list'] });
     const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
     const msg = totalParts > texts.length
       ? `${texts.length} file${texts.length > 1 ? 's' : ''} imported as ${totalParts} parts`

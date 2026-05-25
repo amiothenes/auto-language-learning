@@ -21,7 +21,7 @@ export function useUpdateWordStatus(textId: string) {
       return res.json() as Promise<{ wordId: string; status: VocabularyStatus }>;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['word-instances', textId] });
+      queryClient.invalidateQueries({ queryKey: ['word-instances'] });
     },
   });
 }
