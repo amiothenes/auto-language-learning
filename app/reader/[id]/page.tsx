@@ -11,6 +11,7 @@ import { WordTooltip } from '@/components/reader/WordTooltip';
 import { TextInfoSkeleton, ReaderContentSkeleton, WordDetailsPanelSkeleton } from '@/components/reader/ReaderSkeleton';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData, TextData } from '@/lib/types';
+import type { WordInstanceItem } from '@/lib/types/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
@@ -313,17 +314,21 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     // Capture pre-update values for rollback
     const prevStats = { ...vocabularyStats };
     const prevWord = { ...selectedWord };
+    const prevInstances = queryClient.getQueryData<WordInstanceItem[]>(['word-instances', id]);
 
     const newKnownWords = vocabularyStats.knownWords + knownWordsDelta;
     const newTextProgress = Math.round((newKnownWords / vocabularyStats.totalWords) * 100);
 
-    // Optimistic update
+    // Optimistic update — patch cache so Word components re-render immediately
     setVocabularyStats({
       ...vocabularyStats,
       knownWords: newKnownWords,
       textKnownPercentage: newTextProgress,
     });
     setSelectedWord({ ...selectedWord, status: newStatus });
+    queryClient.setQueryData<WordInstanceItem[]>(['word-instances', id], (old) =>
+      old?.map((inst) => inst.wordId === wordId ? { ...inst, status: newStatus } : inst) ?? old
+    );
 
     const isMilestone = knownWordsDelta > 0 && checkMilestone(newKnownWords);
     const message = isMilestone
@@ -347,6 +352,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         onError: () => {
           setVocabularyStats(prevStats);
           setSelectedWord(prevWord);
+          queryClient.setQueryData(['word-instances', id], prevInstances);
           setFeedbackState(null);
         },
       }
