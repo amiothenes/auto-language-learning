@@ -126,7 +126,8 @@ export async function POST(request: NextRequest) {
     // 4. Split Content into Chunks + Process Each
     // ========================================================================
 
-    const chunks = splitIntoChunks(content.trim());
+    const normalizedContent = content.replace(/\r\n/g, '\n').trim();
+    const chunks = splitIntoChunks(normalizedContent);
     const isMultiChunk = chunks.length > 1;
 
     console.log(`[Text Import] Split into ${chunks.length} chunk(s)`);

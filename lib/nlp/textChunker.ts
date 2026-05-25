@@ -1,12 +1,11 @@
-import { splitIntoSentences, quickTokenize } from './tokenizer';
-
-const DEFAULT_SENTENCE_REGEX = '[.!?]+(?:\\s|$)';
+import { quickTokenize } from './tokenizer';
 
 /**
- * Split a long text into sentence-boundary-respecting chunks.
+ * Split a long text into paragraph-boundary-respecting chunks.
  *
- * Targets ~750 words per chunk. Never cuts mid-sentence. Merges a trailing
+ * Targets ~750 words per chunk. Never cuts mid-paragraph. Merges a trailing
  * remainder that is smaller than minWords into the previous chunk.
+ * Newlines within paragraph blocks are preserved as-is.
  */
 export function splitIntoChunks(
   content: string,
@@ -14,29 +13,32 @@ export function splitIntoChunks(
   minWords = 300,
   maxWords = 1200
 ): string[] {
-  const sentences = splitIntoSentences(content, DEFAULT_SENTENCE_REGEX);
-  if (sentences.length === 0) return [content];
+  // Split on two or more consecutive newlines to get paragraph blocks.
+  // Single \n within a block is preserved and passes through unchanged.
+  const paragraphBlocks = content.split(/\n{2,}/);
+  const nonEmptyBlocks = paragraphBlocks.filter((b) => b.trim());
+  if (nonEmptyBlocks.length === 0) return [content];
 
   const chunks: string[] = [];
-  let currentSentences: string[] = [];
+  let currentBlocks: string[] = [];
   let currentWordCount = 0;
 
-  for (const sentence of sentences) {
-    const wordCount = quickTokenize(sentence.text, 'en').length;
-    currentSentences.push(sentence.text);
+  for (const block of nonEmptyBlocks) {
+    const wordCount = quickTokenize(block, 'en').length;
+    currentBlocks.push(block);
     currentWordCount += wordCount;
 
     if ((currentWordCount >= targetWords && currentWordCount >= minWords) || currentWordCount >= maxWords) {
-      chunks.push(currentSentences.join(' '));
-      currentSentences = [];
+      chunks.push(currentBlocks.join('\n\n'));
+      currentBlocks = [];
       currentWordCount = 0;
     }
   }
 
-  if (currentSentences.length > 0) {
-    const remainder = currentSentences.join(' ');
+  if (currentBlocks.length > 0) {
+    const remainder = currentBlocks.join('\n\n');
     if (chunks.length > 0 && currentWordCount < minWords) {
-      chunks[chunks.length - 1] += ' ' + remainder;
+      chunks[chunks.length - 1] += '\n\n' + remainder;
     } else {
       chunks.push(remainder);
     }

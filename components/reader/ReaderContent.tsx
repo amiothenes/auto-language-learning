@@ -167,7 +167,7 @@ export function ReaderContent({
       {parsedContent.map((paragraph) => (
         <p
           key={paragraph.id}
-          className="font-serif text-ink leading-relaxed"
+          className="font-serif text-ink leading-relaxed whitespace-pre-line"
         >
           {paragraph.tokens.map((token, i) =>
             token.type === 'text' ? (
