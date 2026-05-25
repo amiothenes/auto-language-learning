@@ -441,7 +441,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 wordCount={textData.wordCount}
                 uniqueWordCount={textData.uniqueWordCount}
                 viewCount={textData.viewCount}
-                knownPercentage={textData.knownPercentage}
+                knownPercentage={vocabularyStats.textKnownPercentage}
                 seriesId={textData.seriesId}
                 seriesName={textData.seriesName}
                 tags={textData.tags}

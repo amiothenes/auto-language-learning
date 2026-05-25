@@ -33,7 +33,7 @@ export function TextListItem({
           <Muted size="xs" className="hidden md:inline">•</Muted>
           <Muted size="xs">{wordCount} words</Muted>
           <Muted size="xs" className="hidden md:inline">•</Muted>
-          <Muted size="xs">{knownPercentage}% known</Muted>
+          <Muted size="xs">{Math.round(knownPercentage * 10) / 10}% known</Muted>
         </div>
       </div>
       <div className="text-left md:text-right shrink-0">

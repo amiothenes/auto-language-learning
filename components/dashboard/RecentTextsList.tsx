@@ -34,7 +34,7 @@ function TextListItemSkeleton() {
 
 export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = false }: RecentTextsListProps) {
   const router = useRouter();
-  const { data: texts, isLoading: isLoadingTexts } = useTexts(5, {
+  const { data: texts, isLoading: isLoadingTexts } = useTexts(3, {
     sortBy: 'lastViewedAt',
     onlyRead: true,
   });

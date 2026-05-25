@@ -22,6 +22,7 @@ export function useUpdateWordStatus(textId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['word-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['text', textId] });
     },
   });
 }
