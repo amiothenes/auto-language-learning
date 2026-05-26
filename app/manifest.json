@@ -1,0 +1,18 @@
+{
+  "name": "Verbista",
+  "short_name": "Verbista",
+  "description": "Read texts, track vocabulary, and grow your language one word at a time.",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#0f2420",
+  "background_color": "#f5f0eb",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

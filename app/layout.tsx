@@ -11,7 +11,8 @@ import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Verbista",
-  description: "A sophisticated language-learning reader for tracking vocabulary growth",
+  description: "Read texts, track vocabulary, and grow your language one word at a time.",
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
