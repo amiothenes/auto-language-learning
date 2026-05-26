@@ -417,7 +417,9 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         textId={editTextTarget?.id ?? ''}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ['series', id] });
+          queryClient.invalidateQueries({ queryKey: ['series-list'] });
           queryClient.invalidateQueries({ queryKey: ['text', editTextTarget!.id] });
+          queryClient.invalidateQueries({ queryKey: ['texts'] });
           setEditTextTarget(null);
         }}
       />

@@ -41,6 +41,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
   const { data: texts, isLoading: isLoadingTexts } = useTexts(3, {
     sortBy: 'lastViewedAt',
     onlyRead: true,
+    staleTime: 0,
   });
   const { data: seriesList } = useSeriesList();
   const isLoading = isLoadingProp || isLoadingTexts;

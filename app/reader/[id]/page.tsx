@@ -62,6 +62,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         queryClient.setQueryData(['text', id], (old: TextData | undefined) =>
           old ? { ...old, viewCount: data.viewCount } : old
         );
+        queryClient.invalidateQueries({ queryKey: ['texts'] });
       })
       .catch(() => {});
   }, [id, queryClient]);
