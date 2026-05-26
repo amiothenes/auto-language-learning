@@ -220,6 +220,7 @@ function SeriesPageContent() {
       showToast(`Series "${deleteTarget.name}" deleted`);
       setDeleteTarget(null);
       await seriesQuery.refetch();
+      await queryClient.invalidateQueries({ queryKey: ['texts'] });
     } catch {
       showToast('Failed to delete series');
     }

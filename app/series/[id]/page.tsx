@@ -204,6 +204,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       if (!res.ok) throw new Error('Failed to delete series');
       setDeleteSeriesTarget(null);
       queryClient.invalidateQueries({ queryKey: ['series-list'] });
+      queryClient.invalidateQueries({ queryKey: ['texts'] });
       router.push('/series');
     } catch {
       showToast('Failed to delete series');
@@ -220,6 +221,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       if (!res.ok) throw new Error('Failed to delete text');
       setDeleteTextTarget(null);
       await queryClient.invalidateQueries({ queryKey: ['series', id] });
+      await queryClient.invalidateQueries({ queryKey: ['texts'] });
     } catch {
       showToast('Failed to delete text');
     }
