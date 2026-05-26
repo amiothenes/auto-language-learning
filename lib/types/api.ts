@@ -219,4 +219,28 @@ export interface StatsResponse {
   };
   /** Percentage of total vocabulary that is KNOWN or WELL_KNOWN */
   overallKnownPercentage: number;
+  /** Zipf-weighted estimated reading coverage of the full language vocabulary (0–98) */
+  readingCoverage: number;
+  /** Approximate CEFR band based on readingCoverage */
+  cefrBand: CefrBand;
+}
+
+// ============================================================================
+// Reading Coverage types
+// ============================================================================
+
+export type CefrBand = 'A1-A2' | 'A2-B1' | 'B1-B2' | 'C1' | 'C2';
+
+// ============================================================================
+// Stats History API — GET /api/stats/history
+// ============================================================================
+
+export interface StatsHistoryPoint {
+  date: string;
+  knownCount: number;
+  totalReviewed: number;
+}
+
+export interface StatsHistoryResponse {
+  history: StatsHistoryPoint[];
 }

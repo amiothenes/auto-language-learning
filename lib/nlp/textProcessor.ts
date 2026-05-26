@@ -482,16 +482,14 @@ export async function processTextForImport(
           },
         });
 
-        // Exclude UNKNOWN (unreviewed) words from both numerator and denominator
-        const reviewedStatuses = wordStatuses.filter((w) => w.status !== 'UNKNOWN');
-        const knownCount = reviewedStatuses.filter(
+        // Include ALL lemmas (incl. UNKNOWN) in denominator — more honest "can I read this?" metric
+        const knownCount = wordStatuses.filter(
           (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN'
         ).length;
-        const reviewedCount = reviewedStatuses.length;
+        const totalCount = wordStatuses.length;
 
-        // Calculate percentage based on reviewed unique lemmas only (excludes UNKNOWN)
         const knownPercentage =
-          reviewedCount > 0 ? Math.round((knownCount / reviewedCount) * 100) : 0;
+          totalCount > 0 ? Math.round((knownCount / totalCount) * 100) : 0;
 
         // Update text with calculated percentage
         await tx

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages, words, texts } from '@/lib/db/schema';
-import { eq, and, isNotNull, count } from 'drizzle-orm';
-import type { StatsResponse, ApiErrorResponse } from '@/lib/types/api';
+import { eq, and, isNotNull, count, inArray } from 'drizzle-orm';
+import type { StatsResponse, ApiErrorResponse, CefrBand } from '@/lib/types/api';
 
 // ============================================================================
 // GET /api/stats — Aggregate dashboard statistics for a language
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     //    - read text count (lastViewedAt not null)
     // ========================================================================
 
-    const [statusRows, [totalTextsRow], [readTextsRow]] = await Promise.all([
+    const [statusRows, [totalTextsRow], [readTextsRow], knownWordRows] = await Promise.all([
       db
         .select({ status: words.status, total: count() })
         .from(words)
@@ -73,6 +73,14 @@ export async function GET(request: NextRequest) {
         .select({ total: count() })
         .from(texts)
         .where(and(eq(texts.languageId, language.id), isNotNull(texts.lastViewedAt))),
+
+      db
+        .select({ dictionaryFrequency: words.dictionaryFrequency })
+        .from(words)
+        .where(and(
+          eq(words.languageId, language.id),
+          inArray(words.status, ['KNOWN', 'WELL_KNOWN']),
+        )),
     ]);
 
     // ========================================================================
@@ -93,8 +101,31 @@ export async function GET(request: NextRequest) {
     const overallKnownPercentage =
       total > 0 ? Math.round(((known + wellKnown) / total) * 100) : 0;
 
+    // ========================================================================
+    // 5. Zipf-weighted reading coverage (accounts for full language vocabulary)
+    //    Based on Paul Nation's frequency band research + Zipf's Law.
+    //    MAX_VOCAB = 10,000 word families; H ≈ ln(10000) + 0.5772 ≈ 9.787
+    //    Validated: top-1K → 76.5% (Nation: ~77%), top-2K → 83.6% (~84-87%) ✓
+    // ========================================================================
+
+    const MAX_VOCAB = 10_000;
+    const H = Math.log(MAX_VOCAB) + 0.5772; // harmonic series approximation
+
+    const zipfNumerator = knownWordRows.reduce((sum, w) => {
+      const rank = MAX_VOCAB * (1 - w.dictionaryFrequency / 100) + 1;
+      return sum + 1 / rank;
+    }, 0);
+
+    const readingCoverage = Math.min(98, Math.round((zipfNumerator / H) * 1000) / 10);
+
+    const cefrBand: CefrBand =
+      readingCoverage >= 96 ? 'C2' :
+      readingCoverage >= 92 ? 'C1' :
+      readingCoverage >= 84 ? 'B1-B2' :
+      readingCoverage >= 77 ? 'A2-B1' : 'A1-A2';
+
     console.log(
-      `[Stats] Words: ${total} reviewed + ${unknown} unknown, ${known + wellKnown} known/well-known (${overallKnownPercentage}%)`
+      `[Stats] Words: ${total} reviewed + ${unknown} unknown, ${known + wellKnown} known/well-known (${overallKnownPercentage}%), reading coverage: ${readingCoverage}% (${cefrBand})`
     );
 
     const response: StatsResponse = {
@@ -104,6 +135,8 @@ export async function GET(request: NextRequest) {
         read: readTextsRow?.total ?? 0,
       },
       overallKnownPercentage,
+      readingCoverage,
+      cefrBand,
     };
 
     return NextResponse.json<StatsResponse>(response);

@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { Heading, Body, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
 import { ProgressGraph } from '@/components/dashboard/ProgressGraph';
-import { Target, BookOpen, CheckCircle2, BookMarked } from 'lucide-react';
+import { BookOpen, CheckCircle2, BookMarked, Info } from 'lucide-react';
 import { Skeleton, SkeletonText, SkeletonCircle } from '@/components/ui/Skeleton';
 import { useStats } from '@/lib/hooks/useStats';
+import { useStatsHistory } from '@/lib/hooks/useStatsHistory';
 
 interface StatsCardProps {
   isLoading?: boolean;
@@ -14,18 +16,19 @@ interface StatsCardProps {
 function StatsCardSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Progress Chart Skeleton */}
+      {/* Chart Card Skeleton */}
       <Card variant="default" padding="md" as="section" className="space-y-4">
-        <div>
-          <SkeletonText width="w-24" className="mb-1 h-4" />
-          <SkeletonText width="w-40" className="h-3" />
+        <div className="space-y-1">
+          <SkeletonText width="w-36" className="h-4" />
+          <SkeletonText width="w-24" className="h-7" />
+          <SkeletonText width="w-32" className="h-3" />
         </div>
-        <Skeleton className="w-full h-[200px] rounded" />
+        <Skeleton className="w-full h-50 rounded" />
       </Card>
 
-      {/* Stats Skeleton */}
+      {/* Stats Skeleton — 3 rows */}
       <Card variant="default" padding="sm" className="divide-y divide-border">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3].map((i) => (
           <div key={i} className="p-4 flex items-center gap-4">
             <SkeletonCircle size={40} />
             <div className="flex-1 min-w-0 space-y-2">
@@ -44,51 +47,57 @@ function StatsCardSkeleton() {
 
 export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) {
   const { data: stats, isLoading: isLoadingStats } = useStats();
+  const { data: historyData } = useStatsHistory();
   const isLoading = isLoadingProp || isLoadingStats;
 
   if (isLoading) {
     return <StatsCardSkeleton />;
   }
 
-  const fluency = stats?.overallKnownPercentage ?? 0;
+  const readingCoverage = stats?.readingCoverage ?? 0;
+  const cefrBand = stats?.cefrBand ?? 'A1-A2';
   const totalWords = stats?.vocabulary.total ?? 0;
   const knownWords = (stats?.vocabulary.known ?? 0) + (stats?.vocabulary.wellKnown ?? 0);
   const textsRead = stats?.texts.read ?? 0;
+  const history = historyData?.history ?? [];
 
   return (
     <div className="space-y-6">
-      {/* Progress Chart */}
+      {/* Reading Coverage + Chart — combined card */}
       <Card variant="default" padding="md" as="section" className="space-y-4">
-        <div>
-          <Heading size="lg" as="h2" className="mb-1">
-            Progress
-          </Heading>
-          <Muted size="xs">
-            Your vocabulary growth over time
-          </Muted>
+        {/* Metric header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5">
+              <Heading size="lg" as="h2">Reading Coverage</Heading>
+              <Link
+                href="/coverage-info"
+                title="How is this calculated?"
+                className="text-muted hover:text-primary transition-colors mt-0.5"
+              >
+                <Info size={14} strokeWidth={1.5} />
+              </Link>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <Heading size="2xl" weight="bold" as="h2">
+                {readingCoverage.toFixed(1)}%
+              </Heading>
+              <Body size="sm" className="text-muted font-medium">
+                {cefrBand}
+              </Body>
+            </div>
+            <Muted size="xs">
+              95% = comfortable reading · 98% = fluent
+            </Muted>
+          </div>
         </div>
-        <ProgressGraph currentPercentage={fluency} />
+
+        {/* Chart / progress bar */}
+        <ProgressGraph currentPercentage={readingCoverage} history={history} />
       </Card>
 
-      {/* Stats Cards - Refined & Elegant */}
+      {/* Stats — 3 rows (Reading Coverage moved to chart card above) */}
       <Card variant="default" padding="sm" className="divide-y divide-border">
-        {/* Fluency % */}
-        <div className="p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Target size={20} className="text-primary" strokeWidth={1.5} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <Muted size="xs" className="mb-0.5">
-              Fluency %
-            </Muted>
-            <div className="flex items-baseline gap-2">
-              <Heading size="xl" weight="bold" as="h3">
-                {fluency.toFixed(1)}%
-              </Heading>
-            </div>
-          </div>
-        </div>
-
         {/* Total Words */}
         <div className="p-4 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -98,11 +107,9 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
             <Muted size="xs" className="mb-0.5">
               Total Words
             </Muted>
-            <div className="flex items-baseline gap-2">
-              <Heading size="xl" weight="bold" as="h3">
-                {totalWords.toLocaleString()}
-              </Heading>
-            </div>
+            <Heading size="xl" weight="bold" as="h3">
+              {totalWords.toLocaleString()}
+            </Heading>
           </div>
         </div>
 
@@ -121,7 +128,7 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
               </Heading>
               {totalWords > 0 && (
                 <Body size="xs" className="text-primary">
-                  {fluency.toFixed(1)}%
+                  of {totalWords.toLocaleString()} reviewed
                 </Body>
               )}
             </div>
@@ -137,11 +144,9 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
             <Muted size="xs" className="mb-0.5">
               Texts Read
             </Muted>
-            <div className="flex items-baseline gap-2">
-              <Heading size="xl" weight="bold" as="h3">
-                {textsRead}
-              </Heading>
-            </div>
+            <Heading size="xl" weight="bold" as="h3">
+              {textsRead}
+            </Heading>
           </div>
         </div>
       </Card>

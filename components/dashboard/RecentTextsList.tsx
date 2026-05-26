@@ -1,12 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { TextListItem } from './TextListItem';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Plus, Library } from 'lucide-react';
+import { FolderPlus, FilePlus, Library } from 'lucide-react';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { useTexts } from '@/lib/hooks/useTexts';
+import { useSeriesList } from '@/lib/hooks/useSeriesList';
+import { NewTextModal } from '@/components/texts/NewTextModal';
 
 interface RecentTextsListProps {
   isLoading?: boolean;
@@ -34,12 +37,18 @@ function TextListItemSkeleton() {
 
 export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = false }: RecentTextsListProps) {
   const router = useRouter();
+  const [showNewTextModal, setShowNewTextModal] = useState(false);
   const { data: texts, isLoading: isLoadingTexts } = useTexts(3, {
     sortBy: 'lastViewedAt',
     onlyRead: true,
   });
+  const { data: seriesList } = useSeriesList();
   const isLoading = isLoadingProp || isLoadingTexts;
   const hasRecentTexts = (texts?.length ?? 0) > 0;
+
+  const openNewTextModal = () => {
+    if (!isDemo) setShowNewTextModal(true);
+  };
 
   return (
     <section className="bg-paper rounded-card border border-border shadow-raised p-4 md:p-6 space-y-4">
@@ -52,15 +61,30 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
             Continue reading where you left off
           </Muted>
         </div>
-        <button
-          onClick={() => !isDemo && router.push('/series?new=true')}
-          disabled={isDemo}
-          title={isDemo ? 'Not available in demo mode' : undefined}
-          className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="hidden md:inline">Add New Text</span>
-          <Plus size={20} className="md:hidden" strokeWidth={2} />
-        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {/* New Series */}
+          <button
+            onClick={() => !isDemo && router.push('/series?new=true')}
+            disabled={isDemo}
+            title={isDemo ? 'Not available in demo mode' : 'Create a new series'}
+            className="px-3 py-2 border border-border rounded font-sans font-medium text-ui-base hover:border-primary hover:text-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="hidden md:inline">New Series</span>
+            <FolderPlus size={20} className="md:hidden" strokeWidth={2} />
+          </button>
+
+          {/* Add Text to Series */}
+          <button
+            onClick={openNewTextModal}
+            disabled={isDemo}
+            title={isDemo ? 'Not available in demo mode' : 'Add a text to an existing series'}
+            className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="hidden md:inline">Add Text to Series</span>
+            <FilePlus size={20} className="md:hidden" strokeWidth={2} />
+          </button>
+        </div>
       </div>
 
       {/* Text Items, Loading State, or Empty State */}
@@ -81,8 +105,8 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
             icon: <Library size={18} strokeWidth={2} />,
           }}
           secondaryAction={isDemo ? undefined : {
-            label: "Add New Text",
-            onClick: () => router.push('/series?new=true'),
+            label: "Add Text to Series",
+            onClick: openNewTextModal,
           }}
           className="min-h-75"
         />
@@ -101,10 +125,10 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
           ))}
           {texts!.length < 3 && !isDemo && (
             <button
-              onClick={() => router.push('/series?new=true')}
+              onClick={openNewTextModal}
               className="w-full p-4 border-2 border-dashed border-border rounded-lg text-muted text-ui-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              <Plus size={16} strokeWidth={2} />
+              <FilePlus size={16} strokeWidth={2} />
               Add another text
             </button>
           )}
@@ -121,6 +145,12 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
           </button>
         </div>
       )}
+
+      <NewTextModal
+        isOpen={showNewTextModal}
+        onClose={() => setShowNewTextModal(false)}
+        availableSeries={seriesList ?? []}
+      />
     </section>
   );
 }
