@@ -221,6 +221,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       if (!res.ok) throw new Error('Failed to delete text');
       setDeleteTextTarget(null);
       await queryClient.invalidateQueries({ queryKey: ['series', id] });
+      await queryClient.invalidateQueries({ queryKey: ['series-list'] });
       await queryClient.invalidateQueries({ queryKey: ['texts'] });
     } catch {
       showToast('Failed to delete text');
