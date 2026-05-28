@@ -294,13 +294,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     }, 120);
   }, []);
 
-  const handleTooltipViewDetails = () => {
-    setTooltipWord(null);
-    setTooltipAnchorRect(null);
-    setIsTooltipExiting(false);
-    setIsRightPanelOpen(true);
-  };
-
   const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
     if (isDemo || !selectedWord) return;
 
@@ -559,7 +552,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             handleStatusChange(wordId, newStatus);
             handleTooltipClose();
           }}
-          onViewDetails={handleTooltipViewDetails}
           isExiting={isTooltipExiting}
         />
       )}

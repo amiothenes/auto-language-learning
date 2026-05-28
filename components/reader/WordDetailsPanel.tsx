@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StatusDots } from './StatusDots';
-import { cn } from '@/lib/utils';
+import { GradingSection } from './GradingSection';
 import { X } from 'lucide-react';
 import { WordData, VocabularyStatus } from './Word';
 
@@ -53,37 +53,6 @@ export function WordDetailsPanel({
     onTranslationChange?.(wordData.id, translation);
   };
 
-  /**
-   * Get status button styling
-   */
-  const getStatusButtonStyle = (status: VocabularyStatus, isActive: boolean) => {
-    const baseColors: Record<VocabularyStatus, string> = {
-      [VocabularyStatus.UNKNOWN]:    'hsla(0, 0%, 60%, 0.12)',
-      [VocabularyStatus.NEWLY_SEEN]: 'hsla(0, 70%, 55%, 0.2)',
-      [VocabularyStatus.FAMILIAR]:   'hsla(45, 85%, 55%, 0.2)',
-      [VocabularyStatus.KNOWN]:      'hsla(145, 60%, 40%, 0.15)',
-      [VocabularyStatus.WELL_KNOWN]: 'hsla(145, 60%, 40%, 0.08)',
-      [VocabularyStatus.IGNORE]:     'hsla(0, 0%, 50%, 0.1)',
-    };
-
-    return {
-      backgroundColor: baseColors[status],
-      border: isActive ? '2px solid #183A37' : '1px solid #E5E2DA',
-      fontWeight: isActive ? 600 : 400,
-    };
-  };
-
-  /**
-   * Status labels
-   */
-  const statusLabels: Record<VocabularyStatus, string> = {
-    [VocabularyStatus.UNKNOWN]:    'Unknown',
-    [VocabularyStatus.NEWLY_SEEN]: 'Newly Seen',
-    [VocabularyStatus.FAMILIAR]:   'Familiar',
-    [VocabularyStatus.KNOWN]:      'Known',
-    [VocabularyStatus.WELL_KNOWN]: 'Well Known',
-    [VocabularyStatus.IGNORE]:     'Ignore',
-  };
 
   // Large Desktop: render on right side with slide animation and reserved space
   // Mobile/Tablet/Small Desktop: render on right side overlapping content
@@ -214,21 +183,11 @@ export function WordDetailsPanel({
               <Muted className="text-ui-xs">Learning Status</Muted>
               <StatusDots status={wordData.status} />
             </div>
-            <div className="space-y-2">
-              {Object.values(VocabularyStatus).map((status) => (
-                <button
-                  key={status}
-                  onClick={() => handleStatusChange(status)}
-                  className={cn(
-                    "w-full px-4 py-2 rounded font-sans text-ui-sm text-ink transition-all hover:brightness-95",
-                    wordData.status === status && "shadow-sm"
-                  )}
-                  style={getStatusButtonStyle(status, wordData.status === status)}
-                >
-                  {statusLabels[status]}
-                </button>
-              ))}
-            </div>
+            <GradingSection
+              status={wordData.status}
+              onStatusChange={handleStatusChange}
+              size="default"
+            />
           </div>
         </div>
       </div>
