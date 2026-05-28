@@ -155,7 +155,7 @@ export function VocabFilterBar({
             <div
               ref={sortDropdownRef}
               role="listbox"
-              className="absolute top-full right-0 mt-1 w-full min-w-[260px] max-w-[320px] bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10"
+              className="absolute top-full right-0 mt-1 w-full min-w-[260px] max-w-[320px] bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10 py-1"
             >
               {sortOptions.map((option, index) => (
                 <button

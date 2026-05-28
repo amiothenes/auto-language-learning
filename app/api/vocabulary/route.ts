@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { words, languages } from '@/lib/db/schema';
-import { eq, and, ilike, asc, desc, count, SQL } from 'drizzle-orm';
+import { eq, ne, and, ilike, asc, desc, count, SQL } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { VocabularyItem } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
 
     if (statusParam && Object.values(VocabularyStatus).includes(statusParam as VocabularyStatus)) {
       conditions.push(eq(words.status, statusParam as VocabularyStatus));
+    } else {
+      conditions.push(ne(words.status, VocabularyStatus.IGNORE));
     }
 
     if (searchParam?.trim()) {
