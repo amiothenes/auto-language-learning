@@ -16,6 +16,7 @@ import { BulkActionsBar } from '@/components/vocabulary/BulkActionsBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AddVocabularyModal } from '@/components/vocabulary/AddVocabularyModal';
 import { ImportVocabularyModal } from '@/components/vocabulary/ImportVocabularyModal';
+import { EditVocabularyModal } from '@/components/vocabulary/EditVocabularyModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ChevronLeft, ChevronRight, Library, Plus, Upload } from 'lucide-react';
@@ -46,6 +47,9 @@ export default function VocabularyPage() {
   // Modal state
   const [isAddVocabModalOpen, setIsAddVocabModalOpen] = useState(false);
   const [isImportVocabModalOpen, setIsImportVocabModalOpen] = useState(false);
+
+  // Edit state
+  const [editTarget, setEditTarget] = useState<VocabularyItem | null>(null);
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<VocabularyItem | null>(null);
@@ -111,10 +115,62 @@ export default function VocabularyPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['word-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['text'] });
       setSelectedIds(new Set());
     },
     onError: () => {
       showToast('Failed to update words');
+    },
+  });
+
+  // Single-word delete mutation (soft delete — resets status to UNKNOWN)
+  const deleteMutation = useMutation({
+    mutationFn: async (wordId: string) => {
+      if (isDemo) return;
+      const res = await fetch(`/api/words/${wordId}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+      });
+      if (!res.ok) throw new Error('Failed to reset word');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['word-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['text'] });
+      setDeleteTarget(null);
+      showToast('Word reset to unknown');
+    },
+    onError: () => {
+      showToast('Failed to delete word');
+    },
+  });
+
+  // Bulk delete mutation (soft deletes all selected words in parallel)
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (wordIds: string[]) => {
+      if (isDemo) return;
+      await Promise.all(
+        wordIds.map((id) =>
+          fetch(`/api/words/${id}`, {
+            method: 'DELETE',
+            headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
+          })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['word-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['text'] });
+      setSelectedIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      showToast('Words reset to unknown');
+    },
+    onError: () => {
+      showToast('Failed to delete words');
     },
   });
 
@@ -171,16 +227,24 @@ export default function VocabularyPage() {
   const handleDelete = () => setShowBulkDeleteConfirm(true);
 
   const handleConfirmBulkDelete = () => {
-    showToast('Word deletion coming soon');
-    setSelectedIds(new Set());
-    setShowBulkDeleteConfirm(false);
+    bulkDeleteMutation.mutate(Array.from(selectedIds));
   };
 
   const handleConfirmSingleDelete = () => {
     if (deleteTarget) {
-      showToast('Word deletion coming soon');
-      setDeleteTarget(null);
+      deleteMutation.mutate(deleteTarget.id);
     }
+  };
+
+  const handleEdit = (item: VocabularyItem) => setEditTarget(item);
+
+  const handleEditSave = () => {
+    queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+    queryClient.invalidateQueries({ queryKey: ['stats'] });
+    queryClient.invalidateQueries({ queryKey: ['word-instances'] });
+    queryClient.invalidateQueries({ queryKey: ['text'] });
+    setEditTarget(null);
+    showToast('Word updated');
   };
 
   const handleAddVocabulary = (vocabData: NewVocabularyData) => {
@@ -335,6 +399,7 @@ export default function VocabularyPage() {
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
                 onToggleAll={handleToggleAll}
+                onEdit={handleEdit}
                 onDelete={(item) => setDeleteTarget(item)}
               />
             </div>
@@ -345,6 +410,7 @@ export default function VocabularyPage() {
                 items={words}
                 selectedIds={selectedIds}
                 onToggleSelection={handleToggleSelection}
+                onEdit={handleEdit}
                 onDelete={(item) => setDeleteTarget(item)}
                 isMultiSelectActive={isMultiSelectActive}
                 onEnableMultiSelect={handleEnableMultiSelect}
@@ -412,6 +478,14 @@ export default function VocabularyPage() {
         message={`Are you sure you want to delete ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} from your vocabulary? This action cannot be undone.`}
         confirmLabel="Delete All"
         variant="danger"
+      />
+
+      {/* Edit Vocabulary Modal */}
+      <EditVocabularyModal
+        isOpen={editTarget !== null}
+        item={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSave={handleEditSave}
       />
 
       {/* Add Vocabulary Modal */}

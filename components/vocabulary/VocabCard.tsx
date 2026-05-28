@@ -52,6 +52,7 @@ interface VocabCardProps {
   item: VocabularyItem;
   isSelected: boolean;
   onToggle: () => void;
+  onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
   isMultiSelectActive?: boolean;
   onEnableMultiSelect?: () => void;
@@ -61,6 +62,7 @@ export function VocabCard({
   item,
   isSelected,
   onToggle,
+  onEdit,
   onDelete,
   isMultiSelectActive = false,
   onEnableMultiSelect
@@ -149,10 +151,10 @@ export function VocabCard({
   const handleMenuAction = (e: React.MouseEvent, action: string) => {
     e.stopPropagation();
     setIsMenuOpen(false);
-    if (action === 'delete') {
+    if (action === 'edit') {
+      onEdit?.(item);
+    } else if (action === 'delete') {
       onDelete?.(item);
-    } else {
-      console.log(`${action} vocabulary:`, item.id);
     }
   };
 
@@ -292,6 +294,7 @@ interface VocabCardListProps {
   items: VocabularyItem[];
   selectedIds: Set<string>;
   onToggleSelection: (id: string) => void;
+  onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
   isMultiSelectActive?: boolean;
   onEnableMultiSelect?: () => void;
@@ -301,6 +304,7 @@ export function VocabCardList({
   items,
   selectedIds,
   onToggleSelection,
+  onEdit,
   onDelete,
   isMultiSelectActive = false,
   onEnableMultiSelect,
@@ -321,6 +325,7 @@ export function VocabCardList({
           item={item}
           isSelected={selectedIds.has(item.id)}
           onToggle={() => onToggleSelection(item.id)}
+          onEdit={onEdit}
           onDelete={onDelete}
           isMultiSelectActive={isMultiSelectActive}
           onEnableMultiSelect={onEnableMultiSelect}
