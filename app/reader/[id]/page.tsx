@@ -3,7 +3,7 @@
 import { use, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { notFound, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { X, ChevronLeft, Info } from 'lucide-react';
+import { X, ChevronLeft, Info, Settings } from 'lucide-react';
 import { TextInfo } from '@/components/reader/TextInfo';
 import { ReaderContent } from '@/components/reader/ReaderContent';
 import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
@@ -20,6 +20,10 @@ import { useText } from '@/lib/hooks/useText';
 import { useWordInstances } from '@/lib/hooks/useWordInstances';
 import { useUpdateWordStatus } from '@/lib/hooks/useUpdateWordStatus';
 import { useAdjacentTexts } from '@/lib/hooks/useAdjacentTexts';
+import { ParagraphScrubber } from '@/components/reader/ParagraphScrubber';
+import { ReaderSettingsPanel } from '@/components/reader/ReaderSettingsPanel';
+import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
+import { useReaderKeyboard } from '@/lib/hooks/useReaderKeyboard';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 
@@ -71,6 +75,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
+
+  const { settings, toggleImmersionMode } = useReaderSettings();
 
   const [vocabularyStats, setVocabularyStats] = useState({
     totalWords: 0,
@@ -355,6 +362,15 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const handleDismissFeedback = useCallback(() => setFeedbackState(null), []);
 
+  useReaderKeyboard({
+    currentStatus: tooltipWord?.status ?? selectedWord?.status ?? null,
+    isActive: !isRightPanelOpen,
+    onStatusChange: (newStatus) => {
+      const wordId = tooltipWord?.wordId ?? selectedWord?.wordId;
+      if (wordId) handleStatusChange(wordId, newStatus);
+    },
+  });
+
   const handleParagraphNavigate = (index: number) => {
     paragraphRefs.current[index]?.scrollIntoView({
       behavior: 'smooth',
@@ -387,13 +403,23 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             {textData?.title ?? ''}
           </h1>
 
-          <button
-            onClick={() => setIsTextInfoOpen(true)}
-            className="text-muted hover:text-ink transition-colors p-1"
-            aria-label="Text information"
-          >
-            <Info size={20} strokeWidth={1.5} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
+              className="text-muted hover:text-ink transition-colors p-1"
+              aria-label="Reader settings"
+              aria-expanded={!!settingsAnchorEl}
+            >
+              <Settings size={20} strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={() => setIsTextInfoOpen(true)}
+              className="text-muted hover:text-ink transition-colors p-1"
+              aria-label="Text information"
+            >
+              <Info size={20} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -408,13 +434,17 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         />
       )}
 
-      {/* Large Desktop: 3-column | Mobile/Tablet: Stacked */}
-      <div className="flex flex-col xl:grid xl:grid-cols-[280px_1fr_25rem]">
+      {/* Large Desktop: 2-column | Mobile/Tablet: Stacked */}
+      <div className={cn(
+        'flex flex-col',
+        !settings.isImmersionMode && 'xl:grid xl:grid-cols-[280px_1fr]',
+      )}>
         {/* ── LEFT SIDEBAR ── */}
         <aside
           className={cn(
             'fixed inset-x-0 bottom-0 h-[90vh] xl:order-1 xl:sticky xl:top-0 xl:h-screen xl:inset-auto bg-paper border-t xl:border-t-0 xl:border-r border-border overflow-y-auto z-40 xl:z-auto rounded-t-2xl xl:rounded-none transition-transform duration-300',
-            isTextInfoOpen ? 'translate-y-0' : 'translate-y-full xl:translate-y-0'
+            isTextInfoOpen ? 'translate-y-0' : 'translate-y-full xl:translate-y-0',
+            settings.isImmersionMode && 'xl:hidden',
           )}
         >
           <button
@@ -439,9 +469,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 seriesId={textData.seriesId}
                 seriesName={textData.seriesName}
                 tags={textData.tags}
-                paragraphProgress={paragraphProgress}
-                currentParagraphIndex={currentParagraphIndex}
-                onParagraphNavigate={handleParagraphNavigate}
                 onRightPanelToggle={() => setIsRightPanelOpen(!isRightPanelOpen)}
                 isRightPanelOpen={isRightPanelOpen}
               />
@@ -513,34 +540,65 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           )}
         </main>
 
-        {/* ── RIGHT PANEL SPACE (Desktop) ── */}
-        <aside className="hidden xl:block xl:order-3 relative">
-          {isRightPanelOpen && (
-            isLoading ? (
-              <div className="fixed top-0 right-0 h-screen w-[25rem] bg-paper border-l border-border overflow-y-auto">
-                <WordDetailsPanelSkeleton />
-              </div>
-            ) : (
-              <WordDetailsPanel
-                wordData={selectedWord}
-                onClose={handleCloseWordDetails}
-                onStatusChange={handleStatusChange}
-                isDesktop={true}
-              />
-            )
-          )}
-        </aside>
       </div>
 
-      {/* ── MOBILE WORD DETAILS ── */}
-      {isRightPanelOpen && !isDesktop && (
-        <WordDetailsPanel
-          wordData={selectedWord}
-          onClose={handleCloseWordDetails}
-          onStatusChange={handleStatusChange}
-          isDesktop={false}
+      {/* ── WORD DETAILS PANEL — fixed overlay, desktop + mobile ── */}
+      {isRightPanelOpen && (
+        isLoading ? (
+          <div className="fixed top-0 right-0 h-screen w-full max-w-100 bg-paper border-l border-border overflow-y-auto z-50">
+            <WordDetailsPanelSkeleton />
+          </div>
+        ) : (
+          <WordDetailsPanel
+            wordData={selectedWord}
+            onClose={handleCloseWordDetails}
+            onStatusChange={handleStatusChange}
+            isDesktop={isDesktop}
+          />
+        )
+      )}
+
+      {/* ── DESKTOP TOP BAR — fixed, xl only ── */}
+      <div className="hidden xl:flex fixed top-0 right-0 z-40 items-center gap-1 px-4 py-2.5">
+        <button
+          onClick={toggleImmersionMode}
+          className={cn(
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-sans text-ui-xs transition-all',
+            settings.isImmersionMode
+              ? 'bg-primary-10 text-primary border border-primary/30'
+              : 'text-muted hover:text-ink hover:bg-desk border border-transparent hover:border-border',
+          )}
+          aria-label="Toggle immersion mode"
+          aria-pressed={settings.isImmersionMode}
+        >
+          {settings.isImmersionMode ? 'Immersion' : 'Study'}
+        </button>
+        <button
+          onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted hover:text-ink hover:bg-desk border border-transparent hover:border-border transition-all"
+          aria-label="Reader settings"
+          aria-expanded={!!settingsAnchorEl}
+        >
+          <Settings size={16} strokeWidth={1.5} />
+          <span className="font-sans text-ui-xs">Settings</span>
+        </button>
+      </div>
+
+      {/* ── READER SETTINGS PANEL ── */}
+      {settingsAnchorEl && (
+        <ReaderSettingsPanel
+          anchorEl={settingsAnchorEl}
+          onClose={() => setSettingsAnchorEl(null)}
         />
       )}
+
+      {/* ── PARAGRAPH SCRUBBER — top-right corner card ── */}
+      <ParagraphScrubber
+        paragraphs={paragraphProgress}
+        currentIndex={currentParagraphIndex}
+        onNavigate={handleParagraphNavigate}
+        hidden={isRightPanelOpen}
+      />
 
       {/* ── DESKTOP WORD TOOLTIP ── */}
       {tooltipWord && tooltipAnchorRect && (
@@ -550,9 +608,12 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onClose={handleTooltipClose}
           onStatusChange={(wordId, newStatus) => {
             handleStatusChange(wordId, newStatus);
-            handleTooltipClose();
           }}
           isExiting={isTooltipExiting}
+          onMoreClick={() => {
+            handleTooltipClose();
+            setIsRightPanelOpen(true);
+          }}
         />
       )}
 

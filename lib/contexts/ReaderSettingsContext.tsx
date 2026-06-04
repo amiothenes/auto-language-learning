@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   highlightIntensity: 100,
   showWellKnownWords: true,
   colorScheme: 'light',
+  highlightMode: 'highlight',
+  isImmersionMode: false,
 };
 
 const STORAGE_KEY = 'reader-settings';
@@ -80,6 +82,14 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, colorScheme: scheme }));
   };
 
+  const updateHighlightMode = (mode: 'highlight' | 'underline') => {
+    setSettings((prev) => ({ ...prev, highlightMode: mode }));
+  };
+
+  const toggleImmersionMode = () => {
+    setSettings((prev) => ({ ...prev, isImmersionMode: !prev.isImmersionMode }));
+  };
+
   const resetToDefaults = () => {
     setSettings(DEFAULT_SETTINGS);
   };
@@ -90,6 +100,8 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     updateHighlightIntensity,
     updateShowWellKnownWords,
     updateColorScheme,
+    updateHighlightMode,
+    toggleImmersionMode,
     resetToDefaults,
   };
 

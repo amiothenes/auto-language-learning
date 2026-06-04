@@ -66,6 +66,10 @@ export interface ReaderSettings {
   showWellKnownWords: boolean;
   /** Color scheme (light/dark) - currently light only */
   colorScheme: ColorScheme;
+  /** Whether status colors appear as background highlight or text underline */
+  highlightMode: 'highlight' | 'underline';
+  /** Whether immersion mode is active (hides the left sidebar) */
+  isImmersionMode: boolean;
 }
 
 /**
@@ -97,6 +101,10 @@ export interface ReaderSettingsContextType {
   updateShowWellKnownWords: (show: boolean) => void;
   /** Update color scheme */
   updateColorScheme: (scheme: ColorScheme) => void;
+  /** Update highlight mode (background highlight vs text underline) */
+  updateHighlightMode: (mode: 'highlight' | 'underline') => void;
+  /** Toggle immersion mode on/off (hides the left sidebar) */
+  toggleImmersionMode: () => void;
   /** Reset all settings to defaults */
   resetToDefaults: () => void;
 }

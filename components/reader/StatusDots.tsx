@@ -3,14 +3,14 @@
 import { cn } from '@/lib/utils';
 import { VocabularyStatus } from './Word';
 
-// Maps each status to its filled-dot Tailwind color class
+// Maps each status to its filled-dot HSL color string
 const STATUS_DOT_COLOR: Record<VocabularyStatus, string> = {
-  [VocabularyStatus.UNKNOWN]:    'bg-gray-400',
-  [VocabularyStatus.NEWLY_SEEN]: 'bg-red-500',
-  [VocabularyStatus.FAMILIAR]:   'bg-orange-400',
-  [VocabularyStatus.KNOWN]:      'bg-green-500',
-  [VocabularyStatus.WELL_KNOWN]: 'bg-green-500',
-  [VocabularyStatus.IGNORE]:     'bg-gray-400',
+  [VocabularyStatus.UNKNOWN]:    'hsl(205, 80%, 58%)',
+  [VocabularyStatus.NEWLY_SEEN]: 'hsl(2, 75%, 60%)',
+  [VocabularyStatus.FAMILIAR]:   'hsl(32, 90%, 56%)',
+  [VocabularyStatus.KNOWN]:      'hsl(78, 60%, 48%)',
+  [VocabularyStatus.WELL_KNOWN]: 'hsl(150, 40%, 42%)',
+  [VocabularyStatus.IGNORE]:     'hsl(0, 0%, 50%)',
 };
 
 // How many dots are filled for each status (IGNORE is handled separately)
@@ -54,8 +54,9 @@ export function StatusDots({ status, className }: StatusDotsProps) {
             key={i}
             className={cn(
               'w-2 h-2 rounded-full shrink-0',
-              isFilled ? filledColor : 'bg-border'
+              !isFilled && 'bg-border'
             )}
+            style={isFilled ? { background: filledColor } : undefined}
           />
         );
       })}
