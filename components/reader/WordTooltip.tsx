@@ -100,7 +100,7 @@ export function WordTooltip({
         onClose={handleTooltipClose}
         isExiting={isExiting}
       >
-        <div className="w-80 p-4" aria-label={`Word details for ${wordData.lemma}`}>
+        <div className="w-96 p-4" aria-label={`Word details for ${wordData.lemma}`}>
 
           {/* ① Header: StatusDots · label · close */}
           <div className="flex items-center justify-between mb-3">

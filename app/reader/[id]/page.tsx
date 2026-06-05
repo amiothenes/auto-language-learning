@@ -24,8 +24,28 @@ import { ParagraphScrubber } from '@/components/reader/ParagraphScrubber';
 import { ReaderSettingsPanel } from '@/components/reader/ReaderSettingsPanel';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { useReaderKeyboard } from '@/lib/hooks/useReaderKeyboard';
+import { MobileWordSheet } from '@/components/reader/MobileWordSheet';
+import { MobileSettingsSheet } from '@/components/reader/MobileSettingsSheet';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
+
+// Per-paragraph heat color for the vocabulary density strip.
+// Interpolates through the status hues: red → orange → yellow-green → green.
+function paraHeatColor(progress: number): string {
+  const stops = [
+    { at: 0,   h: 2,   s: 75, l: 60 },
+    { at: 33,  h: 32,  s: 90, l: 56 },
+    { at: 66,  h: 78,  s: 60, l: 48 },
+    { at: 100, h: 150, s: 40, l: 42 },
+  ];
+  const p = Math.max(0, Math.min(100, progress));
+  let a = stops[0], b = stops[1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (p >= stops[i].at && p <= stops[i + 1].at) { a = stops[i]; b = stops[i + 1]; break; }
+  }
+  const t = b.at === a.at ? 0 : (p - a.at) / (b.at - a.at);
+  return `hsl(${Math.round(a.h + (b.h - a.h) * t)}, ${Math.round(a.s + (b.s - a.s) * t)}%, ${Math.round(a.l + (b.l - a.l) * t)}%)`;
+}
 
 // ============================================================================
 // Reader Page Component
@@ -76,6 +96,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [isParaMapOpen, setIsParaMapOpen] = useState(false);
 
   const { settings, toggleImmersionMode } = useReaderSettings();
 
@@ -106,6 +127,24 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
   const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
+
+  // Dynamic right padding: shifts <main> content left to prevent minimap overlap.
+  // At vw < 1392px (normal mode), the minimap would overlap the centered prose.
+  // Extra padding = max(0, 1392 - vw) closes the gap exactly.
+  const [mainRightPadding, setMainRightPadding] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const update = () => {
+      const isXl = window.innerWidth >= 1280;
+      if (!isXl || settings.isImmersionMode) {
+        setMainRightPadding(undefined);
+      } else {
+        setMainRightPadding(32 + Math.max(0, 1392 - window.innerWidth));
+      }
+    };
+    update();
+    window.addEventListener('resize', update, { passive: true });
+    return () => window.removeEventListener('resize', update);
+  }, [settings.isImmersionMode]);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -153,6 +192,17 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       };
     });
   }, [wordInstances, textData, paragraphs]);
+
+  // Hard-stop gradient for the 4px vocabulary density strip (mobile only)
+  const densityStripGradient = useMemo(() => {
+    if (!paragraphProgress.length) return 'transparent';
+    const step = 100 / paragraphProgress.length;
+    const stops = paragraphProgress.map((p, i) => {
+      const color = paraHeatColor(p.progress);
+      return `${color} ${i * step}%, ${color} ${(i + 1) * step}%`;
+    });
+    return `linear-gradient(to right, ${stops.join(', ')})`;
+  }, [paragraphProgress]);
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
@@ -382,55 +432,67 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-desk">
-      {/* Mobile/Tablet: Top Header Bar */}
-      <header
+      {/* Mobile/Tablet: Top Header Bar + vocabulary density strip (move together on scroll) */}
+      <div
         className={cn(
-          'fixed top-0 inset-x-0 bg-paper/95 backdrop-blur-sm border-b border-border z-40 xl:hidden transition-transform duration-300',
+          'fixed top-0 inset-x-0 z-40 xl:hidden transition-transform duration-300',
           showMobileHeader ? 'translate-y-0' : '-translate-y-full'
         )}
       >
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => router.push(`/series/${textData?.seriesId ?? ''}`)}
-            className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
-            aria-label="Back to series"
-          >
-            <ChevronLeft size={20} strokeWidth={2} />
-            <span className="font-sans text-ui-sm font-medium">Back</span>
-          </button>
-
-          <h1 className="flex-1 px-4 font-serif text-content-sm text-ink truncate text-center">
-            {textData?.title ?? ''}
-          </h1>
-
-          <div className="flex items-center gap-1">
+        <header className="bg-paper/95 backdrop-blur-sm border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3">
             <button
-              onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
-              className="text-muted hover:text-ink transition-colors p-1"
-              aria-label="Reader settings"
-              aria-expanded={!!settingsAnchorEl}
+              onClick={() => router.push(`/series/${textData?.seriesId ?? ''}`)}
+              className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+              aria-label="Back to series"
             >
-              <Settings size={20} strokeWidth={1.5} />
+              <ChevronLeft size={20} strokeWidth={2} />
+              <span className="font-sans text-ui-sm font-medium">Back</span>
             </button>
-            <button
-              onClick={() => setIsTextInfoOpen(true)}
-              className="text-muted hover:text-ink transition-colors p-1"
-              aria-label="Text information"
-            >
-              <Info size={20} strokeWidth={1.5} />
-            </button>
+
+            <h1 className="flex-1 px-4 font-serif text-content-sm text-ink truncate text-center">
+              {textData?.title ?? ''}
+            </h1>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
+                className="text-muted hover:text-ink transition-colors p-1"
+                aria-label="Reader settings"
+                aria-expanded={!!settingsAnchorEl}
+              >
+                <Settings size={20} strokeWidth={1.5} />
+              </button>
+              {!settings.isImmersionMode && (
+                <button
+                  onClick={() => setIsTextInfoOpen(true)}
+                  className="text-muted hover:text-ink transition-colors p-1"
+                  aria-label="Text information"
+                >
+                  <Info size={20} strokeWidth={1.5} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Mobile/Tablet: Backdrop overlay when panels are open */}
-      {(isTextInfoOpen || (isRightPanelOpen && !isDesktop)) && (
+        {/* 4px vocabulary density strip — tappable to open ¶ map */}
+        {!settings.isImmersionMode && (
+          <div
+            className="h-1 cursor-pointer"
+            style={{ background: densityStripGradient }}
+            onClick={() => setIsParaMapOpen(true)}
+            role="button"
+            aria-label="View paragraph map"
+          />
+        )}
+      </div>
+
+      {/* Mobile/Tablet: Backdrop overlay when text info panel is open */}
+      {isTextInfoOpen && (
         <div
           className="fixed inset-0 bg-ink/30 z-30 xl:hidden backdrop-blur-sm"
-          onClick={() => {
-            setIsTextInfoOpen(false);
-            setIsRightPanelOpen(false);
-          }}
+          onClick={() => setIsTextInfoOpen(false)}
         />
       )}
 
@@ -477,7 +539,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </aside>
 
         {/* ── MAIN READER AREA ── */}
-        <main className="order-1 xl:order-2 flex flex-col items-center px-4 pt-20 pb-[50vh] xl:pt-12 xl:px-8">
+        <main
+          className="order-1 xl:order-2 flex flex-col items-center px-4 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
+          style={mainRightPadding !== undefined ? { paddingRight: mainRightPadding } : undefined}
+        >
           {adjacentQuery.isPending && (textData?.wordCount ?? 0) >= 226 ? (
             <nav className="invisible flex justify-between w-full max-w-prose mb-6 pb-4 border-b border-border" aria-hidden="true">
               <span className="font-sans text-ui-sm">.</span>
@@ -542,8 +607,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
       </div>
 
-      {/* ── WORD DETAILS PANEL — fixed overlay, desktop + mobile ── */}
-      {isRightPanelOpen && (
+      {/* ── WORD DETAILS PANEL — desktop right overlay (xl+) ── */}
+      {isRightPanelOpen && isDesktop && (
         isLoading ? (
           <div className="fixed top-0 right-0 h-screen w-full max-w-100 bg-paper border-l border-border overflow-y-auto z-50">
             <WordDetailsPanelSkeleton />
@@ -556,6 +621,15 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             isDesktop={isDesktop}
           />
         )
+      )}
+
+      {/* ── MOBILE WORD SHEET — bottom sheet (<1280px) ── */}
+      {isRightPanelOpen && !isDesktop && selectedWord && (
+        <MobileWordSheet
+          wordData={selectedWord}
+          onClose={handleCloseWordDetails}
+          onStatusChange={handleStatusChange}
+        />
       )}
 
       {/* ── DESKTOP TOP BAR — fixed, xl only ── */}
@@ -584,12 +658,15 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </button>
       </div>
 
-      {/* ── READER SETTINGS PANEL ── */}
-      {settingsAnchorEl && (
+      {/* ── READER SETTINGS — desktop popover (xl+) / mobile bottom sheet ── */}
+      {settingsAnchorEl && isDesktop && (
         <ReaderSettingsPanel
           anchorEl={settingsAnchorEl}
           onClose={() => setSettingsAnchorEl(null)}
         />
+      )}
+      {settingsAnchorEl && !isDesktop && (
+        <MobileSettingsSheet onClose={() => setSettingsAnchorEl(null)} />
       )}
 
       {/* ── PARAGRAPH SCRUBBER — top-right corner card ── */}
@@ -608,6 +685,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onClose={handleTooltipClose}
           onStatusChange={(wordId, newStatus) => {
             handleStatusChange(wordId, newStatus);
+            handleTooltipClose();
           }}
           isExiting={isTooltipExiting}
           onMoreClick={() => {
@@ -615,6 +693,64 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             setIsRightPanelOpen(true);
           }}
         />
+      )}
+
+      {/* ── PARAGRAPH MAP — mobile bottom sheet, opened by tapping density strip ── */}
+      {isParaMapOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-45 bg-ink/30 xl:hidden"
+            onClick={() => setIsParaMapOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed bottom-0 inset-x-0 z-48 bg-paper rounded-t-2xl shadow-modal max-h-[80dvh] flex flex-col xl:hidden animate-slide-up">
+            <div className="shrink-0 pt-3 pb-1 flex justify-center">
+              <div className="w-10 h-1 rounded-full bg-border" />
+            </div>
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
+              <p className="font-sans text-ui-sm font-semibold text-ink">Paragraph Map</p>
+              <button
+                onClick={() => setIsParaMapOpen(false)}
+                className="text-muted hover:text-ink transition-colors p-1 -mr-1"
+                aria-label="Close paragraph map"
+              >
+                <X size={18} strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {paragraphs.map((para, i) => {
+                const progress = paragraphProgress[i]?.progress ?? 0;
+                const preview = para.slice(0, 80).trim() + (para.length > 80 ? '…' : '');
+                return (
+                  <button
+                    key={i}
+                    onClick={() => { handleParagraphNavigate(i); setIsParaMapOpen(false); }}
+                    className={cn(
+                      'w-full text-left p-3 rounded-card border transition-colors',
+                      currentParagraphIndex === i
+                        ? 'border-primary/30 bg-primary-05'
+                        : 'border-border hover:bg-desk',
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-sans text-ui-xs text-muted">¶{i + 1}</span>
+                      <span className="font-sans text-ui-xs font-medium text-ink">{progress}%</span>
+                    </div>
+                    <p className="font-serif text-content-sm text-ink leading-snug mb-2 line-clamp-2">
+                      {preview}
+                    </p>
+                    <div className="h-1 rounded-full bg-border overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${progress}%`, background: paraHeatColor(progress) }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── STATUS UPDATE FEEDBACK ── */}

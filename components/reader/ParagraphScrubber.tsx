@@ -1,23 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// ParagraphScrubber — compact ¶ map card, top-right corner of the reader.
+// ParagraphScrubber — compact ¶ map card, fixed top-right of the reader.
 //
-// Design spec (from wireframe Direction A):
-//   • Positioned fixed, top-right of the viewport (right-3 top-[62px])
-//   • Width: ~172px — always visible as a small card, no resting strip
-//   • Style: paper bg, 1px border, rounded-lg, shadow-modal
-//   • Rows: ¶# | progress bar (colored by density) | % value
-//   • Active paragraph: primary-05 bg + primary ring
-//   • Click row → smooth-scroll to that paragraph
-//   • Replaces <MiniMap> which lived in the left TextInfo sidebar
-//
-// Color scale matches existing MiniMap.tsx heatmap:
-//   > 80% known → green    > 60% → yellow-green
-//   > 40% → orange         ≤ 40% → blue/red
+// Layout: fixed right-4, below the desktop top bar (top-15.5).
+// Width is a fixed 172px. The main content area shifts left dynamically
+// (via padding set in page.tsx) to ensure no overlap.
+// Hidden on mobile/tablet via CSS (hidden xl:block).
 // ============================================================================
 
 interface ParagraphScrubberProps {
@@ -41,21 +32,11 @@ export function ParagraphScrubber({
   onNavigate,
   hidden = false,
 }: ParagraphScrubberProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   if (hidden) return null;
 
   return (
     <div
-      className={cn(
-        // Fixed top-right, below the mobile header (62px = header h + gap)
-        'fixed right-3 z-20 transition-opacity duration-200',
-        // Sits below the desktop top bar; on mobile hide it
-        'top-[62px] hidden xl:block',
-        isHovered ? 'opacity-100' : 'opacity-80 hover:opacity-100',
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="fixed right-4 top-15.5 z-20 hidden xl:block"
       aria-label="Paragraph navigation"
     >
       <div
@@ -83,7 +64,7 @@ export function ParagraphScrubber({
               >
                 <span
                   className={cn(
-                    'font-sans text-[10.5px] w-[22px] shrink-0',
+                    'font-sans text-[10.5px] w-5.5 shrink-0',
                     isActive ? 'text-primary font-semibold' : 'text-muted',
                   )}
                 >
@@ -102,7 +83,7 @@ export function ParagraphScrubber({
 
                 <span
                   className={cn(
-                    'font-sans text-[10px] w-[26px] text-right shrink-0',
+                    'font-sans text-[10px] w-6.5 text-right shrink-0',
                     isActive ? 'text-ink font-medium' : 'text-muted',
                   )}
                 >
