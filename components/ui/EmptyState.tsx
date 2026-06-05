@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
-import { EmptyStateIllustration } from '@/components/ui/EmptyStateIllustration';
+import { EmptyStateIllustration, IllustrationType } from '@/components/ui/EmptyStateIllustration';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -23,7 +23,8 @@ interface EmptyStateProps {
     label: string;
     onClick: () => void;
   };
-  illustration?: 'books' | 'pages' | 'vocabulary' | 'none';
+  illustration?: IllustrationType | 'none';
+  illustrationSize?: number;
   className?: string;
 }
 
@@ -34,6 +35,7 @@ export function EmptyState({
   primaryAction,
   secondaryAction,
   illustration = 'none',
+  illustrationSize = 128,
   className,
 }: EmptyStateProps) {
   return (
@@ -42,7 +44,7 @@ export function EmptyState({
         {/* Icon or Illustration */}
         {illustration !== 'none' ? (
           <div className="mb-6 flex justify-center">
-            <EmptyStateIllustration type={illustration} />
+            <EmptyStateIllustration type={illustration} size={illustrationSize} />
           </div>
         ) : icon ? (
           <div className="mb-6 flex justify-center">

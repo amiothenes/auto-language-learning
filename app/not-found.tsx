@@ -14,7 +14,7 @@ export default function NotFound() {
       <div className="bg-paper border border-border rounded-card shadow-raised p-12 max-w-md text-center">
         {/* Illustration */}
         <div className="mb-6 flex justify-center">
-          <EmptyStateIllustration type="pages" />
+          <EmptyStateIllustration type="telescope" />
         </div>
 
         {/* 404 Badge */}

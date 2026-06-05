@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Word, WordData } from './Word';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ interface ReaderContentProps {
   wordInstances?: WordInstanceItem[] | null;
   isLoading?: boolean;
   loadError?: string | null;
+  seriesId?: string;
 }
 
 export function ReaderContent({
@@ -33,6 +35,7 @@ export function ReaderContent({
   wordInstances,
   isLoading,
   loadError,
+  seriesId,
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
 
@@ -185,6 +188,26 @@ export function ReaderContent({
           )}
         </p>
       ))}
+
+      {/* End-of-text marker */}
+      <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
+        <img
+          src="/illustrations/mountain.svg"
+          width={72}
+          height={72}
+          alt=""
+          className="opacity-60"
+        />
+        <p className="font-serif italic text-content-base text-muted">— End —</p>
+        {seriesId && (
+          <Link
+            href={`/series/${seriesId}`}
+            className="font-sans text-ui-sm text-primary hover:underline"
+          >
+            Back to series →
+          </Link>
+        )}
+      </div>
     </article>
   );
 }

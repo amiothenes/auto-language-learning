@@ -1,15 +1,36 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { Settings } from 'lucide-react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { RecentTextsList } from '@/components/dashboard/RecentTextsList';
 import { ActionButtons } from '@/components/dashboard/ActionButtons';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 
 export default function Dashboard() {
+  const router = useRouter();
   const { currentLanguage } = useLanguage();
+
+  if (!currentLanguage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <EmptyState
+          illustration="compass"
+          title="Choose your first language"
+          description="Head to Settings to add a language and start tracking your vocabulary."
+          primaryAction={{
+            label: 'Open Settings',
+            onClick: () => router.push('/settings/languages'),
+            icon: <Settings size={18} strokeWidth={2} />,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8">

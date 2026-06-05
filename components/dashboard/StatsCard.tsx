@@ -5,7 +5,7 @@ import { Heading, Body, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
 import { ProgressGraph } from '@/components/dashboard/ProgressGraph';
 import { VocabDistribution } from '@/components/vocabulary/VocabDistribution';
-import { BookOpen, CheckCircle2, Flame, Info } from 'lucide-react';
+import { BookOpen, CheckCircle2, Info } from 'lucide-react';
 import { Skeleton, SkeletonText, SkeletonCircle } from '@/components/ui/Skeleton';
 import { useStats } from '@/lib/hooks/useStats';
 import { useStatsHistory } from '@/lib/hooks/useStatsHistory';
@@ -158,7 +158,7 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
         {/* Day Streak */}
         <div className="p-4 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Flame size={20} className="text-primary" strokeWidth={1.5} />
+            <img src="/illustrations/stones.svg" width={26} height={26} alt="" />
           </div>
           <div className="flex-1 min-w-0">
             <Muted size="xs" className="mb-0.5">

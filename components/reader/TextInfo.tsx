@@ -127,9 +127,14 @@ export function TextInfo({
         </div>
         <div className="flex justify-between items-center">
           <span className="font-sans text-ui-sm text-muted">Times Read</span>
-          <span className="font-sans text-ui-base text-ink font-medium">
-            {viewCount}
-          </span>
+          {viewCount === 0 ? (
+            <span className="flex items-center gap-1.5 font-sans text-ui-sm text-primary font-medium">
+              <img src="/illustrations/lantern.svg" width={18} height={18} alt="" />
+              First read
+            </span>
+          ) : (
+            <span className="font-sans text-ui-base text-ink font-medium">{viewCount}</span>
+          )}
         </div>
       </div>
 

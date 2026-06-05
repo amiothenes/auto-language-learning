@@ -12,7 +12,6 @@ import {
   Tooltip,
   type TooltipItem,
 } from 'chart.js';
-import { Muted } from '@/components/ui/Typography';
 import type { StatsHistoryPoint } from '@/lib/types/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
@@ -22,8 +21,7 @@ interface ProgressGraphProps {
   history: StatsHistoryPoint[];
 }
 
-export function ProgressGraph({ currentPercentage, history }: ProgressGraphProps) {
-  const clamped = Math.min(100, Math.max(0, currentPercentage));
+export function ProgressGraph({ history }: ProgressGraphProps) {
   const hasChart = history.length >= 2;
 
   const chartData = useMemo(() => {
@@ -95,17 +93,12 @@ export function ProgressGraph({ currentPercentage, history }: ProgressGraphProps
           <Line data={chartData} options={chartOptions} />
         </div>
       ) : (
-        <>
-          <div className="h-2 w-full rounded-full bg-border overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-500"
-              style={{ width: `${clamped}%` }}
-            />
-          </div>
-          <Muted size="xs">
-            Read more texts to see your vocabulary growth here.
-          </Muted>
-        </>
+        <div className="h-50 flex flex-col items-center justify-center gap-3">
+          <img src="/illustrations/leaf.svg" width={72} height={72} alt="" />
+          <p className="font-sans text-ui-sm text-muted text-center">
+            Start reading to track your progress over time
+          </p>
+        </div>
       )}
     </div>
   );

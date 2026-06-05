@@ -1,0 +1,22 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence>
+      <feColorMatrix in="n" type="saturate" values="0"></feColorMatrix>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"></feFuncA></feComponentTransfer>
+      <feComposite operator="in" in2="SourceGraphic"></feComposite>
+    </filter>
+    <clipPath id="disc"><circle cx="64" cy="64" r="52"></circle></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.05"></circle>
+  <g clip-path="url(#disc)">
+    <line x1="34" y1="96" x2="94" y2="96" stroke="#183A37" stroke-width="2" opacity="0.3"></line>
+    <path d="M64 84 m-24 0 a24 9 0 1 0 48 0 a24 9 0 1 0 -48 0" fill="#C28A4A" opacity="0.4" style="mix-blend-mode:multiply" transform="translate(-2.2,2)"></path>
+    <ellipse cx="64" cy="84" rx="24" ry="9" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></ellipse>
+    <ellipse cx="62" cy="68" rx="18" ry="8" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></ellipse>
+    <ellipse cx="65" cy="54" rx="13" ry="6.5" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></ellipse>
+    <ellipse cx="63" cy="43" rx="8" ry="5" fill="#C28A4A" opacity="0.85"></ellipse>
+    <ellipse cx="63" cy="43" rx="8" ry="5" fill="none" stroke="#183A37" stroke-width="2.2"></ellipse>
+  </g>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.38" style="mix-blend-mode:multiply" filter="url(#grain)" clip-path="url(#disc)"></circle>
+</svg>

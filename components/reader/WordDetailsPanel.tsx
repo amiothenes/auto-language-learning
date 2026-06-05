@@ -63,8 +63,8 @@ export function WordDetailsPanel({
   // If no word is selected, show placeholder
   if (!wordData) {
     return (
-      <aside className={panelClasses}>
-        <div className="p-5 space-y-5">
+      <aside className={`${panelClasses} flex flex-col`}>
+        <div className="p-5 shrink-0">
           {/* Panel Header */}
           <div className="flex items-center justify-between">
             <Heading size="lg" as="h2">
@@ -78,13 +78,20 @@ export function WordDetailsPanel({
               <X size={20} strokeWidth={1.5} />
             </button>
           </div>
+        </div>
 
-          {/* Placeholder Content */}
-          <div className="space-y-4 pt-4 border-t border-border">
-            <Muted className="text-ui-sm text-center italic">
-              Select a word in the text to view its details, translation, and learning status.
-            </Muted>
-          </div>
+        {/* Quill idle state */}
+        <div className="flex flex-col items-center justify-center flex-1 gap-4 px-4 py-8">
+          <img
+            src="/illustrations/quill.svg"
+            width={88}
+            height={88}
+            alt=""
+            className="opacity-70"
+          />
+          <p className="font-sans text-ui-sm text-muted text-center max-w-45 leading-relaxed">
+            Select a word in the text to view its details
+          </p>
         </div>
       </aside>
     );

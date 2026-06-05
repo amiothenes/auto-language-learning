@@ -309,6 +309,27 @@ export default function VocabularyPage() {
           />
         )}
 
+        {/* V3: All-mastered banner */}
+        {(() => {
+          const allMastered =
+            !!stats &&
+            stats.vocabulary.total > 0 &&
+            stats.vocabulary.unknown + stats.vocabulary.newlySeen + stats.vocabulary.familiar === 0;
+          return allMastered ? (
+            <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-card px-5 py-4">
+              <div>
+                <p className="font-sans text-ui-base font-semibold text-primary">
+                  Amazing — every word is mastered
+                </p>
+                <p className="font-sans text-ui-sm text-muted mt-0.5">
+                  Time to add new texts and keep growing.
+                </p>
+              </div>
+              <img src="/illustrations/laurel.svg" width={52} height={52} alt="" />
+            </div>
+          ) : null;
+        })()}
+
         {/* Filter Bar */}
         <VocabFilterBar
           searchQuery={searchQuery}
@@ -370,9 +391,9 @@ export default function VocabularyPage() {
           /* Empty State */
           searchQuery || activeStatuses.size > 0 ? (
             <EmptyState
-              illustration="none"
+              illustration="search"
               title="No words found"
-              description="Try adjusting your search query or filter criteria to find what you're looking for"
+              description="Try adjusting your search or filter criteria"
             />
           ) : (
             <EmptyState

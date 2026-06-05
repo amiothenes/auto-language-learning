@@ -1,0 +1,34 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence>
+      <feColorMatrix in="n" type="saturate" values="0"></feColorMatrix>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"></feFuncA></feComponentTransfer>
+      <feComposite operator="in" in2="SourceGraphic"></feComposite>
+    </filter>
+    <clipPath id="disc"><circle cx="64" cy="64" r="52"></circle></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.05"></circle>
+  <g clip-path="url(#disc)">
+    <g transform="rotate(-3 65 80)">
+    <path d="M34 80 h62 v14 h-62 Z" fill="#C28A4A" opacity="0.45" style="mix-blend-mode:multiply" transform="translate(-2.2,2.2)"></path>
+      <rect x="34" y="80" width="62" height="14" rx="2.5" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></rect>
+      <line x1="41" y1="82" x2="41" y2="92" stroke="#183A37" stroke-width="2" opacity="0.5"></line>
+      <line x1="47" y1="87" x2="91" y2="87" stroke="#183A37" stroke-width="1.6" opacity="0.3"></line>
+    </g>
+    <g transform="rotate(2 64 64)">
+    <path d="M30 64 h68 v14 h-68 Z" fill="#C28A4A" opacity="0.45" style="mix-blend-mode:multiply" transform="translate(-2.2,2.2)"></path>
+      <rect x="30" y="64" width="68" height="14" rx="2.5" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></rect>
+      <line x1="37" y1="66" x2="37" y2="76" stroke="#183A37" stroke-width="2" opacity="0.5"></line>
+      <line x1="43" y1="71" x2="93" y2="71" stroke="#183A37" stroke-width="1.6" opacity="0.3"></line>
+    </g>
+    <g transform="rotate(-2 65 48)">
+    <path d="M38 48 h54 v14 h-54 Z" fill="#C28A4A" opacity="0.45" style="mix-blend-mode:multiply" transform="translate(-2.2,2.2)"></path>
+      <rect x="38" y="48" width="54" height="14" rx="2.5" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></rect>
+      <line x1="45" y1="50" x2="45" y2="60" stroke="#183A37" stroke-width="2" opacity="0.5"></line>
+      <line x1="51" y1="55" x2="87" y2="55" stroke="#183A37" stroke-width="1.6" opacity="0.3"></line>
+    </g>
+    <circle cx="92" cy="44" r="3" fill="#C28A4A" opacity="0.7"></circle>
+  </g>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.38" style="mix-blend-mode:multiply" filter="url(#grain)" clip-path="url(#disc)"></circle>
+</svg>

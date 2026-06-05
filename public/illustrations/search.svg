@@ -1,0 +1,24 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence>
+      <feColorMatrix in="n" type="saturate" values="0"></feColorMatrix>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"></feFuncA></feComponentTransfer>
+      <feComposite operator="in" in2="SourceGraphic"></feComposite>
+    </filter>
+    <clipPath id="disc"><circle cx="64" cy="64" r="52"></circle></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.05"></circle>
+  <g clip-path="url(#disc)">
+    <rect x="30" y="34" width="44" height="56" rx="3" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></rect>
+    <line x1="38" y1="46" x2="64" y2="46" stroke="#183A37" stroke-width="1.6" opacity="0.32" stroke-linecap="round"></line>
+    <line x1="38" y1="54" x2="64" y2="54" stroke="#183A37" stroke-width="1.6" opacity="0.32" stroke-linecap="round"></line>
+    <line x1="38" y1="62" x2="64" y2="62" stroke="#183A37" stroke-width="1.6" opacity="0.32" stroke-linecap="round"></line>
+    <path d="M58 58 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0" fill="#C28A4A" opacity="0.4" style="mix-blend-mode:multiply" transform="translate(-2.4,2.4)"></path>
+    <circle cx="74" cy="66" r="22" fill="#183A37" opacity="0.06"></circle>
+    <circle cx="74" cy="66" r="22" fill="none" stroke="#183A37" stroke-width="3"></circle>
+    <circle cx="67" cy="59" r="6" fill="#FAF9F5" opacity="0.6"></circle>
+    <line x1="90" y1="82" x2="104" y2="96" stroke="#183A37" stroke-width="7" stroke-linecap="round"></line>
+  </g>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.38" style="mix-blend-mode:multiply" filter="url(#grain)" clip-path="url(#disc)"></circle>
+</svg>

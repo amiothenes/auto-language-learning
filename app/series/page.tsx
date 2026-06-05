@@ -429,11 +429,18 @@ function SeriesPageContent() {
             ))}
           </div>
         ) : filteredAndSortedSeries.length === 0 ? (
-          searchQuery ? (
+          readinessFilter !== 'all' ? (
             <EmptyState
-              illustration="none"
+              illustration="telescope"
+              illustrationSize={96}
+              title="No series at this level yet"
+              description="Keep reading to build coverage and unlock more series here"
+            />
+          ) : searchQuery ? (
+            <EmptyState
+              illustration="search"
               title="No series found"
-              description="Try adjusting your search query to find what you're looking for"
+              description="Try adjusting your search to find what you're looking for"
             />
           ) : (
             <EmptySeriesState onCreateClick={handleNewSeries} />

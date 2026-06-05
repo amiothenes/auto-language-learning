@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import Link from 'next/link';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useText } from '@/lib/hooks/useText';
 import { useWordInstances } from '@/lib/hooks/useWordInstances';
 import { useUpdateWordStatus } from '@/lib/hooks/useUpdateWordStatus';
@@ -312,6 +313,22 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   if (textQuery.isError) notFound();
 
+  if (!isLoading && !textQuery.data) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <EmptyState
+          illustration="cloudoff"
+          title="Text couldn't be loaded"
+          description="This text may have been deleted or is unavailable."
+          primaryAction={{
+            label: 'Back to Series',
+            onClick: () => router.back(),
+          }}
+        />
+      </div>
+    );
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   const checkMilestone = (knownWords: number): boolean =>
     [100, 250, 500, 1000, 2000, 5000].includes(knownWords);
@@ -579,6 +596,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 wordInstances={wordInstances}
                 isLoading={instancesQuery.isLoading}
                 loadError={instancesQuery.error?.message ?? null}
+                seriesId={textData.seriesId}
               />
             )
           )}

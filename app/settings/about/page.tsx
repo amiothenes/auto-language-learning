@@ -11,6 +11,23 @@ import { Button } from '@/components/ui/Button';
 export default function AboutSettingsPage() {
   return (
     <div className="space-y-6">
+      {/* Brand hero */}
+      <div className="flex items-center gap-4 pb-6 mb-2 border-b border-border">
+        <img
+          src="/illustrations/verbista-icon.png"
+          width={56}
+          height={56}
+          alt="Verbista"
+          className="rounded-xl shadow-raised shrink-0"
+        />
+        <div>
+          <p className="font-sans text-ui-lg font-semibold text-ink">Verbista</p>
+          <p className="font-sans text-ui-sm text-muted mt-0.5">
+            Language learning, one lemma at a time.
+          </p>
+        </div>
+      </div>
+
       {/* Application Information */}
       <SettingSection
         title="Application Information"

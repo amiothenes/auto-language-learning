@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Toggle } from '@/components/settings/Toggle';
 
@@ -183,13 +184,33 @@ export function AddLanguageModal({
           className="w-full max-w-md bg-paper rounded-card shadow-modal animate-modal-enter p-6"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Title */}
-          <h2
-            id="add-language-dialog-title"
-            className="font-sans text-ui-lg font-semibold text-ink"
-          >
-            Add New Language
-          </h2>
+          {/* Title row */}
+          <div className="flex items-center justify-between gap-2">
+            <h2
+              id="add-language-dialog-title"
+              className="font-sans text-ui-lg font-semibold text-ink"
+            >
+              Add New Language
+            </h2>
+            <div className="flex items-center gap-2 shrink-0">
+              <img
+                src="/illustrations/sprout.svg"
+                width={40}
+                height={40}
+                alt=""
+                aria-hidden="true"
+                className="opacity-80 shrink-0"
+              />
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-muted hover:text-ink transition-colors"
+                aria-label="Close dialog"
+              >
+                <X size={20} strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">

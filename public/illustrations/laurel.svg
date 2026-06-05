@@ -1,0 +1,31 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence>
+      <feColorMatrix in="n" type="saturate" values="0"></feColorMatrix>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"></feFuncA></feComponentTransfer>
+      <feComposite operator="in" in2="SourceGraphic"></feComposite>
+    </filter>
+    <clipPath id="disc"><circle cx="64" cy="64" r="52"></circle></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.05"></circle>
+  <g clip-path="url(#disc)">
+    <path d="M86 96 C104 84, 106 56, 94 36" stroke="#183A37" stroke-width="2.4" fill="none"></path>
+    <ellipse cx="105.24000000000001" cy="48.400000000000006" rx="7" ry="4" fill="#183A37" opacity="0.5" transform="rotate(-40 105.24000000000001 48.400000000000006)"></ellipse>
+    <ellipse cx="110.28" cy="28.80000000000001" rx="8.5" ry="4" fill="#183A37" opacity="0.5" transform="rotate(-40 110.28 28.80000000000001)"></ellipse>
+    <ellipse cx="106.2" cy="9.200000000000003" rx="8" ry="4" fill="#183A37" opacity="0.5" transform="rotate(-40 106.2 9.200000000000003)"></ellipse>
+    <ellipse cx="101.4" cy="-7.599999999999994" rx="6" ry="4" fill="#183A37" opacity="0.5" transform="rotate(-40 101.4 -7.599999999999994)"></ellipse>
+    <ellipse cx="98.2" cy="-18.799999999999997" rx="3.5" ry="4" fill="#183A37" opacity="0.5" transform="rotate(-40 98.2 -18.799999999999997)"></ellipse>
+    <path d="M42 96 C24 84, 22 56, 34 36" stroke="#183A37" stroke-width="2.4" fill="none"></path>
+    <ellipse cx="22.759999999999998" cy="48.400000000000006" rx="7" ry="4" fill="#183A37" opacity="0.5" transform="rotate(40 22.759999999999998 48.400000000000006)"></ellipse>
+    <ellipse cx="17.72" cy="28.80000000000001" rx="8.5" ry="4" fill="#183A37" opacity="0.5" transform="rotate(40 17.72 28.80000000000001)"></ellipse>
+    <ellipse cx="21.799999999999997" cy="9.200000000000003" rx="8" ry="4" fill="#183A37" opacity="0.5" transform="rotate(40 21.799999999999997 9.200000000000003)"></ellipse>
+    <ellipse cx="26.6" cy="-7.599999999999994" rx="6" ry="4" fill="#183A37" opacity="0.5" transform="rotate(40 26.6 -7.599999999999994)"></ellipse>
+    <ellipse cx="29.799999999999997" cy="-18.799999999999997" rx="3.5" ry="4" fill="#183A37" opacity="0.5" transform="rotate(40 29.799999999999997 -18.799999999999997)"></ellipse>
+
+    <path d="M64 44 l5.5 11 12 1.5 -9 8.5 2.5 12 -11 -6 -11 6 2.5 -12 -9 -8.5 12 -1.5 Z" fill="#C28A4A" opacity="0.5" style="mix-blend-mode:multiply" transform="translate(-2,2)"></path>
+    <path d="M64 44 l5.5 11 12 1.5 -9 8.5 2.5 12 -11 -6 -11 6 2.5 -12 -9 -8.5 12 -1.5 Z" fill="#C28A4A" opacity="0.9"></path>
+    <path d="M64 44 l5.5 11 12 1.5 -9 8.5 2.5 12 -11 -6 -11 6 2.5 -12 -9 -8.5 12 -1.5 Z" fill="none" stroke="#183A37" stroke-width="2" stroke-linejoin="round"></path>
+  </g>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.38" style="mix-blend-mode:multiply" filter="url(#grain)" clip-path="url(#disc)"></circle>
+</svg>

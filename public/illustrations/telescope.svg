@@ -1,0 +1,27 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"></feTurbulence>
+      <feColorMatrix in="n" type="saturate" values="0"></feColorMatrix>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"></feFuncA></feComponentTransfer>
+      <feComposite operator="in" in2="SourceGraphic"></feComposite>
+    </filter>
+    <clipPath id="disc"><circle cx="64" cy="64" r="52"></circle></clipPath>
+  </defs>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.05"></circle>
+  <g clip-path="url(#disc)">
+    <line x1="60" y1="66" x2="48" y2="96" stroke="#183A37" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="64" y1="66" x2="78" y2="96" stroke="#183A37" stroke-width="2.6" stroke-linecap="round"></line>
+    <line x1="54" y1="74" x2="70" y2="74" stroke="#183A37" stroke-width="2.2" stroke-linecap="round"></line>
+    <g transform="rotate(-34 62 58)">
+    <path d="M40 52 H86 L92 49 V69 L86 66 H40 Z" fill="#C28A4A" opacity="0.45" style="mix-blend-mode:multiply" transform="translate(-2.2,2.4)"></path>
+      <rect x="40" y="52" width="46" height="14" rx="3" fill="#FAF9F5" stroke="#183A37" stroke-width="2.4"></rect>
+      <path d="M86 49 L93 47 V71 L86 69 Z" fill="#183A37" opacity="0.18"></path>
+      <path d="M86 49 L93 47 V71 L86 69 Z" fill="none" stroke="#183A37" stroke-width="2.2" stroke-linejoin="round"></path>
+      <rect x="34" y="54" width="7" height="10" rx="2" fill="#183A37"></rect>
+      <line x1="60" y1="52" x2="60" y2="66" stroke="#183A37" stroke-width="1.6" opacity="0.3"></line>
+    </g>
+    <path d="M98 28 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2 Z" fill="#C28A4A" opacity="0.9"></path>
+  </g>
+  <circle cx="64" cy="64" r="52" fill="#183A37" opacity="0.38" style="mix-blend-mode:multiply" filter="url(#grain)" clip-path="url(#disc)"></circle>
+</svg>

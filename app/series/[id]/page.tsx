@@ -389,21 +389,54 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
           />
         )}
 
-        {/* Continue Reading Card */}
-        {!isLoading && seriesData?.lastReadTextId && (() => {
-          const lastText = seriesData.texts.find((t) => t.id === seriesData.lastReadTextId);
-          if (!lastText) return null;
-          return (
-            <ContinueReadingCard
-              textId={seriesData.lastReadTextId}
-              textTitle={lastText.title}
-              paragraphIndex={seriesData.lastReadParagraphIndex ?? 0}
-              totalParagraphs={seriesData.lastReadTotalParagraphs ?? 1}
-              knownPercentage={Math.round(lastText.knownPercentage)}
-              lastReadAt={lastText.lastRead}
-              onResume={() => router.push(`/reader/${seriesData.lastReadTextId}`)}
-            />
-          );
+        {/* SD2: Series completion banner */}
+        {!isLoading && seriesData && (() => {
+          const allComplete =
+            seriesData.texts.length >= 2 &&
+            seriesData.texts.every((t) => t.knownPercentage >= 80);
+          return allComplete ? (
+            <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-card px-5 py-4 mb-2">
+              <div>
+                <p className="font-sans text-ui-base font-semibold text-primary">
+                  Series Complete
+                </p>
+                <p className="font-sans text-ui-sm text-muted mt-0.5">
+                  All texts are at comfortable reading level.
+                </p>
+              </div>
+              <img src="/illustrations/laurel.svg" width={52} height={52} alt="" />
+            </div>
+          ) : null;
+        })()}
+
+        {/* SD3: Continue Reading Card or nothing-to-resume hint */}
+        {!isLoading && seriesData && (() => {
+          if (seriesData.lastReadTextId) {
+            const lastText = seriesData.texts.find((t) => t.id === seriesData.lastReadTextId);
+            if (!lastText) return null;
+            return (
+              <ContinueReadingCard
+                textId={seriesData.lastReadTextId}
+                textTitle={lastText.title}
+                paragraphIndex={seriesData.lastReadParagraphIndex ?? 0}
+                totalParagraphs={seriesData.lastReadTotalParagraphs ?? 1}
+                knownPercentage={Math.round(lastText.knownPercentage)}
+                lastReadAt={lastText.lastRead}
+                onResume={() => router.push(`/reader/${seriesData.lastReadTextId}`)}
+              />
+            );
+          }
+          if (seriesData.texts.length > 0) {
+            return (
+              <div className="flex items-center gap-4 bg-paper border border-border rounded-card p-4 mb-4">
+                <img src="/illustrations/bookmark.svg" width={40} height={40} alt="" />
+                <p className="font-sans text-ui-sm text-muted">
+                  Pick a text below to begin reading
+                </p>
+              </div>
+            );
+          }
+          return null;
         })()}
 
         {/* Texts Section */}

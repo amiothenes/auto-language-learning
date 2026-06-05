@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronDown, Globe } from 'lucide-react';
+import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Select, SelectOption } from '@/components/settings/Select';
 import { Toggle } from '@/components/settings/Toggle';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { AddLanguageModal, NewLanguageData } from '@/components/settings/AddLanguageModal';
 import { useLanguages } from '@/lib/hooks/useLanguages';
 import { useCreateLanguage } from '@/lib/hooks/useCreateLanguage';
@@ -93,27 +94,17 @@ export default function LanguagesSettingsPage() {
           )}
 
           {!isLoading && languages.length === 0 && (
-            <div className="flex flex-col items-center gap-4 py-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-desk flex items-center justify-center">
-                <Globe size={32} className="text-muted" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="font-sans text-ui-base font-medium text-ink mb-1">
-                  No languages yet
-                </p>
-                <p className="font-sans text-ui-sm text-muted">
-                  Add a language to start tracking your vocabulary.
-                </p>
-              </div>
-              <Button
-                variant="primary"
-                size="md"
-                leftIcon={<Plus size={18} strokeWidth={2} />}
-                onClick={() => setIsAddModalOpen(true)}
-              >
-                Add Your First Language
-              </Button>
-            </div>
+            <EmptyState
+              illustration="globe"
+              illustrationSize={96}
+              title="No languages yet"
+              description="Add a language to start tracking your vocabulary."
+              primaryAction={{
+                label: 'Add Your First Language',
+                onClick: () => setIsAddModalOpen(true),
+                icon: <Plus size={18} strokeWidth={2} />,
+              }}
+            />
           )}
 
           {languages.map((language) => {
