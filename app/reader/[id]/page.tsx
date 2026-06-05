@@ -629,6 +629,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           wordData={selectedWord}
           onClose={handleCloseWordDetails}
           onStatusChange={handleStatusChange}
+          onTranslationChange={(wordId, newTranslation) => {
+            console.log('translation update', wordId, newTranslation);
+          }}
         />
       )}
 

@@ -1,31 +1,21 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, ExternalLink } from 'lucide-react';
-import { WordData, VocabularyStatus } from '@/lib/types';
+import { VocabularyStatus } from '@/lib/types';
+import type { WordData } from '@/lib/types';
+import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
-import { StatusDots } from './StatusDots';
 import { cn } from '@/lib/utils';
 
-// ============================================================================
-// MobileWordSheet — bottom-sheet word details for mobile/tablet (<1280px).
-//
-// Two snap states driven by transform translateY on a 90dvh-tall sheet:
-//   Peek     → translateY(calc(90dvh - PEEK_H + dragOffset))   = top 232px visible
-//   Expanded → translateY(max(0, dragOffset))                   = full 90dvh visible
-//
-// Drag-to-expand/dismiss is handled on the drag handle only (touch events).
-// AdaptiveStepper + MoreMenu are wired for status grading.
-// ============================================================================
+const PEEK_HEIGHT = 240;
 
-const PEEK_H = 232;
-const DRAG_THRESHOLD = 72;
+const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 
-const MORPH_PRIORITY = ['tense', 'case', 'number'] as const;
 const MORPH_LABELS: Record<string, string> = {
-  tense: 'Tense', case: 'Case', number: 'Number', mood: 'Mood',
-  gender: 'Gender', voice: 'Voice', aspect: 'Aspect', person: 'Person',
+  tense: 'Tense', mood: 'Mood', person: 'Person', number: 'Number',
+  gender: 'Gender', case: 'Case', voice: 'Voice', aspect: 'Aspect',
 };
 
 const STATUS_LABEL: Record<VocabularyStatus, string> = {
@@ -37,257 +27,295 @@ const STATUS_LABEL: Record<VocabularyStatus, string> = {
   [VocabularyStatus.IGNORE]:     'Ignored',
 };
 
-function buildMorphSummary(data: Record<string, unknown>): string {
-  const d = Object.fromEntries(Object.entries(data).map(([k, v]) => [k.toLowerCase(), v]));
-  return MORPH_PRIORITY.filter((k) => d[k]).map((k) => String(d[k])).join(', ');
+const STATUS_CHIPS = [
+  { status: VocabularyStatus.UNKNOWN,    label: '?',   color: 'hsl(205,80%,58%)' },
+  { status: VocabularyStatus.NEWLY_SEEN, label: 'NS',  color: 'hsl(2,75%,60%)'   },
+  { status: VocabularyStatus.FAMILIAR,   label: 'Fam', color: 'hsl(32,90%,56%)'  },
+  { status: VocabularyStatus.KNOWN,      label: 'Kno', color: 'hsl(78,60%,48%)'  },
+  { status: VocabularyStatus.WELL_KNOWN, label: 'WKn', color: 'hsl(150,40%,42%)' },
+  { status: VocabularyStatus.IGNORE,     label: 'Ign', color: 'hsl(0,0%,50%)'    },
+] as const;
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function MorphChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-desk border border-border rounded-sm px-2.5 py-1.5 flex items-center gap-1">
+      <span className="font-sans text-[10px] text-muted">{label}:</span>
+      <span className="font-sans text-[10.5px] text-ink font-semibold">{value}</span>
+    </div>
+  );
 }
 
-function buildMorphFull(data: Record<string, unknown>): string {
-  const d = Object.fromEntries(Object.entries(data).map(([k, v]) => [k.toLowerCase(), v]));
-  const order = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'];
-  return order.filter((k) => d[k]).map((k) => `${MORPH_LABELS[k] ?? k}: ${d[k]}`).join(' · ');
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-desk border border-border rounded-card px-2.5 py-3 flex flex-col gap-1">
+      <span className="font-sans text-[9.5px] text-muted leading-none">{label}</span>
+      <span className="font-sans text-[13px] text-ink font-semibold leading-tight">{value}</span>
+    </div>
+  );
 }
+
+function LookupLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-1.5 h-11
+                 bg-primary-05 border border-primary/20 rounded-card
+                 font-sans text-ui-sm text-primary
+                 hover:opacity-90 transition-opacity active:scale-[0.98]"
+    >
+      {label}
+      <ExternalLink size={12} strokeWidth={1.5} />
+    </a>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 interface MobileWordSheetProps {
-  wordData: WordData;
+  wordData: WordData | null;
   onClose: () => void;
   onStatusChange: (wordId: string, newStatus: VocabularyStatus) => void;
+  onTranslationChange?: (wordId: string, newTranslation: string) => void;
 }
 
-export function MobileWordSheet({ wordData, onClose, onStatusChange }: MobileWordSheetProps) {
+export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslationChange }: MobileWordSheetProps) {
   const [expanded, setExpanded] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [dismissing, setDismissing] = useState(false);
+  const [translation, setTranslation] = useState('');
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [showFullMorph, setShowFullMorph] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
 
-  const startYRef = useRef(0);
+  const touchStartY = useRef(0);
+  const touchCurrentY = useRef(0);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const dismiss = useCallback(() => {
+  // Reset snap state and sync translation whenever a new word is selected
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setExpanded(false);
+    setDismissing(false);
+    setTranslation(wordData?.translation ?? '');
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+  }, [wordData?.wordId]);
+
+  if (!wordData) return null;
+
+  const dismiss = () => {
     setDismissing(true);
-    setTimeout(onClose, 280);
-  }, [onClose]);
+    dismissTimerRef.current = setTimeout(onClose, 280);
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    startYRef.current = e.touches[0].clientY;
-    setIsDragging(true);
-    setDragOffset(0);
+    touchStartY.current = e.touches[0].clientY;
+    touchCurrentY.current = e.touches[0].clientY;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    setDragOffset(e.touches[0].clientY - startYRef.current);
+    touchCurrentY.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = () => {
-    setIsDragging(false);
-    if (expanded) {
-      if (dragOffset > DRAG_THRESHOLD) setExpanded(false);
-    } else {
-      if (dragOffset < -DRAG_THRESHOLD) setExpanded(true);
-      else if (dragOffset > DRAG_THRESHOLD) dismiss();
+    const delta = touchCurrentY.current - touchStartY.current;
+    if (delta < -60) setExpanded(true);
+    if (delta > 60) {
+      if (expanded) setExpanded(false);
+      else dismiss();
     }
-    setDragOffset(0);
   };
-
-  // Sheet stays at 90dvh; translateY exposes only PEEK_H px in peek state.
-  let transform: string;
-  if (dismissing) {
-    transform = 'translateY(90dvh)';
-  } else if (expanded) {
-    transform = `translateY(${Math.max(0, dragOffset)}px)`;
-  } else {
-    transform = `translateY(calc(90dvh - ${PEEK_H}px + ${dragOffset}px))`;
-  }
-
-  const transition = dismissing
-    ? 'transform 0.28s ease-in'
-    : isDragging
-    ? 'none'
-    : 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
 
   const cleanSurface = wordData.surface.replace(/[.,!?;:«»„"]/g, '');
   const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
   const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(cleanSurface)}`;
-  const morphSummary = wordData.inflectionData ? buildMorphSummary(wordData.inflectionData) : '';
-  const morphFull = wordData.inflectionData ? buildMorphFull(wordData.inflectionData) : wordData.inflection;
-  const summaryDisplay = morphSummary || wordData.inflection;
-  const hasExtraMorph = wordData.inflectionData
-    ? Object.keys(wordData.inflectionData).length > MORPH_PRIORITY.length
-    : false;
+
+  const sheetStyle: React.CSSProperties = {
+    height: expanded ? 'calc(90dvh)' : `${PEEK_HEIGHT}px`,
+    transform: dismissing ? 'translateY(calc(100% + 16px))' : 'translateY(0)',
+    transition: dismissing
+      ? 'transform 0.28s ease-in'
+      : 'height 0.3s cubic-bezier(0,0,.2,1)',
+  };
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-45 bg-ink/20"
+        className="fixed inset-0 z-40 bg-ink/20 backdrop-blur-[2px] xl:hidden"
         onClick={dismiss}
         aria-hidden="true"
       />
 
       {/* Sheet */}
       <div
-        className="fixed bottom-0 inset-x-0 z-48 bg-paper rounded-t-2xl shadow-modal flex flex-col xl:hidden"
-        style={{ height: '90dvh', transform, transition }}
         role="dialog"
+        aria-label="Word details"
         aria-modal="true"
-        aria-label={`Word details: ${wordData.lemma}`}
+        className="fixed bottom-0 inset-x-0 z-50 bg-paper rounded-t-[14px] border-t border-border shadow-modal flex flex-col overflow-hidden xl:hidden"
+        style={sheetStyle}
       >
-        {/* Drag handle — also tappable to toggle expanded */}
+        {/* Drag handle — tap to expand, drag to expand/collapse/dismiss */}
         <div
-          className="shrink-0 pt-3 pb-2 px-4 cursor-grab active:cursor-grabbing touch-none"
+          className="shrink-0 flex items-center justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={() => !expanded && setExpanded(true)}
         >
-          <div className="w-10 h-1 rounded-full bg-border mx-auto" />
+          <div className="w-8 h-1 rounded-full bg-border" />
         </div>
 
-        {/* Status row + close */}
-        <div className="shrink-0 flex items-center justify-between px-4 pb-2">
-          <div className="flex items-center gap-2">
-            <StatusDots status={wordData.status} />
-            <span className="font-sans text-ui-xs text-muted font-medium uppercase tracking-wide">
-              {STATUS_LABEL[wordData.status]}
-            </span>
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-5 pb-8 overscroll-contain">
+
+          {/* ① Status header: dots · label · ✕ */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <StatusDots status={wordData.status} />
+              <span className="font-sans text-ui-xs text-muted uppercase tracking-[0.07em] font-semibold">
+                {STATUS_LABEL[wordData.status]}
+              </span>
+            </div>
+            <button
+              onClick={dismiss}
+              className="p-1 text-muted hover:text-ink transition-colors"
+              aria-label="Close word details"
+            >
+              <X size={18} strokeWidth={1.5} />
+            </button>
           </div>
-          <button
-            onClick={dismiss}
-            className="text-muted hover:text-ink transition-colors p-1 -mr-1"
-            aria-label="Close word details"
-          >
-            <X size={18} strokeWidth={1.5} />
-          </button>
-        </div>
 
-        {/* Lemma + translation + stepper — always visible in peek */}
-        <div className="shrink-0 px-4 pb-4 border-b border-border">
-          <p className="font-serif text-content-lg text-ink font-bold leading-tight mb-1">
-            {wordData.lemma}
-          </p>
-          {wordData.translation && wordData.translation !== '—' ? (
-            <p className="font-sans text-ui-sm text-muted italic mb-3">
-              &ldquo;{wordData.translation}&rdquo;
+          {/* ② Lemma + translation */}
+          <div className="mb-4">
+            <p className="font-serif text-[26px] text-ink font-bold leading-tight">
+              {wordData.lemma}
             </p>
-          ) : (
-            <div className="mb-3" />
-          )}
-          <AdaptiveStepper
-            status={wordData.status}
-            onStatusChange={(newStatus) => onStatusChange(wordData.wordId, newStatus)}
-            onMoreClick={(el) => setMoreMenuAnchorEl(el)}
-          />
-        </div>
-
-        {/* Peek-only expand hint — collapses away when expanded */}
-        <div
-          className={cn(
-            'shrink-0 overflow-hidden transition-all duration-300',
-            expanded ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100',
-          )}
-        >
-          <button
-            onClick={() => setExpanded(true)}
-            className="w-full py-2.5 font-sans text-ui-xs text-muted hover:text-ink transition-colors flex items-center justify-center gap-1"
-            aria-label="Show full word details"
-          >
-            More details ↑
-          </button>
-        </div>
-
-        {/* Expanded content — scrollable */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-4 py-4 space-y-4">
-            {/* Surface + POS */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="font-sans text-ui-xs text-muted mb-1">Surface Form</p>
-                <p className="font-serif text-content-sm text-ink">{cleanSurface}</p>
-              </div>
-              <div>
-                <p className="font-sans text-ui-xs text-muted mb-1">Part of Speech</p>
-                <p className="font-sans text-ui-sm text-ink">{wordData.pos}</p>
-              </div>
-            </div>
-
-            {/* Morphology */}
-            {summaryDisplay && summaryDisplay !== 'base form' && (
-              <div>
-                <p className="font-sans text-ui-xs text-muted mb-1">Form</p>
-                <p className="font-sans text-ui-sm text-ink">{summaryDisplay}</p>
-                {hasExtraMorph && (
-                  <>
-                    <div
-                      className={cn(
-                        'grid transition-[grid-template-rows] duration-200',
-                        showFullMorph ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
-                      )}
-                    >
-                      <div className="overflow-hidden">
-                        <p className="font-sans text-ui-xs text-ink/70 pt-1">{morphFull}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowFullMorph((v) => !v)}
-                      className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors mt-1"
-                    >
-                      {showFullMorph ? 'less ‹' : 'more ›'}
-                    </button>
-                  </>
-                )}
-              </div>
+            {wordData.translation && wordData.translation !== '—' && (
+              <p className="font-sans text-ui-sm text-muted italic mt-1.5">
+                &ldquo;{wordData.translation}&rdquo;
+              </p>
             )}
-
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-desk rounded-card p-3">
-                <p className="font-sans text-ui-xs text-muted mb-1">Dict. Frequency</p>
-                <p className="font-sans text-ui-sm font-semibold text-ink">
-                  {wordData.dictionaryFrequency}/100
-                </p>
-              </div>
-              <div className="bg-desk rounded-card p-3">
-                <p className="font-sans text-ui-xs text-muted mb-1">Encounters</p>
-                <p className="font-sans text-ui-sm font-semibold text-ink">
-                  {wordData.userFrequency}×
-                </p>
-              </div>
-            </div>
-
-            {/* Lookup links */}
-            <div className="flex items-center gap-4 pt-2 border-t border-border pb-4">
-              <a
-                href={wiktionaryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1.5"
-              >
-                Wiktionary <ExternalLink size={12} />
-              </a>
-              <a
-                href={googleTranslateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-sans text-ui-sm text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1.5"
-              >
-                Translate <ExternalLink size={12} />
-              </a>
-            </div>
           </div>
+
+          {/* ③ AdaptiveStepper */}
+          <div className="mb-3">
+            <AdaptiveStepper
+              status={wordData.status}
+              onStatusChange={(s) => onStatusChange(wordData.wordId, s)}
+              onMoreClick={(el) => setMoreMenuAnchorEl(el)}
+            />
+          </div>
+
+          {/* ④ 6-chip status row */}
+          <div className="flex gap-1.5 mb-5">
+            {STATUS_CHIPS.map(({ status, label, color }) => {
+              const isActive = wordData.status === status;
+              return (
+                <button
+                  key={status}
+                  onClick={() => onStatusChange(wordData.wordId, status)}
+                  style={{
+                    borderColor: isActive ? color : 'var(--border)',
+                    background: isActive ? `${color}22` : 'transparent',
+                    color: isActive ? 'var(--ink)' : 'var(--muted)',
+                  }}
+                  className={cn(
+                    'flex-1 h-7 rounded-sm font-sans text-[10px] font-medium transition-all active:scale-95',
+                    isActive ? 'border-2 font-semibold' : 'border',
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Expanded content ── */}
+          {expanded && (
+            <>
+              <div className="h-px bg-border mb-5" />
+
+              {/* ⑤ Morphology */}
+              <section className="mb-5">
+                <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
+                  Morphology
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {wordData.pos && <MorphChip label="POS" value={wordData.pos} />}
+                  <MorphChip label="Form" value={cleanSurface} />
+                  {wordData.inflectionData &&
+                    MORPH_DISPLAY_KEYS.filter((k) => wordData.inflectionData![k]).map((k) => (
+                      <MorphChip key={k} label={MORPH_LABELS[k]} value={String(wordData.inflectionData![k])} />
+                    ))}
+                </div>
+              </section>
+
+              {/* ⑥ Translation — editable */}
+              <section className="mb-5">
+                <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
+                  Translation
+                </p>
+                <input
+                  type="text"
+                  value={translation}
+                  onChange={(e) => setTranslation(e.target.value)}
+                  onBlur={() => onTranslationChange?.(wordData.wordId, translation)}
+                  placeholder="Add translation…"
+                  className="w-full h-11 px-3 font-sans text-ui-sm text-ink
+                             bg-desk border border-border rounded-sm
+                             focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
+                             transition-all placeholder:text-muted/60"
+                />
+              </section>
+
+              {/* ⑦ Frequency & history */}
+              <section className="mb-5">
+                <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
+                  Frequency & History
+                </p>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <StatCard label="Dict. Freq" value={`${wordData.dictionaryFrequency}/100`} />
+                  <StatCard label="Encounters" value={`${wordData.userFrequency}×`} />
+                  <StatCard label="First seen" value={wordData.firstSeen ?? '—'} />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="font-sans text-ui-xs text-muted">Dictionary Frequency</span>
+                    <span className="font-sans text-ui-xs text-ink font-medium">
+                      {wordData.dictionaryFrequency}/100
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-300"
+                      style={{ width: `${wordData.dictionaryFrequency}%` }}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* ⑧ Lookup links */}
+              <section>
+                <div className="grid grid-cols-2 gap-2">
+                  <LookupLink href={wiktionaryUrl} label="Wiktionary" />
+                  <LookupLink href={googleTranslateUrl} label="Google Translate" />
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </div>
 
-      {/* MoreMenu — renders above the sheet */}
+      {/* MoreMenu — floats above the sheet (z-[60] > sheet z-50) */}
       {moreMenuAnchorEl && (
         <MoreMenu
           anchorEl={moreMenuAnchorEl}
           currentStatus={wordData.status}
-          onStatusChange={(newStatus) => {
-            onStatusChange(wordData.wordId, newStatus);
-            setMoreMenuAnchorEl(null);
-          }}
+          onStatusChange={(s) => { onStatusChange(wordData.wordId, s); setMoreMenuAnchorEl(null); }}
           onClose={() => setMoreMenuAnchorEl(null)}
         />
       )}

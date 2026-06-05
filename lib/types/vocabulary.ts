@@ -116,6 +116,8 @@ export type WordData = {
   status: VocabularyStatus;
   /** Raw morphological features from spaCy — used by tooltip for collapsible "show more" */
   inflectionData?: Record<string, unknown> | null;
+  /** Formatted relative date of first encounter (e.g. "3 days ago") */
+  firstSeen?: string;
 }
 
 // ============================================================================
