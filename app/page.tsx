@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Page Header */}
         <header className="space-y-2">
           <Heading size="2xl" as="h1">
@@ -46,16 +46,16 @@ export default function Dashboard() {
         </header>
 
         {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts) */}
-        <div className="flex flex-col lg:grid lg:grid-cols-[35%_1fr] gap-6">
+        <div className="flex flex-col xl:grid xl:grid-cols-[35%_1fr] gap-6">
           {/* LEFT COLUMN: Chart + Stats - Order 3 on mobile, 1 on desktop */}
-          <div className="space-y-6 order-3 lg:order-1">
+          <div className="space-y-6 order-3 xl:order-1">
             <StatsCard />
           </div>
 
           {/* RIGHT COLUMN: Recent Texts - Order 1 on mobile, 2 on desktop */}
-          <div className="space-y-6 order-1 lg:order-2">
+          <div className="space-y-6 order-1 xl:order-2">
             <RecentTextsList isDemo={isDemo} />
-            <ActionButtons className="order-2 lg:order-3" />
+            <ActionButtons className="order-2 xl:order-3" />
           </div>
         </div>
       </div>

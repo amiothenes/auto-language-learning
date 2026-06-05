@@ -358,7 +358,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Series Header */}
         {isLoading ? (
           <SeriesHeaderSkeleton />
@@ -441,7 +441,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
         {/* Texts Section */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <TextCardSkeleton key={i} />
             ))}
@@ -589,7 +589,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                 </SortableContext>
               </DndContext>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {displayTexts.map((text) => (
                   <TextCard
                     key={text.id}

@@ -557,7 +557,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
         {/* ── MAIN READER AREA ── */}
         <main
-          className="order-1 xl:order-2 flex flex-col items-center px-4 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
+          className="order-1 xl:order-2 flex flex-col items-center px-4 md:px-6 lg:px-8 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
           style={mainRightPadding !== undefined ? { paddingRight: mainRightPadding } : undefined}
         >
           {adjacentQuery.isPending && (textData?.wordCount ?? 0) >= 226 ? (

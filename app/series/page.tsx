@@ -255,7 +255,7 @@ function SeriesPageContent() {
   if (viewMode === 'texts') {
     return (
       <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <header className="space-y-2">
             <button
               onClick={() => router.push('/series')}
@@ -323,7 +323,7 @@ function SeriesPageContent() {
 
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         {/* Resume Band */}
         <ResumeBar />
 
@@ -423,7 +423,7 @@ function SeriesPageContent() {
 
         {/* Series Grid, Loading State, or Empty State */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <SeriesCardSkeleton key={i} />
             ))}
@@ -446,7 +446,7 @@ function SeriesPageContent() {
             <EmptySeriesState onCreateClick={handleNewSeries} />
           )
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredAndSortedSeries.map((series) => (
               <SeriesCard
                 key={series.id}

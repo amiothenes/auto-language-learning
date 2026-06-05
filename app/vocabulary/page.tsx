@@ -260,7 +260,7 @@ export default function VocabularyPage() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         {/* Page Header */}
         <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-2">
