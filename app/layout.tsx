@@ -39,8 +39,8 @@ export default function RootLayout({
                   <ErrorBoundary>
                     <main id="main-content" tabIndex={-1} className="md:ml-16 min-h-screen pb-16 md:pb-0">
                       {isDemo && (
-                        <div className="w-full bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-center">
-                          <p className="font-sans text-ui-sm text-amber-800">
+                        <div className="border-b border-border bg-paper px-4 py-2 text-center">
+                          <p className="font-sans text-ui-sm text-muted">
                             Demo mode - this is a read-only preview. Clone the repo to use the full app.
                           </p>
                         </div>

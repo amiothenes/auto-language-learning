@@ -39,13 +39,13 @@ export function Word({
     
     switch (status) {
       case VocabularyStatus.UNKNOWN:
-        return `hsla(205, 80%, 58%, ${opacity})`;
+        return `hsl(var(--color-status-unknown) / ${opacity})`;
       case VocabularyStatus.NEWLY_SEEN:
-        return `hsla(2, 75%, 60%, ${opacity})`;
+        return `hsl(var(--color-status-new) / ${opacity})`;
       case VocabularyStatus.FAMILIAR:
-        return `hsla(32, 90%, 56%, ${opacity})`;
+        return `hsl(var(--color-status-familiar) / ${opacity})`;
       case VocabularyStatus.KNOWN:
-        return `hsla(78, 60%, 48%, ${opacity > 0.1 ? opacity : 0.05})`;
+        return `hsl(var(--color-status-known) / ${opacity > 0.1 ? opacity : 0.05})`;
       case VocabularyStatus.WELL_KNOWN:
         return undefined; // No styling
       case VocabularyStatus.IGNORE:

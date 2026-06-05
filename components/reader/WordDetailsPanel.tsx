@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Heading, Muted } from '@/components/ui/Typography';
+import { Heading, Muted, Content } from '@/components/ui/Typography';
+import { Input } from '@/components/ui/Input';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StatusDots } from './StatusDots';
 import { GradingSection } from './GradingSection';
@@ -119,13 +120,13 @@ export function WordDetailsPanel({
           {/* Surface Form & Lemma - Combined */}
           <div className="pt-1">
             <Muted className="text-ui-xs mb-1.5">Surface Form</Muted>
-            <p className="font-serif text-content-lg text-ink font-semibold mb-3">
+            <Content size="lg" weight="semibold" className="mb-3">
               {wordData.surface.replace(/[.,!?;:«»„"]/g, '')}
-            </p>
+            </Content>
             <Muted className="text-ui-xs mb-1.5">Lemma</Muted>
-            <p className="font-serif text-content-lg text-ink">
+            <Content size="lg">
               {wordData.lemma}
-            </p>
+            </Content>
           </div>
 
           {/* POS & Inflection - Single Line */}
@@ -149,13 +150,12 @@ export function WordDetailsPanel({
           {/* Translation (Editable) */}
           <div className="pt-2 border-t border-border">
             <Muted className="text-ui-xs mb-1.5">Translation</Muted>
-            <input
+            <Input
               type="text"
               value={translation}
               onChange={(e) => setTranslation(e.target.value)}
               onBlur={handleTranslationBlur}
               placeholder="Add translation..."
-              className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-desk border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
             />
           </div>
 

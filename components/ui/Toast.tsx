@@ -2,35 +2,59 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 
 // ============================================================================
 // Toast Component
-// Success notification with auto-dismiss
+// Notification with auto-dismiss — supports success, error, and info variants
 // ============================================================================
+
+type ToastType = 'success' | 'error' | 'info';
+
+const toastVariants: Record<ToastType, {
+  icon: typeof CheckCircle;
+  iconClass: string;
+  borderClass: string;
+}> = {
+  success: {
+    icon: CheckCircle,
+    iconClass: 'text-primary',
+    borderClass: 'border-l-4 border-primary',
+  },
+  error: {
+    icon: AlertCircle,
+    iconClass: 'text-danger',
+    borderClass: 'border-l-4 border-danger',
+  },
+  info: {
+    icon: Info,
+    iconClass: 'text-muted',
+    borderClass: 'border-l-4 border-border',
+  },
+};
 
 interface ToastProps {
   message: string;
   isOpen: boolean;
   onClose: () => void;
-  duration?: number; // Auto-dismiss duration in milliseconds (default: 3000)
+  type?: ToastType;
+  duration?: number;
 }
 
 export function Toast({
   message,
   isOpen,
   onClose,
+  type = 'success',
   duration = 3000,
 }: ToastProps) {
   const [isExiting, setIsExiting] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // SSR guard for portal
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Auto-dismiss timer
   useEffect(() => {
     if (!isOpen) return;
 
@@ -41,16 +65,14 @@ export function Toast({
     return () => clearTimeout(timer);
   }, [isOpen, duration]);
 
-  // Close handler with exit animation
   const handleClose = useCallback(() => {
     setIsExiting(true);
     setTimeout(() => {
       setIsExiting(false);
       onClose();
-    }, 200); // Match fade-out animation duration
+    }, 200);
   }, [onClose]);
 
-  // Escape key dismiss
   useEffect(() => {
     if (!isOpen) return;
 
@@ -66,6 +88,9 @@ export function Toast({
 
   if (!mounted || !isOpen) return null;
 
+  const variant = toastVariants[type];
+  const Icon = variant.icon;
+
   return createPortal(
     <div
       role="status"
@@ -75,24 +100,21 @@ export function Toast({
         isExiting ? 'animate-fade-out' : 'animate-slide-in-right'
       }`}
     >
-      <div className="flex items-start gap-3 bg-paper border border-border rounded-card shadow-raised p-4">
-        {/* Success Icon */}
-        <CheckCircle
+      <div className={`flex items-start gap-3 bg-paper border border-border rounded-card shadow-raised p-4 ${variant.borderClass}`}>
+        <Icon
           size={20}
           strokeWidth={2}
-          className="text-primary flex-shrink-0 mt-0.5"
+          className={`${variant.iconClass} shrink-0 mt-0.5`}
           aria-hidden="true"
         />
 
-        {/* Message */}
         <p className="flex-1 font-sans text-ui-sm text-ink font-medium">
           {message}
         </p>
 
-        {/* Close Button */}
         <button
           onClick={handleClose}
-          className="flex-shrink-0 text-muted hover:text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+          className="shrink-0 text-muted hover:text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
           aria-label="Dismiss notification"
         >
           <X size={16} strokeWidth={2} />
@@ -104,22 +126,24 @@ export function Toast({
 }
 
 // ============================================================================
-// Toast Hook for Easy Usage
+// Toast Hook
 // ============================================================================
 
 export interface ToastState {
   message: string;
   isOpen: boolean;
+  type: ToastType;
 }
 
 export function useToast() {
   const [toast, setToast] = useState<ToastState>({
     message: '',
     isOpen: false,
+    type: 'success',
   });
 
-  const showToast = useCallback((message: string) => {
-    setToast({ message, isOpen: true });
+  const showToast = useCallback((message: string, type: ToastType = 'success') => {
+    setToast({ message, isOpen: true, type });
   }, []);
 
   const hideToast = useCallback(() => {

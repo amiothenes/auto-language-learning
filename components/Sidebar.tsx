@@ -81,7 +81,7 @@ export function Sidebar() {
                 aria-haspopup="listbox"
                 aria-controls="language-listbox"
                 aria-label="Select language"
-                className="w-full h-10 px-2 bg-paper border border-border rounded-card shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                className="w-full h-10 px-2 bg-paper border border-border rounded shadow-raised hover:shadow-raised-hover hover:brightness-105 transition-all duration-200 flex items-center gap-2 font-sans text-ui-base text-ink font-medium overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                 title={currentLanguage?.name}
               >
                 <Globe size={20} className="shrink-0 text-primary" strokeWidth={1.5} />
@@ -143,7 +143,8 @@ export function Sidebar() {
                   href={item.href}
                   className={cn(
                     'flex items-center gap-3 px-2 py-3 rounded font-sans text-ui-base transition-all duration-200 relative overflow-hidden',
-                    isActive
+                    // Active nav: 2px left accent bar (spec) + 5% primary tint fill (intentional, approved)
+                  isActive
                       ? 'text-primary font-semibold bg-primary/5'
                       : 'text-ink hover:bg-paper'
                   )}
