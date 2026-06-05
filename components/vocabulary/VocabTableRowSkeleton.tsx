@@ -31,11 +31,6 @@ export function VocabTableRowSkeleton() {
         </div>
       </td>
 
-      {/* User Frequency */}
-      <td className="px-2 md:px-3 py-2 md:py-3">
-        <SkeletonText width="w-8" className="h-3" />
-      </td>
-
       {/* Translation (hidden on mobile) */}
       <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
         <SkeletonText width="w-32" className="h-4" />

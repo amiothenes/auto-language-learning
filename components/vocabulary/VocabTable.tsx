@@ -138,13 +138,6 @@ function TableRow({
         </Muted>
       </td>
 
-      {/* User Frequency */}
-      <td className="px-2 md:px-3 py-2 md:py-3">
-        <Muted size="xs" className="font-sans font-medium text-ui-xs md:text-ui-sm">
-          {item.userFrequency}
-        </Muted>
-      </td>
-
       {/* Translation */}
       <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
         <Content size="base" className="text-ink opacity-80 line-clamp-1">
@@ -248,9 +241,6 @@ export function VocabTable({
               </th>
               <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
                 Rarity
-              </th>
-              <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
-                User
               </th>
               <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
                 Translation

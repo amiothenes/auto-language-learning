@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle2, Circle, AlertTriangle, XCircle } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { CheckCircle2, Circle, AlertTriangle, XCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ReadingMapText {
@@ -22,8 +22,8 @@ type TierFilter = 'all' | 'ready' | 'ok' | 'hard';
 function TierIcon({ pct }: { pct: number }) {
   if (pct >= 80) return <CheckCircle2 size={14} className="text-primary shrink-0" strokeWidth={1.5} />;
   if (pct >= 65) return <Circle       size={14} className="text-muted shrink-0"   strokeWidth={1.5} />;
-  if (pct >= 50) return <AlertTriangle size={14} className="text-amber-500 shrink-0" strokeWidth={1.5} />;
-  return               <XCircle       size={14} className="text-red-400 shrink-0"  strokeWidth={1.5} />;
+  if (pct >= 50) return <AlertTriangle size={14} className="text-[hsl(32,28%,38%)] shrink-0" strokeWidth={1.5} />;
+  return               <XCircle       size={14} className="text-[hsl(2,22%,40%)] shrink-0"  strokeWidth={1.5} />;
 }
 
 const TIER_OPTIONS: { value: TierFilter; label: string }[] = [
@@ -38,6 +38,20 @@ const COLLAPSED_COUNT = 3;
 export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: ReadingMapProps) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [tierFilter, setTierFilter] = useState<TierFilter>('all');
+  const [isTierOpen, setIsTierOpen] = useState(false);
+  const tierRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tierRef.current && !tierRef.current.contains(event.target as Node)) {
+        setIsTierOpen(false);
+      }
+    }
+    if (isTierOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isTierOpen]);
 
   if (texts.length === 0) return null;
 
@@ -58,18 +72,35 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
         <h3 className="font-semibold text-ui-sm font-sans flex-1">Reading Map</h3>
 
         {/* Tier filter */}
-        <select
-          value={tierFilter}
-          onChange={(e) => {
-            setTierFilter(e.target.value as TierFilter);
-            setCollapsed(true);
-          }}
-          className="text-ui-xs font-sans text-muted bg-paper border border-border rounded px-2 py-1 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/30"
-        >
-          {TIER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+        <div ref={tierRef} className="relative">
+          <button
+            onClick={() => setIsTierOpen((o) => !o)}
+            className="flex items-center gap-1 px-3 py-1 border border-border rounded-full font-sans text-ui-xs text-muted hover:bg-desk transition-colors cursor-pointer"
+          >
+            {TIER_OPTIONS.find((o) => o.value === tierFilter)?.label ?? 'All'}
+            <ChevronDown size={11} className="shrink-0" strokeWidth={2} />
+          </button>
+          {isTierOpen && (
+            <div className="absolute top-full right-0 mt-1 w-36 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
+              {TIER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    setTierFilter(opt.value);
+                    setCollapsed(true);
+                    setIsTierOpen(false);
+                  }}
+                  className={cn(
+                    'w-full px-3 py-2 text-left font-sans text-ui-xs transition-colors cursor-pointer',
+                    tierFilter === opt.value ? 'bg-primary text-white font-medium' : 'text-ink hover:bg-desk'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Expand / collapse */}
         {hasMore && (
@@ -101,8 +132,11 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
             {/* Progress bar */}
             <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary opacity-75 rounded-full transition-all"
-                style={{ width: `${Math.round(text.knownPercentage)}%` }}
+                className="h-full bg-primary rounded-full transition-all"
+                style={{
+                  width: `${Math.round(text.knownPercentage)}%`,
+                  opacity: text.knownPercentage >= 80 ? 0.85 : text.knownPercentage >= 65 ? 0.65 : text.knownPercentage >= 50 ? 0.45 : 0.3,
+                }}
               />
             </div>
 
@@ -112,7 +146,7 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
             </span>
 
             {/* Tier icon */}
-            <TierIcon pct={text.knownPercentage} />
+            <TierIcon pct={Math.round(text.knownPercentage)} />
 
             {/* Currently reading label */}
             {text.isCurrentlyReading && (

@@ -202,13 +202,9 @@ export function VocabFilterBar({
                 className={cn(
                   'px-4 py-2.5 rounded-full font-sans text-ui-sm font-medium transition-all border cursor-pointer min-h-[44px] inline-flex items-center justify-center',
                   isActive
-                    ? 'border-transparent shadow-raised'
-                    : 'border-border bg-paper hover:bg-desk'
+                    ? 'bg-primary/6 border-primary text-primary shadow-raised'
+                    : 'border-border bg-paper text-muted hover:bg-desk'
                 )}
-                style={{
-                  backgroundColor: isActive ? config.color : undefined,
-                  color: isActive ? config.textColor : '#6E6D6A',
-                }}
                 aria-label={`Filter by ${config.label}`}
                 aria-pressed={isActive}
               >

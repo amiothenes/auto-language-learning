@@ -145,7 +145,7 @@ export function SeriesCard({
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5">
           <BookOpen size={14} className="text-muted" strokeWidth={1.5} />
-          <Muted size="xs">{textCount} texts</Muted>
+          <Muted size="xs">{textCount} {textCount === 1 ? 'text' : 'texts'}</Muted>
         </div>
         <Muted size="xs" className="text-primary font-medium">
           {progress}% complete

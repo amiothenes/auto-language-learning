@@ -339,9 +339,6 @@ export default function VocabularyPage() {
                       <th className="px-2 md:px-3 py-2 md:py-3 text-left">
                         <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Rarity</span>
                       </th>
-                      <th className="px-2 md:px-3 py-2 md:py-3 text-left">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">User Freq</span>
-                      </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
                         <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Translation</span>
                       </th>

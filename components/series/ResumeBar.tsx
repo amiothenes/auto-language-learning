@@ -18,15 +18,14 @@ export function ResumeBar() {
 
   return (
     <div
-      className="flex items-center justify-between gap-3 px-3 py-2 md:px-4 md:py-2.5 rounded-card"
-      style={{ background: 'var(--primary)', color: 'white' }}
+      className="flex items-center justify-between gap-3 px-3 py-2 md:px-4 md:py-2.5 rounded-card bg-primary text-white"
     >
       {/* Left: title + meta */}
       <div className="flex items-center gap-2 min-w-0">
         <BookOpen size={14} className="shrink-0 opacity-80" strokeWidth={1.5} />
         <div className="min-w-0">
           <span className="font-semibold font-sans text-ui-base truncate block">{textTitle}</span>
-          <span className="font-sans text-ui-xs opacity-70 whitespace-nowrap">
+          <span className="font-sans text-ui-xs opacity-70 truncate block">
             {seriesName} · ¶ {paragraphIndex + 1}/{totalParagraphs} · {knownPercentage}% known · {lastReadAt}
           </span>
         </div>
@@ -35,8 +34,7 @@ export function ResumeBar() {
       {/* Right: resume button */}
       <button
         onClick={() => router.push(`/reader/${textId}`)}
-        className="shrink-0 bg-white font-sans text-ui-xs font-bold px-3 py-1.5 rounded-sm cursor-pointer hover:opacity-90 transition-opacity"
-        style={{ color: 'var(--primary)' }}
+        className="shrink-0 bg-white text-primary font-sans text-ui-xs font-bold px-3 py-1.5 rounded-sm cursor-pointer hover:opacity-90 transition-opacity"
       >
         Resume →
       </button>

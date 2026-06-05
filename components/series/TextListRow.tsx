@@ -26,8 +26,8 @@ interface TextListRowProps {
 function TierIcon({ pct }: { pct: number }) {
   if (pct >= 80) return <CheckCircle2 size={14} className="text-primary shrink-0"    strokeWidth={1.5} />;
   if (pct >= 65) return <Circle       size={14} className="text-muted shrink-0"      strokeWidth={1.5} />;
-  if (pct >= 50) return <AlertTriangle size={14} className="text-amber-500 shrink-0" strokeWidth={1.5} />;
-  return               <XCircle       size={14} className="text-red-400 shrink-0"    strokeWidth={1.5} />;
+  if (pct >= 50) return <AlertTriangle size={14} className="text-[hsl(32,28%,38%)] shrink-0" strokeWidth={1.5} />;
+  return               <XCircle       size={14} className="text-[hsl(2,22%,40%)] shrink-0"    strokeWidth={1.5} />;
 }
 
 export function TextListRow({
@@ -101,7 +101,7 @@ export function TextListRow({
       </span>
 
       {/* Tier icon */}
-      <TierIcon pct={knownPercentage} />
+      <TierIcon pct={Math.round(knownPercentage)} />
 
       {/* Known % — w-10 comfortably holds "100%" at text-ui-sm */}
       <span className="text-ui-sm font-semibold w-10 text-right font-sans shrink-0">

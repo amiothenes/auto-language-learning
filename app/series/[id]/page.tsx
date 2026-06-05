@@ -383,7 +383,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
               id: t.id,
               title: t.title,
               knownPercentage: t.knownPercentage,
-              isCurrentlyReading: false,
+              isCurrentlyReading: t.id === seriesData.lastReadTextId,
             }))}
             onTextClick={(textId) => router.push(`/reader/${textId}`)}
           />
@@ -545,7 +545,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                         title={text.title}
                         wordCount={text.wordCount}
                         knownPercentage={text.knownPercentage}
-                        isCurrentlyReading={false}
+                        isCurrentlyReading={text.id === seriesData?.lastReadTextId}
                         reorderMode={reorderMode}
                         onRead={() => router.push(`/reader/${text.id}`)}
                         onEdit={isDemo ? () => {} : () => setEditTextTarget({ id: text.id, title: text.title })}
