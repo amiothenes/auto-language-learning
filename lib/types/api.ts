@@ -199,6 +199,20 @@ export interface SeriesDetailResponse {
 }
 
 // ============================================================================
+// Reader Last Position API — GET /api/reader/last-position
+// ============================================================================
+
+export interface LastPositionResponse {
+  textId: string;
+  textTitle: string;
+  seriesName: string;
+  paragraphIndex: number;
+  totalParagraphs: number;
+  knownPercentage: number;
+  lastReadAt: string;
+}
+
+// ============================================================================
 // Stats API — GET /api/stats
 // ============================================================================
 
@@ -219,10 +233,12 @@ export interface StatsResponse {
   };
   /** Percentage of total vocabulary that is KNOWN or WELL_KNOWN */
   overallKnownPercentage: number;
-  /** Zipf-weighted estimated reading coverage of the full language vocabulary (0–98) */
+  /** Zipf-weighted estimated reading coverage of the full language vocabulary (0-98) */
   readingCoverage: number;
   /** Approximate CEFR band based on readingCoverage */
   cefrBand: CefrBand;
+  /** Consecutive calendar days (UTC) with at least one text viewed */
+  streak: number;
 }
 
 // ============================================================================

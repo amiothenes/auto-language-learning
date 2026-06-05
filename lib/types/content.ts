@@ -38,6 +38,8 @@ export interface Series {
   progress: number;
   /** Human-readable last updated timestamp (e.g., "2 days ago") */
   lastUpdated: string;
+  /** Highest knownPercentage across all texts — used for readiness filtering */
+  maxKnownPct: number;
 }
 
 /**
@@ -67,6 +69,12 @@ export interface SeriesDetail {
   lastUpdated: string;
   /** Array of all texts in this series */
   texts: Text[];
+  /** ID of the most recently viewed text in this series (null if never read) */
+  lastReadTextId: string | null;
+  /** Paragraph position in the last-read text (0-indexed, null if never read) */
+  lastReadParagraphIndex: number | null;
+  /** Total paragraph count in the last-read text (null if never read) */
+  lastReadTotalParagraphs: number | null;
 }
 
 // ============================================================================

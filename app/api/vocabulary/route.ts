@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { words, languages } from '@/lib/db/schema';
-import { eq, ne, and, ilike, asc, desc, count, SQL } from 'drizzle-orm';
+import { words, wordInstances, languages } from '@/lib/db/schema';
+import { eq, ne, and, ilike, asc, desc, count, countDistinct, inArray, SQL } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { VocabularyItem } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
@@ -108,6 +108,21 @@ export async function GET(request: NextRequest) {
         .offset(offset),
     ]);
 
+    // Batch-fetch distinct text counts for this page of words
+    let textCountMap: Record<string, number> = {};
+    if (rows.length > 0) {
+      const wordIds = rows.map((r) => r.id);
+      const counts = await db
+        .select({
+          wordId: wordInstances.wordId,
+          textCount: countDistinct(wordInstances.textId),
+        })
+        .from(wordInstances)
+        .where(inArray(wordInstances.wordId, wordIds))
+        .groupBy(wordInstances.wordId);
+      textCountMap = Object.fromEntries(counts.map((c) => [c.wordId, Number(c.textCount)]));
+    }
+
     const vocabItems: VocabularyItem[] = rows.map((r) => ({
       id: r.id,
       lemma: r.lemma,
@@ -116,6 +131,7 @@ export async function GET(request: NextRequest) {
       userFrequency: r.userFrequency,
       translation: r.translation ?? '',
       tags: [],
+      textCount: textCountMap[r.id] ?? 0,
     }));
 
     return NextResponse.json({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages, words, texts } from '@/lib/db/schema';
-import { eq, and, isNotNull, count, inArray } from 'drizzle-orm';
+import { eq, and, isNotNull, count, inArray, sql, desc } from 'drizzle-orm';
 import type { StatsResponse, ApiErrorResponse, CefrBand } from '@/lib/types/api';
 
 // ============================================================================
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     //    - read text count (lastViewedAt not null)
     // ========================================================================
 
-    const [statusRows, [totalTextsRow], [readTextsRow], knownWordRows] = await Promise.all([
+    const [statusRows, [totalTextsRow], [readTextsRow], knownWordRows, activityDates] = await Promise.all([
       db
         .select({ status: words.status, total: count() })
         .from(words)
@@ -81,6 +81,12 @@ export async function GET(request: NextRequest) {
           eq(words.languageId, language.id),
           inArray(words.status, ['KNOWN', 'WELL_KNOWN']),
         )),
+
+      db
+        .selectDistinct({ date: sql<string>`DATE(${texts.lastViewedAt} AT TIME ZONE 'UTC')` })
+        .from(texts)
+        .where(and(eq(texts.languageId, language.id), isNotNull(texts.lastViewedAt)))
+        .orderBy(desc(sql`DATE(${texts.lastViewedAt} AT TIME ZONE 'UTC')`)),
     ]);
 
     // ========================================================================
@@ -124,8 +130,30 @@ export async function GET(request: NextRequest) {
       readingCoverage >= 84 ? 'B1-B2' :
       readingCoverage >= 77 ? 'A2-B1' : 'A1-A2';
 
+    // ========================================================================
+    // 6. Compute reading streak (consecutive UTC calendar days with activity)
+    // ========================================================================
+
+    const prevDay = (d: string) =>
+      new Date(new Date(d).getTime() - 86_400_000).toISOString().slice(0, 10);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = prevDay(today);
+    const dates = activityDates.map((r) => r.date);
+
+    let streak = 0;
+    let cursor: string | null =
+      dates[0] === today || dates[0] === yesterday ? dates[0] : null;
+
+    if (cursor) {
+      for (const d of dates) {
+        if (d === cursor) { streak++; cursor = prevDay(cursor); }
+        else break;
+      }
+    }
+
     console.log(
-      `[Stats] Words: ${total} reviewed + ${unknown} unknown, ${known + wellKnown} known/well-known (${overallKnownPercentage}%), reading coverage: ${readingCoverage}% (${cefrBand})`
+      `[Stats] Words: ${total} reviewed + ${unknown} unknown, ${known + wellKnown} known/well-known (${overallKnownPercentage}%), reading coverage: ${readingCoverage}% (${cefrBand}), streak: ${streak} days`
     );
 
     const response: StatsResponse = {
@@ -137,6 +165,7 @@ export async function GET(request: NextRequest) {
       overallKnownPercentage,
       readingCoverage,
       cefrBand,
+      streak,
     };
 
     return NextResponse.json<StatsResponse>(response);

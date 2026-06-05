@@ -1,12 +1,7 @@
 'use client';
 
-// ============================================================================
-// Languages Settings Page
-// Manage learning languages and their settings
-// ============================================================================
-
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, Globe } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Select, SelectOption } from '@/components/settings/Select';
 import { Toggle } from '@/components/settings/Toggle';
@@ -16,12 +11,14 @@ import { AddLanguageModal, NewLanguageData } from '@/components/settings/AddLang
 import { useLanguages } from '@/lib/hooks/useLanguages';
 import { useCreateLanguage } from '@/lib/hooks/useCreateLanguage';
 import { useDeleteLanguage } from '@/lib/hooks/useDeleteLanguage';
+import { useAutoSaveToast } from '@/components/ui/AutoSaveToast';
 import type { LanguageItem } from '@/lib/types/api';
 
 export default function LanguagesSettingsPage() {
   const { data: languages = [], isLoading } = useLanguages();
   const createLanguage = useCreateLanguage();
   const deleteLanguage = useDeleteLanguage();
+  const { showSaved, ToastComponent } = useAutoSaveToast();
 
   const [activeLanguageId, setActiveLanguageId] = useState<string>('');
   const [expandedLanguageId, setExpandedLanguageId] = useState<string | null>(null);
@@ -30,9 +27,9 @@ export default function LanguagesSettingsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRTLOverrides, setIsRTLOverrides] = useState<Record<string, boolean>>({});
 
-  // Initialize active language to first in list once loaded
   useEffect(() => {
     if (languages.length > 0 && !activeLanguageId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveLanguageId(languages[0].id);
     }
   }, [languages, activeLanguageId]);
@@ -63,8 +60,9 @@ export default function LanguagesSettingsPage() {
 
   const handleAddLanguage = (newLanguageData: NewLanguageData) => {
     createLanguage.mutate(newLanguageData, {
-      onSuccess: () => {
+      onSuccess: (newLang) => {
         setIsAddModalOpen(false);
+        setExpandedLanguageId(newLang.id);
       },
     });
   };
@@ -95,7 +93,27 @@ export default function LanguagesSettingsPage() {
           )}
 
           {!isLoading && languages.length === 0 && (
-            <p className="font-sans text-ui-sm text-muted py-2">No languages added yet.</p>
+            <div className="flex flex-col items-center gap-4 py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-desk flex items-center justify-center">
+                <Globe size={32} className="text-muted" strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="font-sans text-ui-base font-medium text-ink mb-1">
+                  No languages yet
+                </p>
+                <p className="font-sans text-ui-sm text-muted">
+                  Add a language to start tracking your vocabulary.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Plus size={18} strokeWidth={2} />}
+                onClick={() => setIsAddModalOpen(true)}
+              >
+                Add Your First Language
+              </Button>
+            </div>
           )}
 
           {languages.map((language) => {
@@ -151,6 +169,7 @@ export default function LanguagesSettingsPage() {
                       variant="ghost"
                       size="sm"
                       iconOnly
+                      ariaLabel={`Delete ${language.name}`}
                       onClick={() => {
                         setDeleteError(null);
                         setDeleteTarget(language);
@@ -168,63 +187,69 @@ export default function LanguagesSettingsPage() {
                   }`}
                 >
                   <div className="overflow-hidden">
-                    <div className="p-4 border-t border-border bg-desk space-y-4">
-                      <div>
-                        <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                          Dictionary URI
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="https://dictionary.example.com/{word}"
-                          defaultValue=""
-                          className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                        />
-                        <p className="font-sans text-ui-xs text-muted mt-1">
-                          Use {'{word}'} as a placeholder for the word to look up
-                        </p>
-                      </div>
+                    <div className="p-4 border-t border-border bg-desk">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Dictionary URI */}
+                        <div>
+                          <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                            Dictionary URI
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="https://dictionary.example.com/{word}"
+                            defaultValue=""
+                            className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                          />
+                          <p className="font-sans text-ui-xs text-muted mt-1">
+                            Use {'{word}'} as placeholder
+                          </p>
+                        </div>
 
-                      <div>
-                        <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                          TTS Code
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="es-ES"
-                          defaultValue=""
-                          className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                        />
-                        <p className="font-sans text-ui-xs text-muted mt-1">
-                          Text-to-speech language code (e.g., es-ES, fr-FR)
-                        </p>
-                      </div>
+                        {/* TTS Code */}
+                        <div>
+                          <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                            TTS Code
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="es-ES"
+                            defaultValue=""
+                            className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                          />
+                          <p className="font-sans text-ui-xs text-muted mt-1">
+                            e.g., es-ES, fr-FR, zh-CN
+                          </p>
+                        </div>
 
-                      <div>
-                        <Toggle
-                          checked={rtlValue}
-                          onChange={(checked) => {
-                            setIsRTLOverrides((prev) => ({ ...prev, [language.id]: checked }));
-                          }}
-                          label="Right-to-Left (RTL)"
-                          description="Enable for Arabic, Hebrew, and other RTL languages"
-                        />
-                      </div>
+                        {/* RTL Toggle — spans both columns */}
+                        <div className="md:col-span-2">
+                          <Toggle
+                            checked={rtlValue}
+                            onChange={(checked) => {
+                              setIsRTLOverrides((prev) => ({ ...prev, [language.id]: checked }));
+                            }}
+                            label="Right-to-Left (RTL)"
+                            description="Enable for Arabic, Hebrew, Farsi…"
+                          />
+                        </div>
 
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => {}}
-                        >
-                          Save Changes
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpandedLanguageId(null)}
-                        >
-                          Cancel
-                        </Button>
+                        {/* Action buttons — spans both columns */}
+                        <div className="md:col-span-2 flex gap-2 pt-1">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => showSaved()}
+                          >
+                            Save Changes
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedLanguageId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -235,17 +260,19 @@ export default function LanguagesSettingsPage() {
         </div>
 
         {/* Add New Language Button */}
-        <div className="mt-4">
-          <Button
-            variant="secondary"
-            size="md"
-            leftIcon={<Plus size={18} strokeWidth={2} />}
-            onClick={() => setIsAddModalOpen(true)}
-            disabled={createLanguage.isPending}
-          >
-            Add New Language
-          </Button>
-        </div>
+        {languages.length > 0 && (
+          <div className="mt-4">
+            <Button
+              variant="secondary"
+              size="md"
+              leftIcon={<Plus size={18} strokeWidth={2} />}
+              onClick={() => setIsAddModalOpen(true)}
+              disabled={createLanguage.isPending}
+            >
+              Add New Language
+            </Button>
+          </div>
+        )}
       </SettingSection>
 
       {/* Delete Confirmation Dialog */}
@@ -260,7 +287,7 @@ export default function LanguagesSettingsPage() {
         message={
           deleteError
             ? deleteError
-            : `Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`
+            : `Deleting ${deleteTarget?.name} will permanently remove all associated vocabulary and texts. This action cannot be undone.`
         }
         confirmLabel={deleteLanguage.isPending ? 'Deleting…' : 'Delete'}
         variant="danger"
@@ -272,6 +299,8 @@ export default function LanguagesSettingsPage() {
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddLanguage}
       />
+
+      {ToastComponent}
     </div>
   );
 }

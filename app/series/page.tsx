@@ -7,6 +7,7 @@ import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { SeriesCard } from '@/components/series/SeriesCard';
 import { SeriesCardSkeleton } from '@/components/series/SeriesCardSkeleton';
+import { ResumeBar } from '@/components/series/ResumeBar';
 import { EmptySeriesState } from '@/components/series/EmptySeriesState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -41,6 +42,7 @@ function SeriesPageContent() {
   const isLoading = seriesQuery.isLoading;
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
+  const [readinessFilter, setReadinessFilter] = useState<'all' | 'ready' | 'ok' | 'hard'>('all');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
@@ -88,6 +90,11 @@ function SeriesPageContent() {
       );
     }
 
+    // Filter by readiness
+    if (readinessFilter === 'ready') result = result.filter((s) => s.maxKnownPct >= 80);
+    if (readinessFilter === 'ok')    result = result.filter((s) => s.maxKnownPct >= 65 && s.maxKnownPct < 80);
+    if (readinessFilter === 'hard')  result = result.filter((s) => s.maxKnownPct < 65);
+
     // Sort by selected option
     switch (sortBy) {
       case 'name-asc':
@@ -115,7 +122,17 @@ function SeriesPageContent() {
     }
 
     return result;
-  }, [searchQuery, sortBy, seriesQuery.data]);
+  }, [searchQuery, sortBy, readinessFilter, seriesQuery.data]);
+
+  const readinessCounts = useMemo(() => {
+    const all = seriesQuery.data ?? [];
+    return {
+      all: all.length,
+      ready: all.filter((s) => s.maxKnownPct >= 80).length,
+      ok: all.filter((s) => s.maxKnownPct >= 65 && s.maxKnownPct < 80).length,
+      hard: all.filter((s) => s.maxKnownPct < 65).length,
+    };
+  }, [seriesQuery.data]);
 
   const availableSeries = useMemo(
     () => (seriesQuery.data ?? []).map((s) => ({ id: s.id, name: s.name })),
@@ -297,9 +314,19 @@ function SeriesPageContent() {
     );
   }
 
+  const readinessPills = [
+    { key: 'all'   as const, label: `All (${readinessCounts.all})` },
+    { key: 'ready' as const, label: `Ready ≥80% (${readinessCounts.ready})` },
+    { key: 'ok'    as const, label: `OK 65–79% (${readinessCounts.ok})` },
+    { key: 'hard'  as const, label: `Hard <65% (${readinessCounts.hard})` },
+  ];
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Resume Band */}
+        <ResumeBar />
+
         {/* Page Header */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-2">
@@ -375,6 +402,23 @@ function SeriesPageContent() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Readiness Filter Pills */}
+        <div className="flex flex-wrap gap-2">
+          {readinessPills.map((pill) => (
+            <button
+              key={pill.key}
+              onClick={() => setReadinessFilter(pill.key)}
+              className={
+                readinessFilter === pill.key
+                  ? 'border border-primary bg-primary/5 text-primary font-semibold rounded-full px-3 py-1.5 font-sans text-ui-xs cursor-pointer transition-colors'
+                  : 'border border-border text-muted rounded-full px-3 py-1.5 font-sans text-ui-xs font-medium cursor-pointer hover:border-primary/50 transition-colors'
+              }
+            >
+              {pill.label}
+            </button>
+          ))}
         </div>
 
         {/* Series Grid, Loading State, or Empty State */}

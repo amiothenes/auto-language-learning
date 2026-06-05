@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
 import { Content, Muted } from '@/components/ui/Typography';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 
 // Re-export for backward compatibility
 export type { VocabularyItem };
@@ -24,37 +24,20 @@ interface VocabTableProps {
 // ============================================================================
 
 const STATUS_CONFIG = {
-  [VocabularyStatus.UNKNOWN]: {
-    label: 'Unknown',
-    bgColor: 'hsla(0, 0%, 60%, 0.25)',
-    textColor: '#6E6D6A',
-  },
-  [VocabularyStatus.NEWLY_SEEN]: {
-    label: 'Newly Seen',
-    bgColor: 'hsla(0, 70%, 55%, 0.6)',
-    textColor: '#8B2020',
-  },
-  [VocabularyStatus.FAMILIAR]: {
-    label: 'Familiar',
-    bgColor: 'hsla(45, 85%, 55%, 0.6)',
-    textColor: '#8B6914',
-  },
-  [VocabularyStatus.KNOWN]: {
-    label: 'Known',
-    bgColor: 'hsla(145, 60%, 40%, 0.5)',
-    textColor: '#1E6B3E',
-  },
-  [VocabularyStatus.WELL_KNOWN]: {
-    label: 'Well Known',
-    bgColor: 'hsla(145, 60%, 40%, 0.3)',
-    textColor: '#1E6B3E',
-  },
-  [VocabularyStatus.IGNORE]: {
-    label: 'Ignored',
-    bgColor: 'hsla(0, 0%, 50%, 0.2)',
-    textColor: '#6E6D6A',
-  },
+  [VocabularyStatus.UNKNOWN]:    { label: 'Unknown',    bgColor: 'hsla(205,80%,58%,.18)', textColor: 'hsl(205,80%,28%)' },
+  [VocabularyStatus.NEWLY_SEEN]: { label: 'Newly Seen', bgColor: 'hsla(2,75%,60%,.18)',   textColor: 'hsl(2,75%,30%)' },
+  [VocabularyStatus.FAMILIAR]:   { label: 'Familiar',   bgColor: 'hsla(32,90%,56%,.18)',  textColor: 'hsl(32,90%,28%)' },
+  [VocabularyStatus.KNOWN]:      { label: 'Known',      bgColor: 'hsla(78,60%,48%,.20)',  textColor: 'hsl(78,60%,20%)' },
+  [VocabularyStatus.WELL_KNOWN]: { label: 'Well Known', bgColor: 'hsla(145,60%,40%,.15)', textColor: 'hsl(145,60%,22%)' },
+  [VocabularyStatus.IGNORE]:     { label: 'Ignored',    bgColor: 'hsla(0,0%,50%,.12)',    textColor: '#6E6D6A' },
 };
+
+function rarityLabel(freq: number): string {
+  if (freq >= 75) return 'Very common';
+  if (freq >= 50) return 'Common';
+  if (freq >= 25) return 'Uncommon';
+  return 'Rare';
+}
 
 // ============================================================================
 // Status Badge Component
@@ -93,6 +76,7 @@ function TableRow({
   onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
 }) {
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -147,16 +131,11 @@ function TableRow({
         <StatusBadge status={item.status} />
       </td>
 
-      {/* Dictionary Frequency */}
-      <td className="px-2 md:px-3 py-2 md:py-3">
-        <div className="flex items-center gap-1 md:gap-2">
-          <Muted size="xs" className="w-6 md:w-8 text-left text-ui-xs">
-            {item.dictionaryFrequency}
-          </Muted>
-          <div className="flex-1 min-w-[40px] md:min-w-[60px] hidden md:block">
-            <ProgressBar value={item.dictionaryFrequency} max={100} className="h-2" />
-          </div>
-        </div>
+      {/* Rarity */}
+      <td className="px-2 md:px-3 py-2 md:py-3" title={String(item.dictionaryFrequency)}>
+        <Muted size="xs" className="font-sans text-ui-xs">
+          {rarityLabel(item.dictionaryFrequency)}
+        </Muted>
       </td>
 
       {/* User Frequency */}
@@ -173,23 +152,18 @@ function TableRow({
         </Content>
       </td>
 
-      {/* Tags */}
+      {/* Seen In */}
       <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
-        <div className="flex flex-wrap gap-1">
-          {item.tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 bg-desk border border-border rounded-full font-sans text-ui-xs text-muted"
-            >
-              {tag}
-            </span>
-          ))}
-          {item.tags.length > 2 && (
-            <span className="px-2 py-0.5 font-sans text-ui-xs text-muted">
-              +{item.tags.length - 2}
-            </span>
-          )}
-        </div>
+        {item.textCount > 0 ? (
+          <button
+            onClick={() => router.push(`/vocabulary/${item.id}/contexts`)}
+            className="font-sans text-ui-xs font-semibold text-primary hover:underline cursor-pointer"
+          >
+            {item.textCount} text{item.textCount !== 1 ? 's' : ''} →
+          </button>
+        ) : (
+          <Muted size="xs">—</Muted>
+        )}
       </td>
 
       {/* Actions */}
@@ -273,7 +247,7 @@ export function VocabTable({
                 Status
               </th>
               <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
-                Dict
+                Rarity
               </th>
               <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
                 User
@@ -282,7 +256,7 @@ export function VocabTable({
                 Translation
               </th>
               <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
-                Tags
+                Seen in
               </th>
               <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
             </tr>

@@ -149,6 +149,9 @@ export async function GET(request: NextRequest) {
         return t.updatedAt > latest.updatedAt ? t : latest;
       }, null);
 
+      const maxKnownPct =
+        textCount > 0 ? Math.max(...s.texts.map((t) => t.knownPercentage)) : 0;
+
       return {
         id: s.id,
         name: s.name,
@@ -156,6 +159,7 @@ export async function GET(request: NextRequest) {
         textCount,
         progress,
         lastUpdated: formatRelativeTime(latestText?.updatedAt ?? s.updatedAt),
+        maxKnownPct,
       };
     });
 

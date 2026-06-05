@@ -9,6 +9,7 @@ import { FolderPlus, FilePlus, Library } from 'lucide-react';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { useTexts } from '@/lib/hooks/useTexts';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
+import { useLastPosition } from '@/lib/hooks/useLastPosition';
 import { NewTextModal } from '@/components/texts/NewTextModal';
 
 interface RecentTextsListProps {
@@ -44,6 +45,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
     staleTime: 0,
   });
   const { data: seriesList } = useSeriesList();
+  const { data: lastPosition } = useLastPosition();
   const isLoading = isLoadingProp || isLoadingTexts;
   const hasRecentTexts = (texts?.length ?? 0) > 0;
 
@@ -113,17 +115,23 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
         />
       ) : (
         <div className="space-y-2 md:space-y-3">
-          {texts!.map((text) => (
-            <TextListItem
-              key={text.id}
-              title={text.title}
-              series={text.seriesName ?? '—'}
-              wordCount={text.wordCount}
-              knownPercentage={text.knownPercentage}
-              lastViewed={text.lastRead}
-              onClick={() => router.push(`/reader/${text.id}`)}
-            />
-          ))}
+          {texts!.map((text, index) => {
+            const isResume = index === 0 && lastPosition?.textId === text.id;
+            return (
+              <TextListItem
+                key={text.id}
+                title={text.title}
+                series={text.seriesName ?? '—'}
+                wordCount={text.wordCount}
+                knownPercentage={text.knownPercentage}
+                lastViewed={text.lastRead}
+                onClick={() => router.push(`/reader/${text.id}`)}
+                isResume={isResume}
+                paragraphIndex={isResume ? lastPosition!.paragraphIndex : undefined}
+                totalParagraphs={isResume ? lastPosition!.totalParagraphs : undefined}
+              />
+            );
+          })}
           {texts!.length < 3 && !isDemo && (
             <button
               onClick={openNewTextModal}

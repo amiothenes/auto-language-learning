@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
 import { VocabFilterBar, SortOption } from '@/components/vocabulary/VocabFilterBar';
+import { VocabDistribution } from '@/components/vocabulary/VocabDistribution';
 import { VocabTable } from '@/components/vocabulary/VocabTable';
 import { VocabCardList } from '@/components/vocabulary/VocabCard';
 import { VocabCardSkeleton } from '@/components/vocabulary/VocabCardSkeleton';
@@ -266,20 +267,7 @@ export default function VocabularyPage() {
             <Heading size="2xl" as="h1">
               Vocabulary
             </Heading>
-            <div className="flex items-center gap-4 flex-wrap">
-              <Muted>Manage your learned words and track your progress</Muted>
-              {!isLoading && (
-                <div className="flex items-center gap-3">
-                  <span className="font-sans text-ui-sm text-muted">
-                    Total: {stats?.vocabulary.total ?? 0} words
-                  </span>
-                  <span className="text-muted">•</span>
-                  <span className="font-sans text-ui-sm text-muted">
-                    Showing: {total} words
-                  </span>
-                </div>
-              )}
-            </div>
+            <Muted>Manage your learned words and track your progress</Muted>
           </div>
 
           {/* Action Buttons */}
@@ -309,6 +297,18 @@ export default function VocabularyPage() {
           </div>
         </header>
 
+        {/* Vocabulary Distribution + Fluency */}
+        {stats && (
+          <VocabDistribution
+            unknown={stats.vocabulary.unknown}
+            newlySeen={stats.vocabulary.newlySeen}
+            familiar={stats.vocabulary.familiar}
+            known={stats.vocabulary.known}
+            wellKnown={stats.vocabulary.wellKnown}
+            total={stats.vocabulary.total}
+          />
+        )}
+
         {/* Filter Bar */}
         <VocabFilterBar
           searchQuery={searchQuery}
@@ -337,7 +337,7 @@ export default function VocabularyPage() {
                         <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Status</span>
                       </th>
                       <th className="px-2 md:px-3 py-2 md:py-3 text-left">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Dict. Freq</span>
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Rarity</span>
                       </th>
                       <th className="px-2 md:px-3 py-2 md:py-3 text-left">
                         <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">User Freq</span>
@@ -346,7 +346,7 @@ export default function VocabularyPage() {
                         <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Translation</span>
                       </th>
                       <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Tags</span>
+                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Seen in</span>
                       </th>
                       <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
                     </tr>

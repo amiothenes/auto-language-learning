@@ -18,6 +18,7 @@ export const texts = pgTable(
       .notNull()
       .references(() => series.id, { onDelete: 'cascade' }),
     order: integer('order').notNull().default(1),
+    lastParagraphIndex: integer('last_paragraph_index').notNull().default(0),
 
     audioURI: text('audio_uri'),
     sourceURI: text('source_uri'),

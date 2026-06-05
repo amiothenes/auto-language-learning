@@ -72,6 +72,15 @@ export async function GET(
       return t.updatedAt > latest.updatedAt ? t : latest;
     }, null);
 
+    // Last-read text — most recently viewed text in this series
+    const lastReadText = s.texts
+      .filter((t) => t.lastViewedAt !== null)
+      .sort((a, b) => (b.lastViewedAt?.getTime() ?? 0) - (a.lastViewedAt?.getTime() ?? 0))[0] ?? null;
+
+    const lastReadTotalParagraphs = lastReadText
+      ? lastReadText.content.split('\n\n').filter((p) => p.trim().length > 0).length
+      : null;
+
     // ========================================================================
     // Map texts to Text[] shape
     // ========================================================================
@@ -95,6 +104,9 @@ export async function GET(
       overallProgress,
       lastUpdated: formatRelativeTime(latestText?.updatedAt ?? s.updatedAt),
       texts,
+      lastReadTextId: lastReadText?.id ?? null,
+      lastReadParagraphIndex: lastReadText?.lastParagraphIndex ?? null,
+      lastReadTotalParagraphs,
     };
 
     return NextResponse.json<SeriesDetailResponse>({ series: seriesDetail });

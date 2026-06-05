@@ -1,10 +1,5 @@
 'use client';
 
-// ============================================================================
-// Display Settings Page
-// Reader and Dashboard display preferences
-// ============================================================================
-
 import { useState } from 'react';
 import { Info } from 'lucide-react';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
@@ -14,6 +9,8 @@ import { RadioGroup, RadioOption } from '@/components/settings/RadioGroup';
 import { Slider } from '@/components/settings/Slider';
 import { Toggle } from '@/components/settings/Toggle';
 import { Select, SelectOption } from '@/components/settings/Select';
+import { useAutoSaveToast } from '@/components/ui/AutoSaveToast';
+import { cn } from '@/lib/utils';
 
 export default function DisplaySettingsPage() {
   const {
@@ -23,31 +20,23 @@ export default function DisplaySettingsPage() {
     updateShowWellKnownWords,
     updateColorScheme,
   } = useReaderSettings();
+  const { showSaved, ToastComponent } = useAutoSaveToast();
 
-  // Local state for Dashboard settings (UI mockup only)
   const [dashboardLayout, setDashboardLayout] = useState<'grid' | 'list'>('grid');
   const [textsCount, setTextsCount] = useState('20');
   const [graphRange, setGraphRange] = useState('30');
 
-  // Font size options
   const fontSizeOptions: RadioOption[] = [
     { value: 'small', label: 'A−', description: '16px - Compact reading' },
     { value: 'medium', label: 'A', description: '18px - Default (recommended)' },
     { value: 'large', label: 'A+', description: '20px - Comfortable reading' },
   ];
 
-  // Color scheme options — dark mode is not yet implemented
-  const colorSchemeOptions: RadioOption[] = [
-    { value: 'light', label: 'Light', description: 'Academic-Naturalist palette' },
-  ];
-
-  // Dashboard layout options
   const layoutOptions: RadioOption[] = [
     { value: 'grid', label: 'Grid', description: 'Card-based grid layout' },
     { value: 'list', label: 'List', description: 'Compact list view' },
   ];
 
-  // Texts count options
   const textsCountOptions: SelectOption[] = [
     { value: '10', label: '10 texts' },
     { value: '20', label: '20 texts' },
@@ -55,7 +44,6 @@ export default function DisplaySettingsPage() {
     { value: '50', label: '50 texts' },
   ];
 
-  // Graph range options
   const graphRangeOptions: SelectOption[] = [
     { value: '7', label: 'Last 7 days' },
     { value: '14', label: 'Last 14 days' },
@@ -65,16 +53,19 @@ export default function DisplaySettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Reader Settings Section */}
+      {/* Reader Section */}
       <SettingSection
-        title="Reader Settings"
-        description="Customize how text appears in the reader view"
+        title="Reader"
+        description="How text appears in the reading view"
       >
         <SettingRow label="Font Size" description="Choose your preferred reading size">
           <RadioGroup
             options={fontSizeOptions}
             value={settings.fontSize}
-            onChange={(value) => updateFontSize(value as 'small' | 'medium' | 'large')}
+            onChange={(value) => {
+              updateFontSize(value as 'small' | 'medium' | 'large');
+              showSaved();
+            }}
             name="fontSize"
           />
         </SettingRow>
@@ -86,7 +77,10 @@ export default function DisplaySettingsPage() {
         >
           <Slider
             value={settings.highlightIntensity}
-            onChange={updateHighlightIntensity}
+            onChange={(v) => {
+              updateHighlightIntensity(v);
+              showSaved();
+            }}
             min={0}
             max={100}
             step={5}
@@ -100,33 +94,66 @@ export default function DisplaySettingsPage() {
         >
           <Toggle
             checked={settings.showWellKnownWords}
-            onChange={updateShowWellKnownWords}
+            onChange={(v) => {
+              updateShowWellKnownWords(v);
+              showSaved();
+            }}
           />
         </SettingRow>
-
-        <SettingRow label="Color Scheme" description="Choose your preferred theme">
-          <RadioGroup
-            options={colorSchemeOptions}
-            value={settings.colorScheme}
-            onChange={(value) => updateColorScheme(value as 'light' | 'dark')}
-            name="colorScheme"
-          />
-        </SettingRow>
-        <div className="opacity-50 pointer-events-none select-none flex items-center justify-between py-1 px-1">
-          <div>
-            <p className="font-sans text-ui-sm font-medium text-ink">Dark mode</p>
-            <p className="font-sans text-ui-xs text-muted">Coming soon</p>
-          </div>
-        </div>
       </SettingSection>
 
-      {/* Dashboard Settings Section (UI Mockup) */}
+      {/* Theme Section */}
       <SettingSection
-        title="Dashboard Settings"
-        description="Customize your dashboard experience"
+        title="Theme"
+        description="Application color scheme"
       >
-        <div className="opacity-50 pointer-events-none select-none">
-          <SettingRow label="Layout" description="Choose how content is displayed">
+        <SettingRow label="Color Scheme" description="Choose your preferred theme">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color Scheme">
+            {/* Light — active */}
+            <label className="cursor-pointer">
+              <input
+                type="radio"
+                name="colorScheme"
+                value="light"
+                checked={settings.colorScheme === 'light'}
+                onChange={() => {
+                  updateColorScheme('light');
+                  showSaved();
+                }}
+                className="sr-only"
+              />
+              <span
+                className={cn(
+                  'inline-flex px-3 py-1.5 font-sans text-ui-sm font-medium rounded border-2 transition-colors',
+                  settings.colorScheme === 'light'
+                    ? 'border-primary text-primary bg-primary/5'
+                    : 'border-border text-ink hover:border-primary/40'
+                )}
+              >
+                Light
+              </span>
+            </label>
+
+            {/* Dark — coming soon */}
+            <span
+              aria-disabled="true"
+              title="Coming soon"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 font-sans text-ui-sm font-medium rounded border-2 border-border text-muted opacity-50 cursor-not-allowed select-none"
+            >
+              Dark
+              <span className="text-ui-xs font-normal">(coming soon)</span>
+            </span>
+          </div>
+        </SettingRow>
+      </SettingSection>
+
+      {/* Dashboard Section */}
+      <SettingSection
+        title="Dashboard"
+        description="Layout and display preferences"
+      >
+        <div className="opacity-50 pointer-events-none select-none space-y-6">
+          <SettingRow label="Layout" description="Card grid or compact list view">
             <RadioGroup
               options={layoutOptions}
               value={dashboardLayout}
@@ -134,13 +161,10 @@ export default function DisplaySettingsPage() {
               name="dashboardLayout"
             />
           </SettingRow>
-          <p className="font-sans text-ui-xs text-muted mt-1 ml-0.5">Coming soon</p>
-        </div>
 
-        <div className="opacity-50 pointer-events-none select-none">
           <SettingRow
-            label="Texts Count"
-            description="Number of texts to display per page"
+            label="Texts Per Page"
+            description="Number of texts shown per page"
           >
             <Select
               options={textsCountOptions}
@@ -148,13 +172,10 @@ export default function DisplaySettingsPage() {
               onChange={setTextsCount}
             />
           </SettingRow>
-          <p className="font-sans text-ui-xs text-muted mt-1 ml-0.5">Coming soon</p>
-        </div>
 
-        <div className="opacity-50 pointer-events-none select-none">
           <SettingRow
-            label="Graph Range"
-            description="Time range for progress graphs"
+            label="Progress Graph Range"
+            description="Time range for the progress graph"
           >
             <Select
               options={graphRangeOptions}
@@ -162,8 +183,10 @@ export default function DisplaySettingsPage() {
               onChange={setGraphRange}
             />
           </SettingRow>
-          <p className="font-sans text-ui-xs text-muted mt-1 ml-0.5">Coming soon</p>
         </div>
+        <p className="font-sans text-ui-xs text-muted mt-2">
+          Dashboard customisation — coming soon
+        </p>
       </SettingSection>
 
       {/* Auto-save Notice */}
@@ -173,6 +196,8 @@ export default function DisplaySettingsPage() {
           Settings are automatically saved as you change them
         </p>
       </div>
+
+      {ToastComponent}
     </div>
   );
 }

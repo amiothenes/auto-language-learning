@@ -157,4 +157,6 @@ export type VocabularyItem = {
   translation: string;
   /** User-defined tags for categorization */
   tags: string[];
+  /** Number of distinct texts this lemma appears in */
+  textCount: number;
 }

@@ -1,11 +1,6 @@
 'use client';
 
-// ============================================================================
-// Data Settings Page
-// Export data and manage data deletion
-// ============================================================================
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 import { Download, AlertTriangle, Upload } from 'lucide-react';
@@ -13,6 +8,7 @@ import { SettingSection } from '@/components/settings/SettingSection';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { LwtLanguageModal } from '@/components/ui/LwtLanguageModal';
+import { cn } from '@/lib/utils';
 
 export default function DataSettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -23,6 +19,8 @@ export default function DataSettingsPage() {
   const [lwtLoading, setLwtLoading] = useState(false);
   const [showLwtLangModal, setShowLwtLangModal] = useState(false);
   const [detectedLangName, setDetectedLangName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDeleteAllData = async () => {
     if (isDemo) return;
@@ -51,7 +49,6 @@ export default function DataSettingsPage() {
     if (isDemo || !lwtFile) return;
     setLwtStatus(null);
 
-    // Parse the file client-side to extract the language name from column 6
     const text = await lwtFile.text();
     const lines = text.split('\n').map((l) => l.trimEnd()).filter(Boolean);
     const firstValidRow = lines.find((line) => line.split('\t').length >= 6);
@@ -91,6 +88,16 @@ export default function DataSettingsPage() {
 
   const isDeleteEnabled = deleteInput === 'DELETE';
 
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith('.tsv') || file.name.endsWith('.txt'))) {
+      setLwtFile(file);
+      setLwtStatus(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Export Data Section */}
@@ -98,48 +105,35 @@ export default function DataSettingsPage() {
         title="Export Your Data"
         description="Download your vocabulary and progress data"
       >
-        <div className="space-y-3">
-          <div>
-            <Button
-              variant="secondary"
-              size="md"
-              disabled
-              leftIcon={<Download size={18} strokeWidth={2} />}
-              className="w-full justify-start"
-            >
-              <span className="flex-1 text-left">Export as CSV</span>
-            </Button>
-            <p className="font-sans text-ui-xs text-muted mt-1 ml-1">Coming soon</p>
-          </div>
-
-          <div>
-            <Button
-              variant="secondary"
-              size="md"
-              disabled
-              leftIcon={<Download size={18} strokeWidth={2} />}
-              className="w-full justify-start"
-            >
-              <span className="flex-1 text-left">Export as JSON</span>
-            </Button>
-            <p className="font-sans text-ui-xs text-muted mt-1 ml-1">Coming soon</p>
-          </div>
-
-          <div>
-            <Button
-              variant="secondary"
-              size="md"
-              disabled
-              leftIcon={<Download size={18} strokeWidth={2} />}
-              className="w-full justify-start"
-            >
-              <span className="flex-1 text-left">Export as ZIP</span>
-            </Button>
-            <p className="font-sans text-ui-xs text-muted mt-1 ml-1">
-              Coming soon — complete backup including vocabulary, progress, and settings
-            </p>
-          </div>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="secondary"
+            size="md"
+            disabled
+            leftIcon={<Download size={16} strokeWidth={2} />}
+          >
+            Export CSV
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            disabled
+            leftIcon={<Download size={16} strokeWidth={2} />}
+          >
+            Export JSON
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            disabled
+            leftIcon={<Download size={16} strokeWidth={2} />}
+          >
+            Export ZIP
+          </Button>
         </div>
+        <p className="font-sans text-ui-xs text-muted mt-2">
+          Coming soon — CSV vocab list · JSON full export · ZIP complete backup
+        </p>
       </SettingSection>
 
       {/* LWT Import Section */}
@@ -148,15 +142,42 @@ export default function DataSettingsPage() {
         description="Bulk-import vocabulary from a Learning With Texts .tsv/.txt export"
       >
         <div className="space-y-3">
-          <input
-            type="file"
-            accept=".tsv,.txt"
-            onChange={(e) => {
-              setLwtFile(e.target.files?.[0] ?? null);
-              setLwtStatus(null);
-            }}
-            className="block w-full font-sans text-ui-sm text-ink file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:font-sans file:text-ui-sm file:font-medium file:bg-surface file:text-ink hover:file:bg-surface/80 cursor-pointer"
-          />
+          {/* Drag-and-drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              'relative flex flex-col items-center justify-center gap-2',
+              'border-2 border-dashed rounded-card p-8 text-center cursor-pointer',
+              'transition-colors',
+              isDragging
+                ? 'border-primary bg-primary/5'
+                : lwtFile
+                  ? 'border-primary/40 bg-primary/5'
+                  : 'border-border hover:border-primary/40 hover:bg-desk'
+            )}
+          >
+            <Upload className="w-6 h-6 text-muted" strokeWidth={1.5} />
+            <p className="font-sans text-ui-sm text-ink font-medium">
+              {lwtFile ? lwtFile.name : 'Drop .tsv or .txt here'}
+            </p>
+            <p className="font-sans text-ui-xs text-muted">
+              {lwtFile ? 'Click to choose a different file' : 'or click to browse'}
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".tsv,.txt"
+              className="sr-only"
+              onChange={(e) => {
+                setLwtFile(e.target.files?.[0] ?? null);
+                setLwtStatus(null);
+              }}
+            />
+          </div>
+
           <span title={isDemo ? 'Not available in demo mode' : undefined}>
             <Button
               variant="secondary"

@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { Heading, Body, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
 import { ProgressGraph } from '@/components/dashboard/ProgressGraph';
-import { BookOpen, CheckCircle2, BookMarked, Info } from 'lucide-react';
+import { VocabDistribution } from '@/components/vocabulary/VocabDistribution';
+import { BookOpen, CheckCircle2, Flame, Info } from 'lucide-react';
 import { Skeleton, SkeletonText, SkeletonCircle } from '@/components/ui/Skeleton';
 import { useStats } from '@/lib/hooks/useStats';
 import { useStatsHistory } from '@/lib/hooks/useStatsHistory';
@@ -58,7 +59,7 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
   const cefrBand = stats?.cefrBand ?? 'A1-A2';
   const totalWords = stats?.vocabulary.total ?? 0;
   const knownWords = (stats?.vocabulary.known ?? 0) + (stats?.vocabulary.wellKnown ?? 0);
-  const textsRead = stats?.texts.read ?? 0;
+  const streak = stats?.streak ?? 0;
   const history = historyData?.history ?? [];
 
   return (
@@ -91,6 +92,25 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
             </Muted>
           </div>
         </div>
+
+        {/* Vocab status distribution strip */}
+        {stats && (
+          <VocabDistribution
+            compact
+            unknown={stats.vocabulary.unknown}
+            newlySeen={stats.vocabulary.newlySeen}
+            familiar={stats.vocabulary.familiar}
+            known={stats.vocabulary.known}
+            wellKnown={stats.vocabulary.wellKnown}
+            total={
+              stats.vocabulary.unknown +
+              stats.vocabulary.newlySeen +
+              stats.vocabulary.familiar +
+              stats.vocabulary.known +
+              stats.vocabulary.wellKnown
+            }
+          />
+        )}
 
         {/* Chart / progress bar */}
         <ProgressGraph currentPercentage={readingCoverage} history={history} />
@@ -135,18 +155,23 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
           </div>
         </div>
 
-        {/* Texts Read */}
+        {/* Day Streak */}
         <div className="p-4 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <BookMarked size={20} className="text-primary" strokeWidth={1.5} />
+            <Flame size={20} className="text-primary" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
             <Muted size="xs" className="mb-0.5">
-              Texts Read
+              Day Streak
             </Muted>
-            <Heading size="xl" weight="bold" as="h3">
-              {textsRead}
-            </Heading>
+            <div className="flex items-baseline gap-1.5">
+              <Heading size="xl" weight="bold" as="h3">
+                {streak}
+              </Heading>
+              <Body size="xs" className="text-muted">
+                {streak === 1 ? 'day' : 'days'}
+              </Body>
+            </div>
           </div>
         </div>
       </Card>
