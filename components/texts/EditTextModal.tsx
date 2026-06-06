@@ -23,8 +23,11 @@ interface EditTextModalProps {
 export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModalProps) {
   const [title, setTitle] = useState('');
   const [tagsInput, setTagsInput] = useState('');
+  const [contentInput, setContentInput] = useState('');
+  const [originalContent, setOriginalContent] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -49,11 +52,13 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
     fetch(`/api/texts/${textId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load text');
-        return res.json() as Promise<{ text: { title: string; tags: string[] } }>;
+        return res.json() as Promise<{ text: { title: string; tags: string[]; content: string } }>;
       })
       .then(({ text }) => {
         setTitle(text.title);
         setTagsInput(text.tags.join(', '));
+        setContentInput(text.content ?? '');
+        setOriginalContent(text.content ?? '');
       })
       .catch(() => {
         setFetchError('Could not load text data. Please close and try again.');
@@ -138,9 +143,14 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
       .filter((t) => t.length > 0 && t.length <= 30)
       .slice(0, 10);
 
+  const hasContentChanged = contentInput !== originalContent;
+
   const isFormValid = useMemo(
-    () => title.trim().length > 0 && title.trim().length <= 200,
-    [title]
+    () =>
+      title.trim().length > 0 &&
+      title.trim().length <= 200 &&
+      (!hasContentChanged || contentInput.trim().length >= 10),
+    [title, hasContentChanged, contentInput]
   );
 
   const handleSubmit = useCallback(
@@ -152,7 +162,25 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
       setIsSaving(true);
 
       try {
-        const res = await fetch(`/api/texts/${textId}`, {
+        if (hasContentChanged) {
+          setSaveStatus('Re-processing text with NLP…');
+          const reprocessRes = await fetch(`/api/texts/${textId}/reprocess`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+            },
+            body: JSON.stringify({ content: contentInput.trim() }),
+          });
+
+          if (!reprocessRes.ok) {
+            const data = await reprocessRes.json() as { error?: string };
+            throw new Error(data.error ?? 'NLP reprocessing failed');
+          }
+        }
+
+        setSaveStatus('Saving metadata…');
+        const patchRes = await fetch(`/api/texts/${textId}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -161,8 +189,8 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
           body: JSON.stringify({ title: title.trim(), newTags: parseTags(tagsInput) }),
         });
 
-        if (!res.ok) {
-          const data = await res.json() as { error?: string };
+        if (!patchRes.ok) {
+          const data = await patchRes.json() as { error?: string };
           throw new Error(data.error ?? 'Failed to save changes');
         }
 
@@ -172,9 +200,10 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
         setSaveError(err instanceof Error ? err.message : 'Failed to save changes');
       } finally {
         setIsSaving(false);
+        setSaveStatus('');
       }
     },
-    [isFormValid, textId, title, tagsInput, onSaved, onClose]
+    [isFormValid, hasContentChanged, textId, title, tagsInput, contentInput, onSaved, onClose]
   );
 
   if (!mounted || !isOpen) return null;
@@ -195,7 +224,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-text-dialog-title"
-          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6"
+          className="w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <h2
@@ -255,8 +284,35 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                 </p>
               </div>
 
+              {/* Content */}
+              <div>
+                <label className="block font-sans text-ui-sm font-medium text-ink mb-1">
+                  Text Content
+                </label>
+                <p className="font-sans text-ui-xs text-muted mb-2">
+                  {hasContentChanged
+                    ? 'Content changed — NLP will re-run on save (~10–30s)'
+                    : 'Edit to re-parse with NLP and rebuild word highlights'}
+                </p>
+                <textarea
+                  value={contentInput}
+                  onChange={(e) => setContentInput(e.target.value)}
+                  disabled={isFetching || isSaving}
+                  rows={12}
+                  className="w-full px-3 py-2 font-serif text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 resize-y"
+                />
+                {hasContentChanged && contentInput.trim().length < 10 && (
+                  <p className="font-sans text-ui-xs text-red-600 mt-1">
+                    Content must be at least 10 characters.
+                  </p>
+                )}
+              </div>
+
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-2">
+                {isSaving && saveStatus && (
+                  <span className="self-center font-sans text-ui-sm text-muted">{saveStatus}</span>
+                )}
                 <Button
                   type="button"
                   variant="ghost"
@@ -273,7 +329,11 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                     size="md"
                     disabled={isDemo || !isFormValid || isFetching || isSaving}
                   >
-                    {isSaving ? 'Saving…' : 'Save Changes'}
+                    {isSaving
+                      ? hasContentChanged
+                        ? 'Processing…'
+                        : 'Saving…'
+                      : 'Save Changes'}
                   </Button>
                 </span>
               </div>

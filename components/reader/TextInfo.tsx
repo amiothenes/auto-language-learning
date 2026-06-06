@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { Heading, Muted } from '@/components/ui/Typography';
@@ -14,6 +14,7 @@ import {
   Download,
   Pencil
 } from 'lucide-react';
+import type { WordInstanceItem } from '@/lib/types/api';
 
 // ============================================================================
 // TextInfo Component
@@ -50,11 +51,86 @@ export function TextInfo({
 }: TextInfoProps) {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleExport = () => {
-    console.log('Export text:', title);
-    // TODO: Implement export functionality
+  useEffect(() => {
+    if (!showExportMenu) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
+
+  const triggerDownload = (content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   };
+
+  const handleExportTxt = useCallback(async () => {
+    setShowExportMenu(false);
+    setIsExporting(true);
+    try {
+      const res = await fetch(`/api/texts/${textId}`);
+      if (!res.ok) throw new Error('Failed to fetch text');
+      const data = await res.json() as { text: { content: string } };
+      const safeTitle = title.replace(/[^\w\s-]/g, '').trim();
+      const header = [
+        `Title: ${title}`,
+        `Series: ${seriesName}`,
+        `Known: ${Math.round(knownPercentage * 10) / 10}%`,
+        `Words: ${wordCount.toLocaleString('en-US')} total, ${uniqueWordCount.toLocaleString('en-US')} unique`,
+        tags.length > 0 ? `Tags: ${tags.join(', ')}` : null,
+        '',
+        '─'.repeat(60),
+        '',
+      ].filter(Boolean).join('\n');
+      triggerDownload(header + data.text.content, `${safeTitle}.txt`, 'text/plain;charset=utf-8');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [textId, title, seriesName, knownPercentage, wordCount, uniqueWordCount, tags]);
+
+  const handleExportCsv = useCallback(async () => {
+    setShowExportMenu(false);
+    setIsExporting(true);
+    try {
+      const res = await fetch(`/api/texts/${textId}/word-instances`);
+      if (!res.ok) throw new Error('Failed to fetch word instances');
+      const data = await res.json() as { instances: WordInstanceItem[] };
+      const seen = new Set<string>();
+      const rows: WordInstanceItem[] = [];
+      for (const inst of data.instances) {
+        if (!seen.has(inst.wordId)) {
+          seen.add(inst.wordId);
+          rows.push(inst);
+        }
+      }
+      const escapeCsv = (val: string | null | undefined) => {
+        const s = val ?? '';
+        return s.includes(',') || s.includes('"') || s.includes('\n')
+          ? `"${s.replace(/"/g, '""')}"`
+          : s;
+      };
+      const header = 'Lemma,Translation,Status,Encounters,Frequency\n';
+      const body = rows.map(r =>
+        [escapeCsv(r.lemma), escapeCsv(r.translation), escapeCsv(r.status), r.userFrequency, r.dictionaryFrequency].join(',')
+      ).join('\n');
+      const safeTitle = title.replace(/[^\w\s-]/g, '').trim();
+      triggerDownload('﻿' + header + body, `${safeTitle}-vocabulary.csv`, 'text/csv;charset=utf-8');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [textId, title]);
 
   const handleEditText = () => {
     setIsEditOpen(true);
@@ -157,15 +233,36 @@ export function TextInfo({
 
       {/* Action Buttons */}
       <div className="pt-4 border-t border-border flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          leftIcon={<Download size={16} strokeWidth={1.5} />}
-          onClick={handleExport}
-          className="flex-1"
-        >
-          Export
-        </Button>
+        <div ref={exportMenuRef} className="relative flex-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Download size={16} strokeWidth={1.5} />}
+            onClick={() => setShowExportMenu((v) => !v)}
+            disabled={isExporting}
+            className="w-full"
+          >
+            {isExporting ? 'Exporting…' : 'Export'}
+          </Button>
+          {showExportMenu && (
+            <div className="absolute left-0 top-full mt-1 z-10 bg-paper border border-border rounded-card shadow-modal min-w-35 py-1">
+              <button
+                type="button"
+                onClick={handleExportTxt}
+                className="w-full text-left px-3 py-2 font-sans text-ui-sm text-ink hover:bg-desk transition-colors"
+              >
+                Export as TXT
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="w-full text-left px-3 py-2 font-sans text-ui-sm text-ink hover:bg-desk transition-colors"
+              >
+                Export as CSV
+              </button>
+            </div>
+          )}
+        </div>
         <Button
           variant="secondary"
           size="sm"
@@ -197,6 +294,7 @@ export function TextInfo({
         textId={textId}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ['text', textId] });
+          queryClient.invalidateQueries({ queryKey: ['word-instances', textId] });
           setIsEditOpen(false);
         }}
       />

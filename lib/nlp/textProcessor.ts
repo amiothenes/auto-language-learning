@@ -20,6 +20,7 @@ import {
   type NewText,
   type NewSentence,
   type NewWordInstance,
+  type Language,
 } from '@/lib/db/schema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { romanizeBatch, requiresRomanization } from '@/lib/nlp';
@@ -129,6 +130,103 @@ function reportProgress(
 }
 
 // ============================================================================
+// Private Helper: NLP Phase
+// ============================================================================
+
+interface NLPPhaseResult {
+  wordTokens: Array<{ surfaceForm: string; cleanForm: string; position: number; sentenceIndex: number }>;
+  lemmaResults: Map<string, LemmatizeResult>;
+  romanizations: Map<string, string | null>;
+  sentenceData: Array<{ content: string; order: number }>;
+  uniqueCleanForms: string[];
+}
+
+async function runNLPPhase(
+  content: string,
+  language: Language,
+  progressCallback?: ProgressCallback
+): Promise<NLPPhaseResult> {
+  const needsRomanization = requiresRomanization(language.code);
+
+  reportProgress(progressCallback, 'tokenizing', 5, 'Processing text with NLP service');
+
+  let spacyResult: Awaited<ReturnType<typeof processWithSpacy>>;
+  try {
+    spacyResult = await processWithSpacy(content, language.code);
+  } catch (error) {
+    throw new TextProcessingError(
+      `NLP service failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'tokenizing',
+      error instanceof Error ? error : undefined
+    );
+  }
+
+  const wordTokens = spacyResult.tokens
+    .filter((t) => t.is_word)
+    .filter((t) => language.includeForeignScript || matchesLanguageScript(t.surface, language.code))
+    .map((t) => ({
+      surfaceForm: t.surface,
+      cleanForm: t.surface.toLowerCase(),
+      position: t.position,
+      sentenceIndex: t.sentence_index,
+    }));
+
+  if (wordTokens.length === 0) {
+    throw new TextProcessingError('No word tokens found in text (only punctuation)', 'tokenizing');
+  }
+
+  const lemmaResults = new Map<string, LemmatizeResult>();
+  for (const token of spacyResult.tokens.filter(
+    (t) => t.is_word && (language.includeForeignScript || matchesLanguageScript(t.surface, language.code))
+  )) {
+    lemmaResults.set(token.surface.toLowerCase(), {
+      lemma: token.lemma,
+      pos: token.pos,
+      inflectionData: Object.fromEntries(Object.entries(token.morph).map(([k, v]) => [k.toLowerCase(), v])),
+      confidence: 0.95,
+    });
+  }
+
+  const uniqueCleanForms = [...new Set(wordTokens.map((t) => t.cleanForm))];
+
+  reportProgress(
+    progressCallback,
+    'lemmatizing',
+    50,
+    `Processed ${wordTokens.length} words (${uniqueCleanForms.length} unique) via NLP service`
+  );
+
+  const romanizations = new Map<string, string | null>();
+  try {
+    if (needsRomanization) {
+      const romanizedResults = await romanizeBatch(uniqueCleanForms, language.code);
+      uniqueCleanForms.forEach((word, idx) => {
+        romanizations.set(word, romanizedResults[idx]);
+      });
+      reportProgress(progressCallback, 'romanizing', 60, `Romanized ${uniqueCleanForms.length} words`);
+    } else {
+      reportProgress(progressCallback, 'romanizing', 60, 'Skipped romanization (Latin script)');
+    }
+  } catch (error) {
+    throw new TextProcessingError(
+      `Romanization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'romanizing',
+      error instanceof Error ? error : undefined
+    );
+  }
+
+  reportProgress(progressCallback, 'romanizing', 63, 'Extracting sentences');
+
+  const sentenceData: Array<{ content: string; order: number }> = spacyResult.sentences
+    .map((s) => ({ content: s.text, order: s.index }))
+    .sort((a, b) => a.order - b.order);
+
+  reportProgress(progressCallback, 'romanizing', 65, `Extracted ${sentenceData.length} sentences`);
+
+  return { wordTokens, lemmaResults, romanizations, sentenceData, uniqueCleanForms };
+}
+
+// ============================================================================
 // Main Export: Text Import Processing Pipeline
 // ============================================================================
 
@@ -193,109 +291,9 @@ export async function processTextForImport(
       );
     }
 
-    const needsRomanization = requiresRomanization(language.code);
-
-    // Steps 2+3: NLP via spaCy microservice — tokenization + lemmatization in one call (5-50%)
-    reportProgress(progressCallback, 'tokenizing', 5, 'Processing text with NLP service');
-
-    let spacyResult: Awaited<ReturnType<typeof processWithSpacy>>;
-    try {
-      spacyResult = await processWithSpacy(content, language.code);
-    } catch (error) {
-      throw new TextProcessingError(
-        `NLP service failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'tokenizing',
-        error instanceof Error ? error : undefined
-      );
-    }
-
-    // Normalize spaCy tokens to the minimal shape used downstream.
-    // When includeForeignScript is false, skip tokens whose script doesn't match the language's expected script.
-    const wordTokens = spacyResult.tokens
-      .filter((t) => t.is_word)
-      .filter((t) => language.includeForeignScript || matchesLanguageScript(t.surface, language.code))
-      .map((t) => ({
-        surfaceForm: t.surface,
-        cleanForm: t.surface.toLowerCase(),
-        position: t.position,
-        sentenceIndex: t.sentence_index,
-      }));
-
-    if (wordTokens.length === 0) {
-      throw new TextProcessingError(
-        'No word tokens found in text (only punctuation)',
-        'tokenizing'
-      );
-    }
-
-    // Build lemmaResults Map: cleanForm → LemmatizeResult (last occurrence wins for homographs)
-    const lemmaResults = new Map<string, LemmatizeResult>();
-    for (const token of spacyResult.tokens.filter((t) => t.is_word && (language.includeForeignScript || matchesLanguageScript(t.surface, language.code)))) {
-      lemmaResults.set(token.surface.toLowerCase(), {
-        lemma: token.lemma,
-        pos: token.pos,
-        inflectionData: Object.fromEntries(Object.entries(token.morph).map(([k, v]) => [k.toLowerCase(), v])),
-        confidence: 0.95,
-      });
-    }
-
-    const uniqueCleanForms = [...new Set(wordTokens.map((t) => t.cleanForm))];
-
-    reportProgress(
-      progressCallback,
-      'lemmatizing',
-      50,
-      `Processed ${wordTokens.length} words (${uniqueCleanForms.length} unique) via NLP service`
-    );
-
-    // Step 4: Batch Romanization (50-60%)
-    const romanizations = new Map<string, string | null>();
-
-    try {
-      if (needsRomanization) {
-        const romanizedResults = await romanizeBatch(uniqueCleanForms, language.code);
-
-        uniqueCleanForms.forEach((word, idx) => {
-          romanizations.set(word, romanizedResults[idx]);
-        });
-
-        reportProgress(
-          progressCallback,
-          'romanizing',
-          60,
-          `Romanized ${uniqueCleanForms.length} words`
-        );
-      } else {
-        // Skip for Latin-script languages
-        reportProgress(
-          progressCallback,
-          'romanizing',
-          60,
-          'Skipped romanization (Latin script)'
-        );
-      }
-    } catch (error) {
-      throw new TextProcessingError(
-        `Romanization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'romanizing',
-        error instanceof Error ? error : undefined
-      );
-    }
-
-    // Step 5: Sentences from spaCy response (60-65%)
-    reportProgress(progressCallback, 'romanizing', 63, 'Extracting sentences');
-
-    const sentenceData: Array<{ content: string; order: number }> =
-      spacyResult.sentences
-        .map((s) => ({ content: s.text, order: s.index }))
-        .sort((a, b) => a.order - b.order);
-
-    reportProgress(
-      progressCallback,
-      'romanizing',
-      65,
-      `Extracted ${sentenceData.length} sentences`
-    );
+    // Steps 2-5: NLP via spaCy (tokenize, lemmatize, romanize, extract sentences)
+    const { wordTokens, lemmaResults, romanizations, sentenceData, uniqueCleanForms } =
+      await runNLPPhase(content, language, progressCallback);
 
     // ========================================================================
     // PHASE 2: DATABASE OPERATIONS (Inside Transaction)
@@ -544,6 +542,204 @@ export async function processTextForImport(
     // Wrap unexpected errors
     throw new TextProcessingError(
       `Unexpected error during text processing: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'tokenizing',
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+// ============================================================================
+// Export: Re-process existing text content
+// ============================================================================
+
+export interface ReprocessResult {
+  wordCount: number;
+  uniqueWordCount: number;
+  knownPercentage: number;
+  processingTime: number;
+}
+
+/**
+ * Re-run NLP on updated content for an existing text record.
+ *
+ * Deletes old sentences and word instances, then creates new ones from the
+ * provided content. Existing word/lemma records are preserved (they are shared
+ * across all texts in the language and carry the user's status data).
+ */
+export async function reprocessTextContent(
+  textId: string,
+  newContent: string,
+  progressCallback?: ProgressCallback
+): Promise<ReprocessResult> {
+  const startTime = Date.now();
+
+  try {
+    reportProgress(progressCallback, 'tokenizing', 0, 'Loading text configuration');
+
+    const text = await db.query.texts.findFirst({
+      where: eq(texts.id, textId),
+    });
+
+    if (!text) {
+      throw new TextProcessingError(`Text not found: ${textId}`, 'tokenizing');
+    }
+
+    if (!newContent || newContent.trim().length === 0) {
+      throw new TextProcessingError('Content cannot be empty', 'tokenizing');
+    }
+
+    const language = await db.query.languages.findFirst({
+      where: eq(languages.id, text.languageId),
+    });
+
+    if (!language) {
+      throw new TextProcessingError(`Language not found: ${text.languageId}`, 'tokenizing');
+    }
+
+    const { wordTokens, lemmaResults, romanizations, sentenceData, uniqueCleanForms } =
+      await runNLPPhase(newContent, language, progressCallback);
+
+    try {
+      const result = await db.transaction(async (tx) => {
+        reportProgress(progressCallback, 'querying_db', 65, 'Clearing old word data');
+
+        // Delete old instances first (sentenceId FK is SET NULL, not cascade)
+        await tx.delete(wordInstances).where(eq(wordInstances.textId, textId));
+        await tx.delete(sentences).where(eq(sentences.textId, textId));
+
+        reportProgress(progressCallback, 'querying_db', 68, 'Checking existing vocabulary');
+
+        const uniqueLemmas = [...new Set(Array.from(lemmaResults.values()).map((r) => r.lemma))];
+
+        const existingWords = await tx.query.words.findMany({
+          where: and(eq(words.languageId, language.id), inArray(words.lemma, uniqueLemmas)),
+        });
+
+        const existingWordsMap = new Map(existingWords.map((w) => [w.lemma, w]));
+
+        const newLemmas = uniqueLemmas.filter((lemma) => !existingWordsMap.has(lemma));
+
+        if (newLemmas.length > 0) {
+          const newWordsData: NewWord[] = newLemmas.map((lemma) => {
+            const representativeResult = Array.from(lemmaResults.entries()).find(
+              ([, result]) => result.lemma === lemma
+            );
+            const cleanForm = representativeResult?.[0];
+            const romanization = cleanForm ? romanizations.get(cleanForm) : null;
+            return {
+              lemma,
+              languageId: language.id,
+              status: 'UNKNOWN' as const,
+              romanization,
+              dictionaryFrequency: 0,
+              userFrequency: 1,
+            };
+          });
+
+          const insertedWords = await tx.insert(words).values(newWordsData).returning();
+          insertedWords.forEach((word) => existingWordsMap.set(word.lemma, word));
+
+          reportProgress(
+            progressCallback,
+            'inserting',
+            75,
+            `Created ${insertedWords.length} new vocabulary entries`
+          );
+        } else {
+          reportProgress(progressCallback, 'inserting', 75, 'All words already exist in vocabulary');
+        }
+
+        const wordCount = wordTokens.length;
+        const uniqueWordCount = uniqueCleanForms.length;
+
+        await tx
+          .update(texts)
+          .set({ content: newContent, wordCount, uniqueWordCount, updatedAt: new Date() })
+          .where(eq(texts.id, textId));
+
+        reportProgress(progressCallback, 'inserting', 80, 'Updated text content');
+
+        const sentencesData: NewSentence[] = sentenceData.map((s) => ({
+          textId,
+          content: s.content,
+          order: s.order,
+        }));
+
+        const insertedSentences = await tx.insert(sentences).values(sentencesData).returning();
+        const sentenceIdMap = new Map(insertedSentences.map((s) => [s.order, s.id]));
+
+        reportProgress(
+          progressCallback,
+          'inserting',
+          85,
+          `Created ${insertedSentences.length} sentences`
+        );
+
+        const wordInstancesData: NewWordInstance[] = wordTokens.map((token) => {
+          const lemmaResult = lemmaResults.get(token.cleanForm)!;
+          const word = existingWordsMap.get(lemmaResult.lemma)!;
+          const sentenceId = sentenceIdMap.get(token.sentenceIndex);
+          return {
+            textId,
+            wordId: word.id,
+            sentenceId: sentenceId || null,
+            surfaceForm: token.surfaceForm,
+            position: token.position,
+            pos: lemmaResult.pos !== 'X' ? lemmaResult.pos : null,
+            inflectionData: lemmaResult.inflectionData as Record<string, unknown>,
+          };
+        });
+
+        const INSTANCE_BATCH_SIZE = 500;
+        for (let i = 0; i < wordInstancesData.length; i += INSTANCE_BATCH_SIZE) {
+          const batch = wordInstancesData.slice(i, i + INSTANCE_BATCH_SIZE);
+          await tx.insert(wordInstances).values(batch);
+          const progress = 85 + Math.floor(7 * ((i + batch.length) / wordInstancesData.length));
+          reportProgress(
+            progressCallback,
+            'inserting',
+            progress,
+            `Inserted ${i + batch.length} / ${wordInstancesData.length} word instances`
+          );
+        }
+
+        reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
+
+        const wordStatuses = await tx.query.words.findMany({
+          where: and(eq(words.languageId, language.id), inArray(words.lemma, uniqueLemmas)),
+          columns: { lemma: true, status: true },
+        });
+
+        const knownCount = wordStatuses.filter(
+          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN'
+        ).length;
+        const knownPercentage =
+          wordStatuses.length > 0
+            ? Math.round((knownCount / wordStatuses.length) * 100)
+            : 0;
+
+        await tx
+          .update(texts)
+          .set({ knownPercentage, updatedAt: new Date() })
+          .where(eq(texts.id, textId));
+
+        reportProgress(progressCallback, 'complete', 100, 'Reprocess complete');
+
+        return { wordCount, uniqueWordCount, knownPercentage, processingTime: Date.now() - startTime };
+      });
+
+      return result;
+    } catch (error) {
+      throw new TextProcessingError(
+        `Database transaction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'inserting',
+        error instanceof Error ? error : undefined
+      );
+    }
+  } catch (error) {
+    if (error instanceof TextProcessingError) throw error;
+    throw new TextProcessingError(
+      `Unexpected error during reprocessing: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'tokenizing',
       error instanceof Error ? error : undefined
     );

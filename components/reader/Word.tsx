@@ -59,11 +59,12 @@ export function Word({
   const isIgnored = data.status === VocabularyStatus.IGNORE;
   const isWellKnown = data.status === VocabularyStatus.WELL_KNOWN;
 
-  // Build native title tooltip text
+  // Build native title tooltip text — surface form + lemma + POS
+  const posLabel = data.pos && data.pos !== 'UNKNOWN' ? ` (${data.pos})` : '';
   const titleText = !isSelected
-    ? data.translation && data.translation !== '—'
-      ? `${data.lemma}: ${data.translation}`
-      : data.lemma
+    ? data.surface !== data.lemma
+      ? `${data.surface} → ${data.lemma}${posLabel}`
+      : `${data.lemma}${posLabel}`
     : undefined;
 
   return (
