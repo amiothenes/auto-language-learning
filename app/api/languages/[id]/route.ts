@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages, texts, words, series } from '@/lib/db/schema';
 import { eq, count } from 'drizzle-orm';
-import type { ApiErrorResponse } from '@/lib/types/api';
+import type { ApiErrorResponse, LanguageItem, UpdateLanguageResponse } from '@/lib/types/api';
 
 // ============================================================================
 // DELETE /api/languages/[id] — Delete a language by ID
@@ -52,6 +52,73 @@ export async function DELETE(
     return NextResponse.json<ApiErrorResponse>(
       {
         error: 'Internal server error deleting language',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================================
+// PATCH /api/languages/[id] — Update language settings
+// ============================================================================
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const adminKey = request.headers.get('x-admin-key');
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json<ApiErrorResponse>({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json<ApiErrorResponse>({ error: 'Request body must be valid JSON' }, { status: 400 });
+    }
+
+    const { dictURI, googleTTSCode, isRTL, includeForeignScript } = body as {
+      dictURI?: string | null;
+      googleTTSCode?: string | null;
+      isRTL?: boolean;
+      includeForeignScript?: boolean;
+    };
+
+    const updates: Partial<typeof languages.$inferInsert> = { updatedAt: new Date() };
+    if (dictURI !== undefined) updates.dictURI = dictURI?.trim() || null;
+    if (googleTTSCode !== undefined) updates.googleTTSCode = googleTTSCode?.trim() || null;
+    if (isRTL !== undefined) updates.isRTL = isRTL;
+    if (includeForeignScript !== undefined) updates.includeForeignScript = includeForeignScript;
+
+    const [row] = await db
+      .update(languages)
+      .set(updates)
+      .where(eq(languages.id, id))
+      .returning();
+
+    if (!row) {
+      return NextResponse.json<ApiErrorResponse>({ error: 'Language not found' }, { status: 404 });
+    }
+
+    const language: LanguageItem = {
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      isRTL: row.isRTL,
+      dictURI: row.dictURI ?? null,
+      googleTTSCode: row.googleTTSCode ?? null,
+      includeForeignScript: row.includeForeignScript,
+    };
+
+    return NextResponse.json<UpdateLanguageResponse>({ language });
+  } catch (error) {
+    console.error('[Languages] Error updating language:', error);
+    return NextResponse.json<ApiErrorResponse>(
+      {
+        error: 'Internal server error updating language',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

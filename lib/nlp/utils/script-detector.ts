@@ -107,3 +107,37 @@ export function requiresRomanization(languageCode: string): boolean {
   const latinScriptLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt'];
   return !latinScriptLanguages.includes(languageCode);
 }
+
+// Map from language code to a regex that matches ONLY tokens in the language's expected script.
+// Languages absent from this map (Latin-script languages) have no restriction.
+const EXPECTED_SCRIPT_PATTERNS: Partial<Record<string, RegExp>> = {
+  ru: /^[Ѐ-ӿ]+$/,
+  be: /^[Ѐ-ӿ]+$/,
+  bg: /^[Ѐ-ӿ]+$/,
+  uk: /^[Ѐ-ӿ]+$/,
+  sr: /^[Ѐ-ӿ]+$/,
+  mk: /^[Ѐ-ӿ]+$/,
+  ar: /^[؀-ۿ]+$/,
+  fa: /^[؀-ۿ]+$/,
+  zh: /^[一-鿿㐀-䶿]+$/,
+  ja: /^[一-鿿぀-ゟ゠-ヿ]+$/,
+  ko: /^[가-힣ᄀ-ᇿ]+$/,
+  he: /^[֐-׿]+$/,
+};
+
+/**
+ * Check whether a surface token belongs to the expected script for the given language.
+ *
+ * Used by the import pipeline when `includeForeignScript` is false to skip tokens
+ * that are clearly not vocabulary for that language (e.g. Latin brand names in Russian text).
+ *
+ * Languages without a defined expected script (Latin-script languages) always return true.
+ *
+ * @param surface - The raw token string
+ * @param languageCode - ISO 639-1 language code
+ * @returns True if the token is in the expected script (or no script restriction applies)
+ */
+export function matchesLanguageScript(surface: string, languageCode: string): boolean {
+  const pattern = EXPECTED_SCRIPT_PATTERNS[languageCode];
+  return !pattern || pattern.test(surface);
+}

@@ -27,8 +27,8 @@ export default function RootLayout({
       <body
         className="antialiased bg-desk"
       >
-        <LanguageProvider>
-          <QueryClientProvider>
+        <QueryClientProvider>
+          <LanguageProvider>
             <ReaderSettingsProvider>
               <KeyboardShortcutsProvider>
                 <SkipLink targetId="main-content" />
@@ -51,8 +51,8 @@ export default function RootLayout({
                 </ViewTransitionWrapper>
               </KeyboardShortcutsProvider>
             </ReaderSettingsProvider>
-          </QueryClientProvider>
-        </LanguageProvider>
+          </LanguageProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );

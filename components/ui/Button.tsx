@@ -68,7 +68,7 @@ export function Button({
       {...props}
     >
       {leftIcon && <span className="flex items-center">{leftIcon}</span>}
-      {!iconOnly && children}
+      {children}
       {rightIcon && <span className="flex items-center">{rightIcon}</span>}
     </button>
   );

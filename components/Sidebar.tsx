@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { useLanguage, languages } from '@/lib/contexts/LanguageContext';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
 import {
   Globe,
@@ -45,6 +45,7 @@ export function Sidebar() {
   const {
     selectedLanguage,
     currentLanguage,
+    languages,
     setSelectedLanguage,
     isDropdownOpen,
     setIsDropdownOpen,

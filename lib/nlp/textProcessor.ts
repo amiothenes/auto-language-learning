@@ -24,6 +24,7 @@ import {
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { romanizeBatch, requiresRomanization } from '@/lib/nlp';
 import { processWithSpacy } from '@/lib/nlp/spacyClient';
+import { matchesLanguageScript } from '@/lib/nlp/utils/script-detector';
 import type { LemmatizeResult } from '@/lib/nlp';
 
 // ============================================================================
@@ -208,9 +209,11 @@ export async function processTextForImport(
       );
     }
 
-    // Normalize spaCy tokens to the minimal shape used downstream
+    // Normalize spaCy tokens to the minimal shape used downstream.
+    // When includeForeignScript is false, skip tokens whose script doesn't match the language's expected script.
     const wordTokens = spacyResult.tokens
       .filter((t) => t.is_word)
+      .filter((t) => language.includeForeignScript || matchesLanguageScript(t.surface, language.code))
       .map((t) => ({
         surfaceForm: t.surface,
         cleanForm: t.surface.toLowerCase(),
@@ -227,7 +230,7 @@ export async function processTextForImport(
 
     // Build lemmaResults Map: cleanForm → LemmatizeResult (last occurrence wins for homographs)
     const lemmaResults = new Map<string, LemmatizeResult>();
-    for (const token of spacyResult.tokens.filter((t) => t.is_word)) {
+    for (const token of spacyResult.tokens.filter((t) => t.is_word && (language.includeForeignScript || matchesLanguageScript(t.surface, language.code)))) {
       lemmaResults.set(token.surface.toLowerCase(), {
         lemma: token.lemma,
         pos: token.pos,

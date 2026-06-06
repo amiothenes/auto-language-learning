@@ -9,36 +9,65 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AddLanguageModal, NewLanguageData } from '@/components/settings/AddLanguageModal';
-import { useLanguages } from '@/lib/hooks/useLanguages';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useCreateLanguage } from '@/lib/hooks/useCreateLanguage';
 import { useDeleteLanguage } from '@/lib/hooks/useDeleteLanguage';
+import { useUpdateLanguage } from '@/lib/hooks/useUpdateLanguage';
 import { useAutoSaveToast } from '@/components/ui/AutoSaveToast';
 import type { LanguageItem } from '@/lib/types/api';
 
+interface LanguageSettingsDraft {
+  dictURI: string;
+  googleTTSCode: string;
+  isRTL: boolean;
+  includeForeignScript: boolean;
+}
+
 export default function LanguagesSettingsPage() {
-  const { data: languages = [], isLoading } = useLanguages();
+  const { languages, selectedLanguage, setSelectedLanguage } = useLanguage();
   const createLanguage = useCreateLanguage();
   const deleteLanguage = useDeleteLanguage();
+  const updateLanguage = useUpdateLanguage();
   const { showSaved, ToastComponent } = useAutoSaveToast();
 
-  const [activeLanguageId, setActiveLanguageId] = useState<string>('');
+  // Derived: match active language ID from LanguageContext code
+  const activeLanguageId = languages.find((l) => l.code === selectedLanguage)?.id ?? '';
+
   const [expandedLanguageId, setExpandedLanguageId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LanguageItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isRTLOverrides, setIsRTLOverrides] = useState<Record<string, boolean>>({});
 
+  // Per-language settings drafts — populated from DB data
+  const [settingsDraft, setSettingsDraft] = useState<Record<string, LanguageSettingsDraft>>({});
+
+  // Populate drafts from DB when languages load (only for unseen languages)
   useEffect(() => {
-    if (languages.length > 0 && !activeLanguageId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveLanguageId(languages[0].id);
-    }
-  }, [languages, activeLanguageId]);
+    setSettingsDraft((prev) => {
+      const next = { ...prev };
+      for (const lang of languages) {
+        if (!next[lang.id]) {
+          next[lang.id] = {
+            dictURI: lang.dictURI ?? '',
+            googleTTSCode: lang.googleTTSCode ?? '',
+            isRTL: lang.isRTL,
+            includeForeignScript: lang.includeForeignScript,
+          };
+        }
+      }
+      return next;
+    });
+  }, [languages]);
 
   const languageOptions: SelectOption[] = languages.map((lang) => ({
     value: lang.id,
     label: `${lang.name} (${lang.code})`,
   }));
+
+  const handleLanguageSwitch = (languageId: string) => {
+    const lang = languages.find((l) => l.id === languageId);
+    if (lang) setSelectedLanguage(lang.code);
+  };
 
   const handleToggleExpand = (languageId: string) => {
     setExpandedLanguageId((prev) => (prev === languageId ? null : languageId));
@@ -49,7 +78,11 @@ export default function LanguagesSettingsPage() {
     setDeleteError(null);
     deleteLanguage.mutate(deleteTarget.id, {
       onSuccess: () => {
-        if (activeLanguageId === deleteTarget.id) setActiveLanguageId('');
+        // If deleted language was active, switch to first remaining
+        if (deleteTarget.code === selectedLanguage) {
+          const remaining = languages.find((l) => l.id !== deleteTarget.id);
+          if (remaining) setSelectedLanguage(remaining.code);
+        }
         setDeleteTarget(null);
         setExpandedLanguageId(null);
       },
@@ -68,6 +101,22 @@ export default function LanguagesSettingsPage() {
     });
   };
 
+  const handleSaveSettings = (languageId: string) => {
+    const draft = settingsDraft[languageId];
+    if (!draft) return;
+    updateLanguage.mutate(
+      { id: languageId, ...draft, dictURI: draft.dictURI || null, googleTTSCode: draft.googleTTSCode || null },
+      { onSuccess: () => showSaved() }
+    );
+  };
+
+  const patchDraft = (languageId: string, patch: Partial<LanguageSettingsDraft>) => {
+    setSettingsDraft((prev) => ({
+      ...prev,
+      [languageId]: { ...prev[languageId], ...patch },
+    }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Current Language Selector */}
@@ -78,7 +127,7 @@ export default function LanguagesSettingsPage() {
         <Select
           options={languageOptions}
           value={activeLanguageId}
-          onChange={setActiveLanguageId}
+          onChange={handleLanguageSwitch}
           label="Active Language"
         />
       </SettingSection>
@@ -89,11 +138,7 @@ export default function LanguagesSettingsPage() {
         description="Manage your learning languages"
       >
         <div className="space-y-3">
-          {isLoading && (
-            <p className="font-sans text-ui-sm text-muted py-2">Loading languages…</p>
-          )}
-
-          {!isLoading && languages.length === 0 && (
+          {languages.length === 0 && (
             <EmptyState
               illustration="globe"
               illustrationSize={96}
@@ -110,7 +155,8 @@ export default function LanguagesSettingsPage() {
           {languages.map((language) => {
             const isExpanded = expandedLanguageId === language.id;
             const isActive = language.id === activeLanguageId;
-            const rtlValue = isRTLOverrides[language.id] ?? language.isRTL;
+            const draft = settingsDraft[language.id];
+            const isOnlyLanguage = languages.length === 1;
 
             return (
               <div
@@ -150,7 +196,7 @@ export default function LanguagesSettingsPage() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => setActiveLanguageId(language.id)}
+                      onClick={() => handleLanguageSwitch(language.id)}
                       disabled={isActive}
                       className={isActive ? 'invisible' : ''}
                     >
@@ -161,6 +207,8 @@ export default function LanguagesSettingsPage() {
                       size="sm"
                       iconOnly
                       ariaLabel={`Delete ${language.name}`}
+                      disabled={isOnlyLanguage}
+                      title={isOnlyLanguage ? 'Cannot delete the only language' : undefined}
                       onClick={() => {
                         setDeleteError(null);
                         setDeleteTarget(language);
@@ -188,7 +236,8 @@ export default function LanguagesSettingsPage() {
                           <input
                             type="text"
                             placeholder="https://dictionary.example.com/{word}"
-                            defaultValue=""
+                            value={draft?.dictURI ?? ''}
+                            onChange={(e) => patchDraft(language.id, { dictURI: e.target.value })}
                             className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                           />
                           <p className="font-sans text-ui-xs text-muted mt-1">
@@ -204,7 +253,8 @@ export default function LanguagesSettingsPage() {
                           <input
                             type="text"
                             placeholder="es-ES"
-                            defaultValue=""
+                            value={draft?.googleTTSCode ?? ''}
+                            onChange={(e) => patchDraft(language.id, { googleTTSCode: e.target.value })}
                             className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                           />
                           <p className="font-sans text-ui-xs text-muted mt-1">
@@ -212,26 +262,35 @@ export default function LanguagesSettingsPage() {
                           </p>
                         </div>
 
-                        {/* RTL Toggle — spans both columns */}
+                        {/* RTL Toggle */}
                         <div className="md:col-span-2">
                           <Toggle
-                            checked={rtlValue}
-                            onChange={(checked) => {
-                              setIsRTLOverrides((prev) => ({ ...prev, [language.id]: checked }));
-                            }}
+                            checked={draft?.isRTL ?? language.isRTL}
+                            onChange={(checked) => patchDraft(language.id, { isRTL: checked })}
                             label="Right-to-Left (RTL)"
                             description="Enable for Arabic, Hebrew, Farsi…"
                           />
                         </div>
 
-                        {/* Action buttons — spans both columns */}
+                        {/* Foreign Script Toggle */}
+                        <div className="md:col-span-2">
+                          <Toggle
+                            checked={draft?.includeForeignScript ?? language.includeForeignScript}
+                            onChange={(checked) => patchDraft(language.id, { includeForeignScript: checked })}
+                            label="Include foreign-script words in parsing"
+                            description="When off, words in other scripts (e.g. Latin in Russian) are skipped at import time."
+                          />
+                        </div>
+
+                        {/* Action buttons */}
                         <div className="md:col-span-2 flex gap-2 pt-1">
                           <Button
                             variant="primary"
                             size="sm"
-                            onClick={() => showSaved()}
+                            disabled={updateLanguage.isPending}
+                            onClick={() => handleSaveSettings(language.id)}
                           >
-                            Save Changes
+                            {updateLanguage.isPending ? 'Saving…' : 'Save Changes'}
                           </Button>
                           <Button
                             variant="ghost"

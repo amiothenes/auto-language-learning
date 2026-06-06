@@ -91,6 +91,9 @@ export interface LanguageItem {
   code: string;
   name: string;
   isRTL: boolean;
+  dictURI: string | null;
+  googleTTSCode: string | null;
+  includeForeignScript: boolean;
 }
 
 export interface LanguagesListResponse {
@@ -103,9 +106,21 @@ export interface CreateLanguageRequest {
   isRTL?: boolean;
   dictURI?: string;
   googleTTSCode?: string;
+  includeForeignScript?: boolean;
 }
 
 export interface CreateLanguageResponse {
+  language: LanguageItem;
+}
+
+export interface UpdateLanguageRequest {
+  dictURI?: string | null;
+  googleTTSCode?: string | null;
+  isRTL?: boolean;
+  includeForeignScript?: boolean;
+}
+
+export interface UpdateLanguageResponse {
   language: LanguageItem;
 }
 

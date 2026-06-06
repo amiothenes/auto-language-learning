@@ -8,14 +8,8 @@ import type { LanguageItem, LanguagesListResponse, CreateLanguageResponse, ApiEr
 // GET /api/languages — List all available languages
 // ============================================================================
 
-/**
- * Returns all languages configured in the system.
- * Used by the import modal dropdown and language switcher.
- */
 export async function GET() {
   try {
-    console.log('[Languages] Fetching all languages');
-
     const rows = await db.query.languages.findMany({
       orderBy: [asc(languages.name)],
     });
@@ -25,14 +19,14 @@ export async function GET() {
       code: lang.code,
       name: lang.name,
       isRTL: lang.isRTL,
+      dictURI: lang.dictURI ?? null,
+      googleTTSCode: lang.googleTTSCode ?? null,
+      includeForeignScript: lang.includeForeignScript,
     }));
-
-    console.log(`[Languages] Found ${result.length} languages`);
 
     return NextResponse.json<LanguagesListResponse>({ languages: result });
   } catch (error) {
     console.error('[Languages] Unexpected error:', error);
-
     return NextResponse.json<ApiErrorResponse>(
       {
         error: 'Internal server error fetching languages',
@@ -59,12 +53,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiErrorResponse>({ error: 'Request body must be valid JSON' }, { status: 400 });
     }
 
-    const { name, code, isRTL, dictURI, googleTTSCode } = body as {
+    const { name, code, isRTL, dictURI, googleTTSCode, includeForeignScript } = body as {
       name?: string;
       code?: string;
       isRTL?: boolean;
       dictURI?: string;
       googleTTSCode?: string;
+      includeForeignScript?: boolean;
     };
 
     if (!name?.trim()) {
@@ -82,6 +77,7 @@ export async function POST(request: NextRequest) {
         isRTL: isRTL ?? false,
         dictURI: dictURI?.trim() || null,
         googleTTSCode: googleTTSCode?.trim() || null,
+        includeForeignScript: includeForeignScript ?? false,
       })
       .returning();
 
@@ -90,6 +86,9 @@ export async function POST(request: NextRequest) {
       code: row.code,
       name: row.name,
       isRTL: row.isRTL,
+      dictURI: row.dictURI ?? null,
+      googleTTSCode: row.googleTTSCode ?? null,
+      includeForeignScript: row.includeForeignScript,
     };
 
     return NextResponse.json<CreateLanguageResponse>({ language }, { status: 201 });

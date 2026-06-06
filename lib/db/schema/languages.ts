@@ -13,6 +13,7 @@ export const languages = pgTable('languages', {
   googleTTSCode: text('google_tts_code'),
   characterSubstitutions: json('character_substitutions').$type<Record<string, string>>(),
   sentenceSplitRegex: text('sentence_split_regex'),
+  includeForeignScript: boolean('include_foreign_script').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

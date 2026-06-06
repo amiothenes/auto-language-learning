@@ -1,47 +1,45 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { Language, LanguageContextType } from '@/lib/types';
-
-// ============================================================================
-// Hardcoded Data (same as Sidebar)
-// ============================================================================
-
-export const languages: Language[] = [
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'ru', name: 'Russian' },
-];
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { useLanguages } from '@/lib/hooks/useLanguages';
+import type { LanguageContextType } from '@/lib/types/language';
 
 const STORAGE_KEY = 'verbista_selected_language';
-const validCodes = new Set(languages.map((l) => l.code));
-
-// ============================================================================
-// Context
-// ============================================================================
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const { data: dbLanguages = [] } = useLanguages();
+
   const [selectedLanguage, setSelectedLanguageRaw] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'ru';
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored && validCodes.has(stored) ? stored : 'ru';
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem(STORAGE_KEY) ?? '';
   });
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Auto-select first language when nothing is stored and DB has loaded
+  useEffect(() => {
+    if (!selectedLanguage && dbLanguages.length > 0) {
+      const code = dbLanguages[0].code;
+      localStorage.setItem(STORAGE_KEY, code);
+      setSelectedLanguageRaw(code);
+    }
+  }, [selectedLanguage, dbLanguages]);
 
   const setSelectedLanguage = useCallback((code: string) => {
     localStorage.setItem(STORAGE_KEY, code);
     setSelectedLanguageRaw(code);
   }, []);
 
-  const currentLanguage = languages.find((lang) => lang.code === selectedLanguage);
+  const currentLanguage = dbLanguages.find((lang) => lang.code === selectedLanguage);
 
   return (
     <LanguageContext.Provider
       value={{
         selectedLanguage,
         currentLanguage,
+        languages: dbLanguages,
         setSelectedLanguage,
         isDropdownOpen,
         setIsDropdownOpen,
