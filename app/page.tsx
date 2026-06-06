@@ -47,15 +47,17 @@ export default function Dashboard() {
 
         {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts) */}
         <div className="flex flex-col xl:grid xl:grid-cols-[35%_1fr] gap-6">
-          {/* LEFT COLUMN: Chart + Stats - Order 3 on mobile, 1 on desktop */}
-          <div className="space-y-6 order-3 xl:order-1">
+          {/* LEFT COLUMN: Chart + Stats — first on mobile, left on desktop */}
+          <div className="space-y-6">
             <StatsCard />
           </div>
 
-          {/* RIGHT COLUMN: Recent Texts - Order 1 on mobile, 2 on desktop */}
-          <div className="space-y-6 order-1 xl:order-2">
+          {/* RIGHT COLUMN: Recent Texts — second on mobile, right on desktop */}
+          <div className="space-y-6">
             <RecentTextsList isDemo={isDemo} />
-            <ActionButtons className="order-2 xl:order-3" />
+            <div className="hidden xl:block">
+              <ActionButtons />
+            </div>
           </div>
         </div>
       </div>
