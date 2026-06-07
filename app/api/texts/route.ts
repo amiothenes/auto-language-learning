@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       seriesId: text.seriesId ?? null,
       seriesName: text.series?.name ?? null,
       tags: text.tags.map((tt) => tt.tag.name),
+      createdAt: text.createdAt.toISOString(),
     }));
 
     console.log(`[Texts List] Found ${result.length} texts`);

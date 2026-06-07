@@ -141,6 +141,8 @@ export interface TextListItem {
   seriesId: string | null;
   seriesName: string | null;
   tags: string[];
+  /** ISO timestamp of when the text was imported */
+  createdAt: string;
 }
 
 export interface TextsListResponse {

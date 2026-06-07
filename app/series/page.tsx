@@ -15,10 +15,13 @@ import { NewSeriesModal } from '@/components/series/NewSeriesModal';
 import { EditSeriesModal } from '@/components/series/EditSeriesModal';
 import { NewTextModal } from '@/components/texts/NewTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
-import { TextListItem } from '@/components/dashboard/TextListItem';
 import { SkeletonText } from '@/components/ui/Skeleton';
+import { TextCard } from '@/components/series/TextCard';
+import { TextsFilterBar } from '@/components/series/TextsFilterBar';
+import type { TextsSortOption } from '@/components/series/TextsFilterBar';
 import { Search, Plus, ChevronDown, ArrowLeft } from 'lucide-react';
 import type { SeriesSortOption } from '@/lib/types';
+import { formatRelativeTime } from '@/lib/utils';
 import type { NewSeriesData } from '@/lib/types/forms';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
@@ -41,13 +44,15 @@ function SeriesPageContent() {
   const textsQuery = useTexts();
   const isLoading = seriesQuery.isLoading;
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SeriesSortOption>('name-asc');
+  const [sortBy, setSortBy] = useState<SeriesSortOption>('updated-recent');
   const [readinessFilter, setReadinessFilter] = useState<'all' | 'ready' | 'ok' | 'hard'>('all');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
   const [addTextTarget, setAddTextTarget] = useState<{ id: string; name: string } | null>(null);
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
+  const [textsSortBy, setTextsSortBy] = useState<TextsSortOption>('date-added');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -138,6 +143,54 @@ function SeriesPageContent() {
     () => (seriesQuery.data ?? []).map((s) => ({ id: s.id, name: s.name })),
     [seriesQuery.data]
   );
+
+  // Unique tags across all texts, sorted alphabetically
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const text of textsQuery.data ?? []) {
+      for (const tag of text.tags) tagSet.add(tag);
+    }
+    return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+  }, [textsQuery.data]);
+
+  // Filtered + sorted texts for the texts view
+  const filteredSortedTexts = useMemo(() => {
+    let result = [...(textsQuery.data ?? [])];
+
+    if (selectedTags.length > 0) {
+      result = result.filter((t) => selectedTags.every((tag) => t.tags.includes(tag)));
+    }
+
+    const getRecentOrder = (str: string) => {
+      if (str.includes('day ago')) return parseInt(str) || 1;
+      if (str.includes('days ago')) return parseInt(str) || 2;
+      if (str.includes('week ago')) return 7;
+      if (str.includes('weeks ago')) return parseInt(str) * 7 || 14;
+      if (str.includes('month ago')) return 30;
+      if (str.includes('months ago')) return parseInt(str) * 30 || 60;
+      return 999;
+    };
+
+    switch (textsSortBy) {
+      case 'date-added':
+        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'recent':
+        result.sort((a, b) => getRecentOrder(a.lastRead) - getRecentOrder(b.lastRead));
+        break;
+      case 'title-asc':
+        result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'progress-desc':
+        result.sort((a, b) => b.knownPercentage - a.knownPercentage);
+        break;
+      case 'progress-asc':
+        result.sort((a, b) => a.knownPercentage - b.knownPercentage);
+        break;
+    }
+
+    return result;
+  }, [textsQuery.data, selectedTags, textsSortBy]);
 
   const handleNewSeries = () => {
     setIsNewSeriesModalOpen(true);
@@ -269,17 +322,18 @@ function SeriesPageContent() {
           </header>
 
           {textsQuery.isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-desk rounded-lg gap-2">
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <SkeletonText width="w-3/5" className="h-5" />
-                    <div className="flex items-center gap-4 flex-wrap">
-                      <SkeletonText width="w-24" className="h-3" />
-                      <SkeletonText width="w-16" className="h-3" />
-                    </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-paper border border-border rounded-card p-5 space-y-3">
+                  <SkeletonText width="w-3/4" className="h-5" />
+                  <SkeletonText width="w-1/3" className="h-3" />
+                  <SkeletonText width="w-full" className="h-3 mt-2" />
+                  <SkeletonText width="w-4/5" className="h-3" />
+                  <div className="flex items-center gap-3 pt-1">
+                    <SkeletonText width="w-20" className="h-3" />
+                    <SkeletonText width="w-16" className="h-3" />
                   </div>
-                  <SkeletonText width="w-16" className="h-4" />
+                  <SkeletonText width="w-full" className="h-1.5 rounded-full" />
                 </div>
               ))}
             </div>
@@ -294,18 +348,38 @@ function SeriesPageContent() {
               }}
             />
           ) : (
-            <div className="space-y-2 md:space-y-3">
-              {textsQuery.data.map((text) => (
-                <TextListItem
-                  key={text.id}
-                  title={text.title}
-                  series={text.seriesName ?? '—'}
-                  wordCount={text.wordCount}
-                  knownPercentage={text.knownPercentage}
-                  lastViewed={text.lastRead}
-                  onClick={() => router.push(`/reader/${text.id}`)}
+            <div className="space-y-4">
+              <TextsFilterBar
+                sortBy={textsSortBy}
+                onSortChange={setTextsSortBy}
+                selectedTags={selectedTags}
+                availableTags={availableTags}
+                onTagsChange={setSelectedTags}
+              />
+
+              {filteredSortedTexts.length === 0 ? (
+                <EmptyState
+                  illustration="search"
+                  title="No matching texts"
+                  description="Try removing some filters"
                 />
-              ))}
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredSortedTexts.map((text) => (
+                    <TextCard
+                      key={text.id}
+                      id={text.id}
+                      title={text.title}
+                      wordCount={text.wordCount}
+                      knownPercentage={text.knownPercentage}
+                      lastRead={text.lastRead}
+                      preview={text.preview}
+                      seriesName={text.seriesName ?? undefined}
+                      dateAdded={formatRelativeTime(text.createdAt)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

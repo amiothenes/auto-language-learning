@@ -20,6 +20,8 @@ interface TextCardProps {
   knownPercentage: number;
   lastRead: string;
   preview: string;
+  seriesName?: string;
+  dateAdded?: string;
   onDelete?: (text: { id: string; title: string }) => void;
   onEdit?: (text: { id: string; title: string }) => void;
 }
@@ -31,6 +33,8 @@ export function TextCard({
   knownPercentage,
   lastRead,
   preview,
+  seriesName,
+  dateAdded,
   onDelete,
   onEdit,
 }: TextCardProps) {
@@ -82,9 +86,14 @@ export function TextCard({
     >
       {/* Header: Text Title + Menu Button */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <Content size="lg" weight="semibold" className="flex-1 line-clamp-1">
-          {title}
-        </Content>
+        <div className="flex-1 min-w-0">
+          <Content size="lg" weight="semibold" className="line-clamp-1">
+            {title}
+          </Content>
+          {seriesName && (
+            <Muted size="xs" className="mt-0.5 line-clamp-1">{seriesName}</Muted>
+          )}
+        </div>
         
         {/* Menu Button - Always visible on mobile, hover-only on desktop */}
         <div ref={menuRef} className="relative">
@@ -141,8 +150,11 @@ export function TextCard({
       {/* Progress Bar */}
       <ProgressBar value={knownPercentage} className="mb-3" />
 
-      {/* Last Read */}
-      <Muted size="xs">Last read {lastRead}</Muted>
+      {/* Last Read / Date Added */}
+      <div className="flex items-center justify-between gap-2">
+        <Muted size="xs">Last read {lastRead}</Muted>
+        {dateAdded && <Muted size="xs">Added {dateAdded}</Muted>}
+      </div>
     </Card>
   );
 }

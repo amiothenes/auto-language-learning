@@ -30,6 +30,9 @@ export function NewTextModal({
 }: NewTextModalProps) {
   const { selectedLanguage } = useLanguage();
   const mutation = useImportText();
+  const lockedSeriesName = prefilledSeriesId
+    ? availableSeries.find((s) => s.id === prefilledSeriesId)?.name
+    : null;
 
   const [formData, setFormData] = useState<NewTextData>({
     title: '',
@@ -239,7 +242,7 @@ export function NewTextModal({
             id="new-text-dialog-title"
             className="font-sans text-ui-lg font-semibold text-ink"
           >
-            Add New Text
+            {lockedSeriesName ? `Add to: ${lockedSeriesName}` : 'Add New Text'}
           </h2>
 
           {/* Error banner */}
@@ -275,27 +278,29 @@ export function NewTextModal({
               </p>
             </div>
 
-            {/* Series Selector */}
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Series <span className="text-red-600">*</span>
-              </label>
-              <select
-                value={formData.seriesId}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, seriesId: e.target.value }))
-                }
-                disabled={mutation.isPending}
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
-              >
-                <option value="">Select a series...</option>
-                {availableSeries.map((series) => (
-                  <option key={series.id} value={series.id}>
-                    {series.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Series Selector — hidden when series is pre-locked from context */}
+            {!lockedSeriesName && (
+              <div>
+                <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                  Series <span className="text-red-600">*</span>
+                </label>
+                <select
+                  value={formData.seriesId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, seriesId: e.target.value }))
+                  }
+                  disabled={mutation.isPending}
+                  className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
+                >
+                  <option value="">Select a series...</option>
+                  {availableSeries.map((series) => (
+                    <option key={series.id} value={series.id}>
+                      {series.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Text Content */}
             <div>

@@ -113,7 +113,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState('');
   const seriesNameInitialized = useRef(false);
-  const [sortBy, setSortBy] = useState<SortOption>('title-asc');
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   const [reorderMode, setReorderMode] = useState(false);
