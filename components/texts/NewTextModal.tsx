@@ -17,8 +17,8 @@ interface NewTextModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd?: (result: ImportTextResponse) => void;
-  prefilledSeriesId?: string; // Pre-select series if provided
-  availableSeries: Array<{ id: string; name: string }>; // List of series for dropdown
+  prefilledSeriesId?: string;
+  availableSeries: Array<{ id: string; name: string; textCount: number }>;
 }
 
 export function NewTextModal({
@@ -41,6 +41,7 @@ export function NewTextModal({
     tags: [],
   });
   const [tagsInput, setTagsInput] = useState('');
+  const [userEditedTitle, setUserEditedTitle] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -55,16 +56,20 @@ export function NewTextModal({
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
+      const initialSeriesName = prefilledSeriesId
+        ? (availableSeries.find((s) => s.id === prefilledSeriesId)?.name ?? '')
+        : '';
       setFormData({
-        title: '',
+        title: initialSeriesName,
         content: '',
         seriesId: prefilledSeriesId || '',
         tags: [],
       });
       setTagsInput('');
+      setUserEditedTitle(false);
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
-  }, [isOpen, prefilledSeriesId]);
+  }, [isOpen, prefilledSeriesId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Body scroll lock
   useEffect(() => {
@@ -143,6 +148,10 @@ export function NewTextModal({
     if (!mutation.isPending) onClose();
   }, [onClose, mutation.isPending]);
 
+  // Derived series info
+  const selectedSeries = availableSeries.find((s) => s.id === formData.seriesId) ?? null;
+  const nextNumber = selectedSeries ? selectedSeries.textCount + 1 : null;
+
   // Form validation
   const isFormValid = useMemo(() => {
     return (
@@ -167,7 +176,7 @@ export function NewTextModal({
       .split(',')
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0 && tag.length <= 30)
-      .slice(0, 10); // Max 10 tags
+      .slice(0, 10);
   };
 
   // Form submission handler
@@ -266,9 +275,10 @@ export function NewTextModal({
                 type="text"
                 placeholder="e.g., Breaking News Article"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                }
+                onChange={(e) => {
+                  setUserEditedTitle(true);
+                  setFormData((prev) => ({ ...prev, title: e.target.value }));
+                }}
                 disabled={mutation.isPending}
                 className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
                 maxLength={200}
@@ -276,6 +286,11 @@ export function NewTextModal({
               <p className="font-sans text-ui-xs text-muted mt-1">
                 {titleLength}/200 characters
               </p>
+              {nextNumber !== null && (
+                <p className="font-sans text-ui-xs text-muted mt-0.5">
+                  Will be added as #{nextNumber} in this series
+                </p>
+              )}
             </div>
 
             {/* Series Selector — hidden when series is pre-locked from context */}
@@ -286,9 +301,20 @@ export function NewTextModal({
                 </label>
                 <select
                   value={formData.seriesId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, seriesId: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const newSeriesId = e.target.value;
+                    const newSeries = availableSeries.find((s) => s.id === newSeriesId);
+                    const shouldPrefill =
+                      !userEditedTitle ||
+                      formData.title === '' ||
+                      formData.title === selectedSeries?.name;
+                    setFormData((prev) => ({
+                      ...prev,
+                      seriesId: newSeriesId,
+                      title: shouldPrefill ? (newSeries?.name ?? '') : prev.title,
+                    }));
+                    if (shouldPrefill) setUserEditedTitle(false);
+                  }}
                   disabled={mutation.isPending}
                   className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50"
                 >

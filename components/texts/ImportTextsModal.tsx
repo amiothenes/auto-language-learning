@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { Upload, FileText, Trash2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { ImportedTextData } from '@/lib/types/forms';
 
 // ============================================================================
@@ -11,22 +12,40 @@ import type { ImportedTextData } from '@/lib/types/forms';
 // Bulk import multiple texts into a series from files
 // ============================================================================
 
+type TitleMode = 'filename' | 'series-increment' | 'custom';
+type EnrichedTextData = ImportedTextData & { sourceTitle: string };
+
+function computeTitle(
+  mode: TitleMode,
+  sourceTitle: string,
+  index: number,
+  seriesName: string,
+  textCount: number
+): string {
+  if (mode === 'filename') return sourceTitle;
+  if (mode === 'series-increment') return `${seriesName} #${textCount + index + 1}`;
+  return '';
+}
+
 interface ImportTextsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (texts: ImportedTextData[]) => Promise<void>;
   seriesId: string;
   seriesName: string;
+  textCount: number;
 }
 
 export function ImportTextsModal({
   isOpen,
   onClose,
   onImport,
-  seriesId,
+  seriesId: _seriesId,
   seriesName,
+  textCount,
 }: ImportTextsModalProps) {
-  const [importedTexts, setImportedTexts] = useState<ImportedTextData[]>([]);
+  const [enrichedTexts, setEnrichedTexts] = useState<EnrichedTextData[]>([]);
+  const [titleMode, setTitleMode] = useState<TitleMode>('filename');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +63,8 @@ export function ImportTextsModal({
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setImportedTexts([]);
+      setEnrichedTexts([]);
+      setTitleMode('filename');
       setError(null);
       setIsProcessing(false);
       setIsSubmitting(false);
@@ -121,10 +141,23 @@ export function ImportTextsModal({
     }
   }, [isProcessing, isSubmitting, onClose]);
 
+  // Recompute titles when mode changes
+  useEffect(() => {
+    if (enrichedTexts.length === 0) return;
+    setEnrichedTexts((prev) =>
+      prev.map((t, i) => ({
+        ...t,
+        title: computeTitle(titleMode, t.sourceTitle, i, seriesName, textCount),
+      }))
+    );
+  // seriesName and textCount are stable for the modal's open lifetime
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titleMode]);
+
   // Parse CSV content
   const parseCSV = (content: string): ImportedTextData[] => {
     const lines = content.split('\n').filter((line) => line.trim() !== '');
-    if (lines.length < 2) return []; // Need at least header + 1 row
+    if (lines.length < 2) return [];
 
     const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
     const titleIndex = header.indexOf('title');
@@ -137,7 +170,6 @@ export function ImportTextsModal({
 
     const texts: ImportedTextData[] = [];
     for (let i = 1; i < lines.length && i < 51; i++) {
-      // Max 50 texts
       const cols = lines[i].split(',');
       if (cols.length < Math.max(titleIndex, contentIndex) + 1) continue;
 
@@ -192,7 +224,6 @@ export function ImportTextsModal({
       const fileReaders: Promise<ImportedTextData | ImportedTextData[]>[] = [];
 
       Array.from(files).forEach((file) => {
-        // Check file size (max 25MB total, max 10MB per file)
         if (file.size > 10 * 1024 * 1024) {
           setError(`File ${file.name} exceeds 10MB limit`);
           return;
@@ -209,7 +240,6 @@ export function ImportTextsModal({
                   return;
                 }
 
-                // Determine file type and parse accordingly
                 const ext = file.name.split('.').pop()?.toLowerCase();
 
                 if (ext === 'csv') {
@@ -217,7 +247,6 @@ export function ImportTextsModal({
                 } else if (ext === 'json') {
                   resolve(parseJSON(content));
                 } else if (ext === 'txt') {
-                  // Single .txt file becomes one text
                   if (content.trim().length >= 10) {
                     resolve({
                       title: file.name.replace(/\.[^/.]+$/, ''),
@@ -255,12 +284,20 @@ export function ImportTextsModal({
         }
       });
 
+      const trimmed = texts.slice(0, 50);
       if (texts.length > 50) {
         setError('Maximum 50 texts per import. Only first 50 will be imported.');
-        setImportedTexts(texts.slice(0, 50));
-      } else {
-        setImportedTexts(texts);
       }
+
+      // Capture current titleMode for closure consistency
+      const currentMode = titleMode;
+      setEnrichedTexts(
+        trimmed.map((t, i) => ({
+          ...t,
+          sourceTitle: t.title,
+          title: computeTitle(currentMode, t.title, i, seriesName, textCount),
+        }))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process files');
     } finally {
@@ -273,34 +310,44 @@ export function ImportTextsModal({
 
   // Remove imported text from list
   const handleRemoveText = (index: number) => {
-    setImportedTexts((prev) => prev.filter((_, i) => i !== index));
+    setEnrichedTexts((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Update text title
   const handleUpdateTextTitle = (index: number, newTitle: string) => {
-    setImportedTexts((prev) =>
+    setEnrichedTexts((prev) =>
       prev.map((text, i) => (i === index ? { ...text, title: newTitle } : text))
     );
   };
 
   // Final submission
   const handleSubmit = useCallback(async () => {
-    if (importedTexts.length === 0 || isSubmitting) return;
+    if (enrichedTexts.length === 0 || isSubmitting) return;
     setIsSubmitting(true);
     setError(null);
     try {
-      await onImport(importedTexts);
+      const textsToImport: ImportedTextData[] = enrichedTexts.map(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        ({ sourceTitle: _s, ...rest }) => rest
+      );
+      await onImport(textsToImport);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
       setIsSubmitting(false);
     }
-  }, [importedTexts, onImport, isSubmitting]);
+  }, [enrichedTexts, onImport, isSubmitting]);
 
   // Calculate total word count estimate
-  const totalWordCount = importedTexts.reduce(
+  const totalWordCount = enrichedTexts.reduce(
     (sum, text) => sum + text.content.split(/\s+/).length,
     0
   );
+
+  const titleModeOptions = [
+    { value: 'filename' as const, label: 'From filename' },
+    { value: 'series-increment' as const, label: 'Series #N' },
+    { value: 'custom' as const, label: 'Custom' },
+  ];
 
   if (!mounted || !isOpen) return null;
 
@@ -336,10 +383,44 @@ export function ImportTextsModal({
             Importing into series: <span className="font-medium text-ink">{seriesName}</span>
           </p>
 
+          {/* Title Format Selector */}
+          <div className="mt-4">
+            <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+              Title Format
+            </label>
+            <div className="flex border border-border rounded overflow-hidden w-fit">
+              {titleModeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setTitleMode(opt.value)}
+                  className={cn(
+                    'px-3 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
+                    titleMode === opt.value
+                      ? 'bg-primary text-white'
+                      : 'text-muted hover:text-ink'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {titleMode === 'series-increment' && (
+              <p className="font-sans text-ui-xs text-muted mt-1">
+                Titles: {seriesName} #{textCount + 1}, #{textCount + 2}, ...
+              </p>
+            )}
+            {titleMode === 'custom' && (
+              <p className="font-sans text-ui-xs text-muted mt-1">
+                Edit each title manually in the preview below
+              </p>
+            )}
+          </div>
+
           {/* Error Message */}
           {error && (
             <div className="mt-4 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded">
-              <AlertCircle size={16} className="text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
               <p className="font-sans text-ui-sm text-red-800">{error}</p>
             </div>
           )}
@@ -400,25 +481,25 @@ export function ImportTextsModal({
           </div>
 
           {/* Imported Texts Preview */}
-          {importedTexts.length > 0 && (
+          {enrichedTexts.length > 0 && (
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
                 <label className="font-sans text-ui-sm font-medium text-ink">
-                  Imported Texts ({importedTexts.length})
+                  Imported Texts ({enrichedTexts.length})
                 </label>
                 <p className="font-sans text-ui-xs text-muted">
                   ~{totalWordCount.toLocaleString()} total words
                 </p>
               </div>
               <div className="space-y-2 max-h-80 overflow-y-auto border border-border rounded p-3">
-                {importedTexts.map((text, index) => (
+                {enrichedTexts.map((text, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-2 p-3 bg-desk rounded"
                   >
                     <FileText
                       size={16}
-                      className="text-muted flex-shrink-0 mt-1"
+                      className="text-muted shrink-0 mt-1"
                     />
                     <div className="flex-1 min-w-0">
                       <input
@@ -427,6 +508,7 @@ export function ImportTextsModal({
                         onChange={(e) =>
                           handleUpdateTextTitle(index, e.target.value)
                         }
+                        placeholder={titleMode === 'custom' ? 'Enter title...' : undefined}
                         className="w-full px-2 py-1 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary mb-1"
                       />
                       <p className="font-sans text-ui-xs text-muted truncate">
@@ -447,7 +529,7 @@ export function ImportTextsModal({
                     </div>
                     <button
                       onClick={() => handleRemoveText(index)}
-                      className="text-muted hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 flex-shrink-0"
+                      className="text-muted hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0"
                       aria-label={`Remove ${text.title}`}
                     >
                       <Trash2 size={16} strokeWidth={1.5} />
@@ -474,11 +556,11 @@ export function ImportTextsModal({
               variant="primary"
               size="md"
               onClick={handleSubmit}
-              disabled={importedTexts.length === 0 || isProcessing || isSubmitting}
+              disabled={enrichedTexts.length === 0 || isProcessing || isSubmitting}
             >
               {isSubmitting
                 ? 'Importing...'
-                : `Import${importedTexts.length > 0 ? ` ${importedTexts.length} Text${importedTexts.length > 1 ? 's' : ''}` : ''}`}
+                : `Import${enrichedTexts.length > 0 ? ` ${enrichedTexts.length} Text${enrichedTexts.length > 1 ? 's' : ''}` : ''}`}
             </Button>
           </div>
         </div>

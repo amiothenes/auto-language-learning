@@ -637,7 +637,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         onClose={() => setIsNewTextModalOpen(false)}
         onAdd={handleCreateText}
         prefilledSeriesId={id}
-        availableSeries={seriesData ? [{ id: seriesData.id, name: seriesData.name }] : []}
+        availableSeries={seriesData ? [{ id: seriesData.id, name: seriesData.name, textCount: seriesData.textCount }] : []}
       />
 
       {/* Import Texts Modal */}
@@ -647,6 +647,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         onImport={handleImportTexts}
         seriesId={id}
         seriesName={seriesName}
+        textCount={seriesData?.textCount ?? 0}
       />
 
       {/* Edit Text Modal */}

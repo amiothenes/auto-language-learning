@@ -140,7 +140,7 @@ function SeriesPageContent() {
   }, [seriesQuery.data]);
 
   const availableSeries = useMemo(
-    () => (seriesQuery.data ?? []).map((s) => ({ id: s.id, name: s.name })),
+    () => (seriesQuery.data ?? []).map((s) => ({ id: s.id, name: s.name, textCount: s.textCount })),
     [seriesQuery.data]
   );
 
@@ -200,65 +200,50 @@ function SeriesPageContent() {
     if (isDemo) return;
     // Step 1: Create the series
     let created: { id: string; name: string };
-    try {
-      const response = await fetch('/api/series', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-        },
-        body: JSON.stringify({
-          name: seriesData.name,
-          description: seriesData.description ?? '',
-          languageCode: selectedLanguage,
-        }),
-      });
+    const seriesResponse = await fetch('/api/series', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+      },
+      body: JSON.stringify({
+        name: seriesData.name,
+        description: seriesData.description ?? '',
+        languageCode: selectedLanguage,
+      }),
+    });
 
-      if (!response.ok) {
-        const error = await response.json();
-        showToast(error.error || 'Failed to create series');
-        return;
-      }
-
-      ({ series: created } = await response.json());
-    } catch {
-      showToast('Failed to create series');
-      return;
+    if (!seriesResponse.ok) {
+      const error = await seriesResponse.json();
+      throw new Error(error.error || 'Failed to create series');
     }
 
-    setIsNewSeriesModalOpen(false);
+    ({ series: created } = await seriesResponse.json());
 
-    // Step 2: Import texts if provided
+    // Step 2: Import texts if provided (NLP runs here — modal stays open with loading overlay)
     if (seriesData.texts && seriesData.texts.length > 0) {
-      try {
-        for (const text of seriesData.texts) {
-          const importRes = await fetch('/api/texts/import', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-            },
-            body: JSON.stringify({
-              title: text.title,
-              content: text.content,
-              languageCode: selectedLanguage,
-              seriesId: created.id,
-            }),
-          });
+      for (const text of seriesData.texts) {
+        const importRes = await fetch('/api/texts/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+          },
+          body: JSON.stringify({
+            title: text.title,
+            content: text.content,
+            languageCode: selectedLanguage,
+            seriesId: created.id,
+          }),
+        });
 
-          if (!importRes.ok) {
-            const err = await importRes.json();
-            showToast(err.error || 'Series created but text import failed');
-            queryClient.invalidateQueries({ queryKey: ['series-list'] });
-            router.push(`/series/${created.id}`);
-            return;
-          }
+        if (!importRes.ok) {
+          const err = await importRes.json();
+          throw new Error(err.error || 'Series created but text import failed');
         }
-
-        showToast(`Series "${seriesData.name}" created with text`);
-      } catch {
-        showToast('Series created but text import failed');
       }
+
+      showToast(`Series "${seriesData.name}" created with text`);
     } else {
       showToast(`Series "${seriesData.name}" created`);
     }
