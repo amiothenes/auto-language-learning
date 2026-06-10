@@ -483,11 +483,12 @@ export async function processTextForImport(
           },
         });
 
-        // Include ALL lemmas (incl. UNKNOWN) in denominator — more honest "can I read this?" metric
-        const knownCount = wordStatuses.filter(
-          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN'
+        // knownPercentage = (KNOWN + WELL_KNOWN + FAMILIAR) / all lemmas except IGNORE
+        const gradableStatuses = wordStatuses.filter((w) => w.status !== 'IGNORE');
+        const knownCount = gradableStatuses.filter(
+          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN' || w.status === 'FAMILIAR'
         ).length;
-        const totalCount = wordStatuses.length;
+        const totalCount = gradableStatuses.length;
 
         const knownPercentage =
           totalCount > 0 ? Math.round((knownCount / totalCount) * 100) : 0;
@@ -710,12 +711,13 @@ export async function reprocessTextContent(
           columns: { lemma: true, status: true },
         });
 
-        const knownCount = wordStatuses.filter(
-          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN'
+        const gradableStatuses = wordStatuses.filter((w) => w.status !== 'IGNORE');
+        const knownCount = gradableStatuses.filter(
+          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN' || w.status === 'FAMILIAR'
         ).length;
         const knownPercentage =
-          wordStatuses.length > 0
-            ? Math.round((knownCount / wordStatuses.length) * 100)
+          gradableStatuses.length > 0
+            ? Math.round((knownCount / gradableStatuses.length) * 100)
             : 0;
 
         await tx

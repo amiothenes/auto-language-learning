@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
         and(
           eq(words.languageId, language.id),
           ne(words.status, 'UNKNOWN'),
+          ne(words.status, 'IGNORE'),
           isNotNull(words.statusChangedAt),
         )
       )
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
           and(
             eq(words.languageId, language.id),
             ne(words.status, 'UNKNOWN'),
+            ne(words.status, 'IGNORE'),
             isNotNull(words.statusChangedAt),
           )
         )
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
       if (!dateMap.has(row.date)) dateMap.set(row.date, { known: 0, total: 0 });
       const entry = dateMap.get(row.date)!;
       entry.total += Number(row.cnt);
-      if (row.status === 'KNOWN' || row.status === 'WELL_KNOWN') {
+      if (row.status === 'KNOWN' || row.status === 'WELL_KNOWN' || row.status === 'FAMILIAR') {
         entry.known += Number(row.cnt);
       }
     }

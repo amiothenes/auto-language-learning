@@ -182,14 +182,20 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         (inst) => inst.position >= start && inst.position < end
       );
       if (paraInstances.length === 0) return { id: `p${index + 1}`, progress: 0 };
-      const knownCount = paraInstances.filter(
+      const gradableInstances = paraInstances.filter(
+        (inst) => inst.status !== VocabularyStatus.IGNORE
+      );
+      const knownCount = gradableInstances.filter(
         (inst) =>
           inst.status === VocabularyStatus.KNOWN ||
-          inst.status === VocabularyStatus.WELL_KNOWN
+          inst.status === VocabularyStatus.WELL_KNOWN ||
+          inst.status === VocabularyStatus.FAMILIAR
       ).length;
       return {
         id: `p${index + 1}`,
-        progress: Math.round((knownCount / paraInstances.length) * 100),
+        progress: gradableInstances.length > 0
+          ? Math.round((knownCount / gradableInstances.length) * 100)
+          : 0,
       };
     });
   }, [wordInstances, textData, paragraphs]);

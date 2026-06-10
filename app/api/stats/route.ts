@@ -101,11 +101,12 @@ export async function GET(request: NextRequest) {
     const known     = statusMap['KNOWN']      ?? 0;
     const wellKnown = statusMap['WELL_KNOWN'] ?? 0;
     const ignored   = statusMap['IGNORE']     ?? 0;
-    // UNKNOWN words excluded from total and overallKnownPercentage
+    // "reviewed" total excludes UNKNOWN (used for vocabulary display counts)
     const total = newlySeen + familiar + known + wellKnown + ignored;
-
+    // overallKnownPercentage: IGNORE excluded from both sides, consistent with per-text formula
+    const allLemmas = newlySeen + familiar + known + wellKnown + unknown;
     const overallKnownPercentage =
-      total > 0 ? Math.round(((known + wellKnown) / total) * 100) : 0;
+      allLemmas > 0 ? Math.round(((known + wellKnown + familiar) / allLemmas) * 100) : 0;
 
     // ========================================================================
     // 5. Zipf-weighted reading coverage (accounts for full language vocabulary)

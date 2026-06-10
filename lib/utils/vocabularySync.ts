@@ -1,23 +1,25 @@
 import { db } from '@/lib/db';
 import { words, texts, wordInstances } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 
 /**
  * Recalculates knownPercentage for a single text and persists it to the DB.
- * knownPercentage = unique lemmas with KNOWN or WELL_KNOWN status / total unique lemmas
+ * knownPercentage = (KNOWN + WELL_KNOWN + FAMILIAR) / (all unique lemmas except IGNORE)
  */
 export async function syncTextStatistics(textId: string): Promise<void> {
   const rows = await db
     .selectDistinct({ wordId: wordInstances.wordId, status: words.status })
     .from(wordInstances)
     .innerJoin(words, eq(wordInstances.wordId, words.id))
-    .where(eq(wordInstances.textId, textId));
+    .where(and(eq(wordInstances.textId, textId), ne(words.status, VocabularyStatus.IGNORE)));
 
-  const reviewedRows = rows.filter((r) => r.status !== VocabularyStatus.UNKNOWN);
-  const total = reviewedRows.length;
-  const known = reviewedRows.filter(
-    (r) => r.status === VocabularyStatus.KNOWN || r.status === VocabularyStatus.WELL_KNOWN
+  const total = rows.length;
+  const known = rows.filter(
+    (r) =>
+      r.status === VocabularyStatus.KNOWN ||
+      r.status === VocabularyStatus.WELL_KNOWN ||
+      r.status === VocabularyStatus.FAMILIAR
   ).length;
   const knownPercentage = total > 0 ? (known / total) * 100 : 0;
 
