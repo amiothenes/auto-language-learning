@@ -9,15 +9,16 @@ _models: dict = {}
 MODEL_MAP = {
     "en": "en_core_web_sm",
     "es": "es_core_news_sm",
+    "fr": "fr_core_news_sm",
     "ru": "ru_core_news_sm",
 }
-
-FALLBACK_MODEL = "xx_ent_wiki_sm"
 
 
 def load_model(lang: str):
     if lang not in _models:
-        model_name = MODEL_MAP.get(lang, FALLBACK_MODEL)
+        model_name = MODEL_MAP.get(lang)
+        if model_name is None:
+            raise HTTPException(status_code=400, detail=f"Unsupported language: '{lang}'")
         try:
             _models[lang] = spacy.load(model_name)
         except OSError:
@@ -31,7 +32,8 @@ def load_model(lang: str):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_model("ru")
+    for lang in MODEL_MAP:
+        load_model(lang)
     yield
 
 
@@ -39,7 +41,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://verbista.vercel.app"],
+    allow_origins=["https://verbista.vercel.app", "http://localhost:3000"],
     allow_methods=["POST", "GET"],
     allow_headers=["Content-Type"],
 )
