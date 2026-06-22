@@ -38,9 +38,13 @@ export async function processWithSpacy(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const apiKey = process.env.NLP_API_KEY;
+      if (apiKey) headers['X-API-Key'] = apiKey;
+
       const res = await fetch(`${url}/process`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body,
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
