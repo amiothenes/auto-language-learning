@@ -80,8 +80,11 @@ export async function GET(request: NextRequest) {
       case 'status':
         orderByClause = asc(words.status);
         break;
-      default:
+      case 'name-asc':
         orderByClause = asc(words.lemma);
+        break;
+      default:
+        orderByClause = desc(words.createdAt);
     }
 
     // ========================================================================

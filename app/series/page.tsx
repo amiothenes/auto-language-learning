@@ -42,7 +42,7 @@ function SeriesPageContent() {
   const queryClient = useQueryClient();
   const seriesQuery = useSeriesList();
   const textsQuery = useTexts();
-  const isLoading = seriesQuery.isLoading;
+  const isLoading = seriesQuery.isPending;
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SeriesSortOption>('updated-recent');
   const [readinessFilter, setReadinessFilter] = useState<'all' | 'ready' | 'ok' | 'hard'>('all');
@@ -306,7 +306,7 @@ function SeriesPageContent() {
             <Muted>All texts in your library</Muted>
           </header>
 
-          {textsQuery.isLoading ? (
+          {textsQuery.isPending ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-paper border border-border rounded-card p-5 space-y-3">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages, texts } from '@/lib/db/schema';
-import { eq, and, desc, isNotNull } from 'drizzle-orm';
+import { eq, and, desc, isNotNull, sql } from 'drizzle-orm';
 import { formatRelativeTime } from '@/lib/utils';
 import type { TextListItem, TextsListResponse, ApiErrorResponse } from '@/lib/types/api';
 
@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
     const seriesId = searchParams.get('seriesId');
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? Math.max(1, parseInt(limitParam, 10)) : undefined;
-    const sortBy = searchParams.get('sortBy') ?? 'createdAt';
     const onlyRead = searchParams.get('onlyRead') === 'true';
 
     // ========================================================================
@@ -62,7 +61,10 @@ export async function GET(request: NextRequest) {
       ? and(eq(texts.languageId, language.id), eq(texts.seriesId, seriesId))
       : eq(texts.languageId, language.id);
     const whereClause = onlyRead ? and(baseWhere, isNotNull(texts.lastViewedAt)) : baseWhere;
-    const orderBy = sortBy === 'lastViewedAt' ? [desc(texts.lastViewedAt)] : [desc(texts.createdAt)];
+    const orderBy = [
+      sql`${texts.lastViewedAt} DESC NULLS LAST`,
+      desc(texts.createdAt),
+    ];
 
     const rows = await db.query.texts.findMany({
       where: whereClause,

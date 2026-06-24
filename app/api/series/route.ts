@@ -134,11 +134,18 @@ export async function GET(request: NextRequest) {
       orderBy: [desc(series.createdAt)],
     });
 
+    const sortedRows = [...rows].sort((a, b) => {
+      const aLast = Math.max(0, ...a.texts.map((t) => t.lastViewedAt?.getTime() ?? 0));
+      const bLast = Math.max(0, ...b.texts.map((t) => t.lastViewedAt?.getTime() ?? 0));
+      if (aLast !== bLast) return bLast - aLast;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
     // ========================================================================
     // 4. Map with computed aggregates
     // ========================================================================
 
-    const result: Series[] = rows.map((s) => {
+    const result: Series[] = sortedRows.map((s) => {
       const textCount = s.texts.length;
       const progress =
         textCount > 0

@@ -23,10 +23,10 @@ import {
   type Language,
 } from '@/lib/db/schema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
-import { romanizeBatch, requiresRomanization } from '@/lib/nlp';
+import { romanizeBatch } from '@/lib/nlp/romanizer';
 import { processWithSpacy } from '@/lib/nlp/spacyClient';
-import { matchesLanguageScript } from '@/lib/nlp/utils/script-detector';
-import type { LemmatizeResult } from '@/lib/nlp';
+import { matchesLanguageScript, requiresRomanization } from '@/lib/nlp/utils/script-detector';
+import type { LemmatizeResult } from '@/lib/nlp/types';
 
 // ============================================================================
 // Type Definitions
