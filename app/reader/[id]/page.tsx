@@ -8,7 +8,7 @@ import { TextInfo } from '@/components/reader/TextInfo';
 import { ReaderContent } from '@/components/reader/ReaderContent';
 import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
 import { WordTooltip } from '@/components/reader/WordTooltip';
-import { TextInfoSkeleton, ReaderContentSkeleton, WordDetailsPanelSkeleton } from '@/components/reader/ReaderSkeleton';
+import { TextInfoSkeleton, ReaderContentSkeleton } from '@/components/reader/ReaderSkeleton';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData, TextData } from '@/lib/types';
 import type { WordInstanceItem } from '@/lib/types/api';
@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useText } from '@/lib/hooks/useText';
 import { useWordInstances } from '@/lib/hooks/useWordInstances';
 import { useUpdateWordStatus } from '@/lib/hooks/useUpdateWordStatus';
+import { useUpdateWordTranslation } from '@/lib/hooks/useUpdateWordTranslation';
 import { useAdjacentTexts } from '@/lib/hooks/useAdjacentTexts';
 import { ParagraphScrubber } from '@/components/reader/ParagraphScrubber';
 import { ReaderSettingsPanel } from '@/components/reader/ReaderSettingsPanel';
@@ -74,6 +75,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const textQuery = useText(id);
   const instancesQuery = useWordInstances(id);
   const updateWordStatus = useUpdateWordStatus(id);
+  const updateWordTranslation = useUpdateWordTranslation(id);
   const adjacentQuery = useAdjacentTexts(id, adjacentSort);
 
   useEffect(() => {
@@ -151,6 +153,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const touchStartY = useRef(0);
   const touchEndX = useRef(0);
   const touchEndY = useRef(0);
+
+  // Tracks which lemmas the user has already graded this session so we don't
+  // show the "Know this word?" test mode on re-taps of the same word.
+  const testedLemmasThisSession = useRef(new Set<string>());
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const textData = textQuery.data;
@@ -361,7 +367,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const handleCloseWordDetails = () => {
     setIsRightPanelOpen(false);
-    setTimeout(() => setSelectedWord(null), 300);
+    setSelectedWord(null);
   };
 
   const handleTooltipClose = useCallback(() => {
@@ -554,8 +560,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 seriesId={textData.seriesId}
                 seriesName={textData.seriesName}
                 tags={textData.tags}
-                onRightPanelToggle={() => setIsRightPanelOpen(!isRightPanelOpen)}
-                isRightPanelOpen={isRightPanelOpen}
               />
             )
           )}
@@ -631,20 +635,16 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
       </div>
 
-      {/* ── WORD DETAILS PANEL — desktop right overlay (xl+) ── */}
-      {isRightPanelOpen && isDesktop && (
-        isLoading ? (
-          <div className="fixed top-0 right-0 h-screen w-full max-w-100 bg-paper border-l border-border overflow-y-auto z-50">
-            <WordDetailsPanelSkeleton />
-          </div>
-        ) : (
-          <WordDetailsPanel
-            wordData={selectedWord}
-            onClose={handleCloseWordDetails}
-            onStatusChange={handleStatusChange}
-            isDesktop={isDesktop}
-          />
-        )
+      {/* ── WORD DETAILS PANEL — centered modal (desktop only) ── */}
+      {isRightPanelOpen && isDesktop && selectedWord && (
+        <WordDetailsPanel
+          wordData={selectedWord}
+          onClose={handleCloseWordDetails}
+          onStatusChange={handleStatusChange}
+          onTranslationChange={(wordId, translation) => {
+            updateWordTranslation.mutate({ wordId, translation });
+          }}
+        />
       )}
 
       {/* ── MOBILE WORD SHEET — bottom sheet (<1280px) ── */}
@@ -653,8 +653,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           wordData={selectedWord}
           onClose={handleCloseWordDetails}
           onStatusChange={handleStatusChange}
+          isFirstTest={!testedLemmasThisSession.current.has(selectedWord.lemma)}
+          onGraded={(lemma) => { testedLemmasThisSession.current.add(lemma); }}
           onTranslationChange={(wordId, newTranslation) => {
-            console.log('translation update', wordId, newTranslation);
+            updateWordTranslation.mutate({ wordId, translation: newTranslation });
           }}
         />
       )}
@@ -712,11 +714,22 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onClose={handleTooltipClose}
           onStatusChange={(wordId, newStatus) => {
             handleStatusChange(wordId, newStatus);
-            handleTooltipClose();
+            // WordTooltip manages close timing: stays open after first-test grade
+          }}
+          isFirstTest={!testedLemmasThisSession.current.has(tooltipWord.lemma)}
+          onGraded={(lemma) => { testedLemmasThisSession.current.add(lemma); }}
+          onTranslationChange={(wordId, translation) => {
+            updateWordTranslation.mutate({ wordId, translation });
           }}
           isExiting={isTooltipExiting}
           onMoreClick={() => {
-            handleTooltipClose();
+            // Close tooltip without clearing selectedWord — the modal takes over
+            setIsTooltipExiting(true);
+            setTimeout(() => {
+              setTooltipWord(null);
+              setTooltipAnchorRect(null);
+              setIsTooltipExiting(false);
+            }, 120);
             setIsRightPanelOpen(true);
           }}
         />

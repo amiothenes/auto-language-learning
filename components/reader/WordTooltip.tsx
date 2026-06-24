@@ -9,24 +9,15 @@ import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 import { X, ExternalLink } from 'lucide-react';
 
-// ============================================================================
-// WordTooltip — updated to use AdaptiveStepper (Option A) instead of
-// GradingSection. Adds a MoreMenu triggered by the ··· button inside the
-// stepper, and a "More →" link to open the full WordDetailsPanel.
-//
-// Changes from previous version:
-//   • GradingSection import removed, replaced with AdaptiveStepper + MoreMenu
-//   • onMoreClick prop added — called when user wants full WordDetailsPanel
-//   • moreMenuAnchorEl state handles MoreMenu positioning
-// ============================================================================
-
 interface WordTooltipProps {
   wordData: WordData;
   anchorRect: DOMRect;
   onClose: () => void;
   onStatusChange: (wordId: string, newStatus: VocabularyStatus) => void;
-  /** Called when user taps "More →" — should open WordDetailsPanel */
   onMoreClick?: () => void;
+  onTranslationChange?: (wordId: string, translation: string) => void;
+  isFirstTest?: boolean;
+  onGraded?: (lemma: string) => void;
   isExiting?: boolean;
 }
 
@@ -66,22 +57,42 @@ export function WordTooltip({
   onClose,
   onStatusChange,
   onMoreClick,
+  onTranslationChange,
+  isFirstTest = false,
+  onGraded,
   isExiting = false,
 }: WordTooltipProps) {
   const [showFullMorph, setShowFullMorph] = useState(false);
-  // anchorEl of the ··· button — non-null means MoreMenu is open
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
+  // SRS state: hidden until graded on first encounter
+  const [translationRevealed, setTranslationRevealed] = useState(false);
+  const [editingTranslation, setEditingTranslation] = useState(false);
+  const [translationValue, setTranslationValue] = useState(wordData.translation ?? '');
 
-  // Guard: don't close the Tooltip via Escape when MoreMenu is consuming that key
+  const showTranslation = !isFirstTest || translationRevealed;
+  const showTestPrompt = isFirstTest && !translationRevealed;
+
   const handleTooltipClose = useCallback(() => {
     if (moreMenuAnchorEl) return;
     onClose();
   }, [moreMenuAnchorEl, onClose]);
 
+  // Manages close timing: stays open on first-test grade so user can read the
+  // revealed translation; closes immediately in instant mode (re-tap).
+  const handleGrade = (newStatus: VocabularyStatus) => {
+    onStatusChange(wordData.wordId, newStatus);
+    onGraded?.(wordData.lemma);
+    if (isFirstTest && newStatus !== VocabularyStatus.IGNORE) {
+      setTranslationRevealed(true);
+    } else {
+      onClose();
+    }
+  };
+
   const { label } = STATUS_CONFIG[wordData.status];
   const cleanSurface = wordData.surface.replace(/[.,!?;:«»„"]/g, '');
 
-  const wiktionaryUrl     = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
+  const wiktionaryUrl      = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
   const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(cleanSurface)}`;
 
   const morphSummary   = wordData.inflectionData ? buildMorphSummary(wordData.inflectionData) : '';
@@ -124,10 +135,38 @@ export function WordTooltip({
             <p className="font-serif text-content-lg text-ink font-bold leading-tight">
               {wordData.lemma}
             </p>
-            {wordData.translation && wordData.translation !== '—' && (
-              <p className="font-sans text-ui-sm text-muted italic mt-0.5">
-                &ldquo;{wordData.translation}&rdquo;
-              </p>
+
+            {showTranslation && (
+              <div className="mt-1">
+                {!editingTranslation ? (
+                  <button className="w-full text-left group" onClick={() => setEditingTranslation(true)}>
+                    <p className="font-sans text-sm text-ink/70 font-medium leading-snug">
+                      {translationValue || (
+                        <span className="italic text-muted/50 font-normal">Add translation…</span>
+                      )}
+                    </p>
+                    <span className="font-sans text-[10px] text-muted/50 group-hover:text-primary transition-colors">
+                      click to edit
+                    </span>
+                  </button>
+                ) : (
+                  <input
+                    type="text"
+                    autoFocus
+                    value={translationValue}
+                    onChange={(e) => setTranslationValue(e.target.value)}
+                    onBlur={() => {
+                      onTranslationChange?.(wordData.wordId, translationValue);
+                      setEditingTranslation(false);
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                    className="w-full h-8 px-2 font-sans text-sm text-ink
+                               bg-desk border border-primary rounded-sm
+                               focus:outline-none focus:ring-2 focus:ring-primary
+                               transition-all"
+                  />
+                )}
+              </div>
             )}
           </div>
 
@@ -169,16 +208,23 @@ export function WordTooltip({
             )}
           </div>
 
-          {/* ④ Adaptive Stepper (replaces old GradingSection) */}
+          {/* ④ "Know this word?" prompt — test mode only */}
+          {showTestPrompt && (
+            <p className="font-sans text-[11px] text-muted text-center mb-2 tracking-wide">
+              Know this word?
+            </p>
+          )}
+
+          {/* ⑤ Adaptive Stepper */}
           <div className="mb-3">
             <AdaptiveStepper
               status={wordData.status}
-              onStatusChange={(newStatus) => onStatusChange(wordData.wordId, newStatus)}
+              onStatusChange={handleGrade}
               onMoreClick={(el) => setMoreMenuAnchorEl(el)}
             />
           </div>
 
-          {/* ⑤ Lookup links + "More →" details link */}
+          {/* ⑥ Lookup links + "More →" details link */}
           <div className="pt-3 border-t border-border flex items-center justify-between">
             <div className="flex items-center gap-3">
               <a
@@ -202,7 +248,7 @@ export function WordTooltip({
 
             {onMoreClick && (
               <button
-                onClick={() => { onMoreClick(); onClose(); }}
+                onClick={onMoreClick}
                 className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors"
               >
                 More →
@@ -220,6 +266,7 @@ export function WordTooltip({
           onStatusChange={(newStatus) => {
             onStatusChange(wordData.wordId, newStatus);
             setMoreMenuAnchorEl(null);
+            onClose(); // MoreMenu is a deliberate precision action — always close after
           }}
           onClose={() => setMoreMenuAnchorEl(null)}
         />

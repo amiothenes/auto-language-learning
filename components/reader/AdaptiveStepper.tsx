@@ -8,19 +8,20 @@ import { cn } from '@/lib/utils';
 // AdaptiveStepper — Grading control (Option A · definitive spec)
 //
 // Three surface states driven by current word status:
-//   UNKNOWN    → two direct jumps: "Just learned · NS" (primary) + "I know it well · WKn"
+//   UNKNOWN    → two direct jumps: "No, new to me · NS" (primary) + "Yes, I know it · WKn"
 //   Mid-tier   → ±1 nudge: "↓ Didn't" + 4-dot status ladder + "Knew it ↑" (primary)
 //   IGNORE     → single "Restore to Unknown" primary
 //   WELL_KNOWN → ±1 nudge (only down available)
 //
 // The ··· button always triggers onMoreClick → opens MoreMenu for full control.
-// Replaces GradingSection inside WordTooltip.
+// Pass hideMore={true} (mobile) to suppress the ··· button entirely.
 // ============================================================================
 
 interface AdaptiveStepperProps {
   status: VocabularyStatus;
   onStatusChange: (newStatus: VocabularyStatus) => void;
-  onMoreClick: (anchorEl: HTMLButtonElement) => void;
+  onMoreClick?: (anchorEl: HTMLButtonElement) => void;
+  hideMore?: boolean;
 }
 
 const PROGRESSION = [
@@ -66,7 +67,7 @@ const BTN_PRIMARY = cn(BTN_BASE, 'bg-primary text-white border border-primary sh
 const BTN_SECONDARY = cn(BTN_BASE, 'border border-border-strong bg-paper hover:bg-desk text-ink');
 const BTN_MORE = cn(BTN_BASE, 'w-[34px] px-0 border border-border-strong bg-paper hover:bg-desk text-muted hover:text-ink');
 
-export function AdaptiveStepper({ status, onStatusChange, onMoreClick }: AdaptiveStepperProps) {
+export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore = false }: AdaptiveStepperProps) {
   const level      = STATUS_LEVEL[status];
   const dotColor   = STATUS_DOT_COLOR[status];
   const label      = STATUS_LABEL[status];
@@ -79,7 +80,7 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick }: Adaptiv
     <button
       aria-label="More grading options"
       className={BTN_MORE}
-      onClick={(e) => onMoreClick(e.currentTarget)}
+      onClick={(e) => onMoreClick?.(e.currentTarget)}
     >
       <span className="text-sm tracking-widest leading-none">···</span>
     </button>
@@ -95,7 +96,7 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick }: Adaptiv
         >
           Restore to Unknown
         </button>
-        <MoreBtn />
+        {!hideMore && <MoreBtn />}
       </div>
     );
   }
@@ -109,18 +110,16 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick }: Adaptiv
           onClick={() => onStatusChange(VocabularyStatus.NEWLY_SEEN)}
         >
           <span className="w-2 h-2 rounded-full bg-[hsl(2,72%,58%)] shrink-0" />
-          Just learned
-          <span className="text-white/60 font-normal">· Newly Seen</span>
+          No, new to me
         </button>
         <button
           className={cn(BTN_SECONDARY, 'flex-1')}
           onClick={() => onStatusChange(VocabularyStatus.WELL_KNOWN)}
         >
           <span className="w-2 h-2 rounded-full bg-[hsl(145,45%,40%)] shrink-0" />
-          I know it well
-          <span className="text-muted font-normal">· Well-Known</span>
+          Yes, I know it
         </button>
-        <MoreBtn />
+        {!hideMore && <MoreBtn />}
       </div>
     );
   }
@@ -131,7 +130,7 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick }: Adaptiv
       {stepDown && (
         <button className={cn(BTN_SECONDARY, 'flex-1')} onClick={() => onStatusChange(stepDown)}>
           <ChevronDown size={13} strokeWidth={2.5} />
-          Didn't
+          Didn&apos;t
         </button>
       )}
 
@@ -155,7 +154,7 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick }: Adaptiv
         </button>
       )}
 
-      <MoreBtn />
+      {!hideMore && <MoreBtn />}
     </div>
   );
 }

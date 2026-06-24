@@ -1,17 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { Heading, Muted, Content } from '@/components/ui/Typography';
+import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { X, ExternalLink } from 'lucide-react';
+import { VocabularyStatus } from '@/lib/types';
+import type { WordData } from '@/lib/types';
+import { Muted } from '@/components/ui/Typography';
 import { Input } from '@/components/ui/Input';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { StatusDots } from './StatusDots';
-import { GradingSection } from './GradingSection';
-import { X } from 'lucide-react';
-import { WordData, VocabularyStatus } from './Word';
+import { AdaptiveStepper } from './AdaptiveStepper';
+import { MoreMenu } from './MoreMenu';
+import { cn } from '@/lib/utils';
+
+const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
+const MORPH_LABELS: Record<string, string> = {
+  tense: 'Tense', mood: 'Mood', person: 'Person', number: 'Number',
+  gender: 'Gender', case: 'Case', voice: 'Voice', aspect: 'Aspect',
+};
+
+function MorphChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-desk border border-border rounded-sm px-2.5 py-1.5 flex items-center gap-1">
+      <span className="font-sans text-[10px] text-muted">{label}:</span>
+      <span className="font-sans text-[10.5px] text-ink font-semibold">{value}</span>
+    </div>
+  );
+}
 
 // ============================================================================
-// WordDetailsPanel Component
-// Right sidebar panel showing detailed word information with slide-in animation
+// WordDetailsPanel — centered modal overlay with full word info.
+// Opened via "More →" in WordTooltip. Closes via X, Esc, or backdrop click.
 // ============================================================================
 
 interface WordDetailsPanelProps {
@@ -19,185 +38,199 @@ interface WordDetailsPanelProps {
   onClose: () => void;
   onStatusChange?: (wordId: string, newStatus: VocabularyStatus) => void;
   onTranslationChange?: (wordId: string, newTranslation: string) => void;
-  isDesktop?: boolean;
 }
 
-export function WordDetailsPanel({ 
-  wordData, 
-  onClose, 
+export function WordDetailsPanel({
+  wordData,
+  onClose,
   onStatusChange,
   onTranslationChange,
-  isDesktop = false
 }: WordDetailsPanelProps) {
-  
-  const [translation, setTranslation] = useState(wordData?.translation || '');
-  
-  // Update translation state when wordData changes
-  if (wordData && translation !== wordData.translation) {
-    setTranslation(wordData.translation);
-  }
+  const [mounted, setMounted] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [translation, setTranslation] = useState(wordData?.translation ?? '');
+  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-  /**
-   * Handle status button click
-   */
-  const handleStatusChange = (newStatus: VocabularyStatus) => {
-    if (!wordData) return;
-    onStatusChange?.(wordData.wordId, newStatus);
-  };
+  // SSR guard for portal
+  useEffect(() => { setMounted(true); }, []);
 
-  /**
-   * Handle translation blur (auto-save)
-   */
-  const handleTranslationBlur = () => {
-    if (!wordData) return;
-    console.log(`Translation saved: ${wordData.surface} -> ${translation}`);
-    onTranslationChange?.(wordData.id, translation);
-  };
+  // Sync translation state when a different word is opened
+  useEffect(() => {
+    setTranslation(wordData?.translation ?? '');
+    setIsExiting(false);
+  }, [wordData?.wordId]);
 
+  // Body scroll lock — save and restore previous value for safe stacking
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
 
-  // Large Desktop: render on right side with slide animation and reserved space
-  // Mobile/Tablet/Small Desktop: render on right side overlapping content
-  const panelClasses = isDesktop
-    ? "fixed top-0 right-0 h-screen w-full max-w-[25rem] bg-paper border-l border-border overflow-y-auto animate-slide-in-right z-auto"
-    : "fixed top-0 right-0 h-screen w-full max-w-[25rem] sm:w-[400px] bg-paper border-l border-border overflow-y-auto animate-slide-in-right z-50 xl:hidden";
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(onClose, 200);
+  }, [onClose]);
 
-  // If no word is selected, show placeholder
-  if (!wordData) {
-    return (
-      <aside className={`${panelClasses} flex flex-col`}>
-        <div className="p-5 shrink-0">
-          {/* Panel Header */}
-          <div className="flex items-center justify-between">
-            <Heading size="lg" as="h2">
-              Word Details
-            </Heading>
-            <button
-              onClick={onClose}
-              className="text-muted hover:text-ink transition-colors"
-              aria-label="Close word details panel"
-            >
-              <X size={20} strokeWidth={1.5} />
-            </button>
-          </div>
-        </div>
+  // Esc key dismiss
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [handleClose]);
 
-        {/* Quill idle state */}
-        <div className="flex flex-col items-center justify-center flex-1 gap-4 px-4 py-8">
-          <img
-            src="/illustrations/quill.svg"
-            width={88}
-            height={88}
-            alt=""
-            className="opacity-70"
-          />
-          <p className="font-sans text-ui-sm text-muted text-center max-w-45 leading-relaxed">
-            Select a word in the text to view its details
-          </p>
-        </div>
-      </aside>
-    );
-  }
+  if (!mounted || !wordData) return null;
 
-  return (
-    <aside className={panelClasses}>
-      <div className="p-5 space-y-4 h-full flex flex-col">
-        {/* Panel Header */}
-        <div className="flex items-center justify-between sticky top-0 bg-paper pb-3 border-b border-border z-10 shrink-0">
-          <Heading size="lg" as="h2">
-            Word Details
-          </Heading>
-          <button
-            onClick={onClose}
-            className="text-muted hover:text-ink transition-colors"
-            aria-label="Close word details panel"
-          >
-            <X size={20} strokeWidth={1.5} />
-          </button>
-        </div>
+  const cleanSurface = wordData.surface.replace(/[.,!?;:«»„"]/g, '');
+  const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
+  const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(cleanSurface)}`;
 
-        {/* Scrollable content area */}
-        <div className="flex-1 space-y-4 overflow-y-auto">
-          {/* Surface Form & Lemma - Combined */}
-          <div className="pt-1">
-            <Muted className="text-ui-xs mb-1.5">Surface Form</Muted>
-            <Content size="lg" weight="semibold" className="mb-3">
-              {wordData.surface.replace(/[.,!?;:«»„"]/g, '')}
-            </Content>
-            <Muted className="text-ui-xs mb-1.5">Lemma</Muted>
-            <Content size="lg">
-              {wordData.lemma}
-            </Content>
-          </div>
+  const morphData = wordData.inflectionData as Record<string, unknown> | null | undefined;
+  const hasMorphology = morphData != null && MORPH_DISPLAY_KEYS.some((k) => Boolean(morphData[k]));
 
-          {/* POS & Inflection - Single Line */}
-          <div className="pt-2 border-t border-border">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Muted className="text-ui-xs mb-1.5">Part of Speech</Muted>
-                <p className="font-sans text-ui-sm text-ink">
-                  {wordData.pos}
-                </p>
-              </div>
-              <div>
-                <Muted className="text-ui-xs mb-1.5">Form</Muted>
-                <p className="font-sans text-ui-sm text-ink">
-                  {wordData.inflection}
-                </p>
-              </div>
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        className={cn(
+          'fixed inset-0 z-50 bg-ink/40',
+          isExiting ? 'animate-fade-out' : 'animate-modal-backdrop-enter',
+        )}
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Word details for ${wordData.lemma}`}
+          className={cn(
+            'w-full max-w-md max-h-[85dvh] bg-paper rounded-card shadow-modal flex flex-col pointer-events-auto overflow-hidden',
+            isExiting ? 'animate-fade-out' : 'animate-modal-enter',
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ── Header ── */}
+          <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-border shrink-0">
+            <div className="flex-1 min-w-0 pr-3">
+              <p className="font-serif text-[22px] font-bold text-ink leading-tight truncate">
+                {wordData.lemma}
+              </p>
+              <p className="font-sans text-sm text-muted mt-0.5">
+                {cleanSurface !== wordData.lemma ? `${cleanSurface} · ` : ''}{wordData.pos}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 pt-1">
+              <StatusDots status={wordData.status} />
+              <button
+                onClick={handleClose}
+                className="text-muted hover:text-ink transition-colors p-0.5 cursor-pointer"
+                aria-label="Close word details"
+              >
+                <X size={20} strokeWidth={1.5} />
+              </button>
             </div>
           </div>
 
-          {/* Translation (Editable) */}
-          <div className="pt-2 border-t border-border">
-            <Muted className="text-ui-xs mb-1.5">Translation</Muted>
-            <Input
-              type="text"
-              value={translation}
-              onChange={(e) => setTranslation(e.target.value)}
-              onBlur={handleTranslationBlur}
-              placeholder="Add translation..."
-            />
-          </div>
+          {/* ── Scrollable body ── */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 overscroll-contain">
 
-          {/* Frequencies */}
-          <div className="pt-2 border-t border-border space-y-3">
-            {/* Dictionary Frequency */}
+            {/* Translation */}
             <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <Muted className="text-ui-xs">Dictionary Frequency</Muted>
-                <span className="font-sans text-ui-sm text-ink font-medium">
-                  {wordData.dictionaryFrequency}/100
-                </span>
-              </div>
-              <ProgressBar 
-                value={wordData.dictionaryFrequency} 
-                max={100}
+              <Muted className="text-ui-xs mb-1.5">Translation</Muted>
+              <Input
+                type="text"
+                value={translation}
+                onChange={(e) => setTranslation(e.target.value)}
+                onBlur={() => { onTranslationChange?.(wordData.wordId, translation); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                placeholder="Add translation…"
               />
             </div>
 
-            {/* User Frequency */}
-            <div className="flex justify-between items-center">
-              <Muted className="text-ui-xs">Your Encounters</Muted>
-              <span className="font-sans text-ui-sm text-ink font-medium">
-                {wordData.userFrequency} times
-              </span>
+            {/* Learning Status */}
+            <div className="border-t border-border pt-4">
+              <Muted className="text-ui-xs mb-2.5">Learning Status</Muted>
+              <AdaptiveStepper
+                status={wordData.status}
+                onStatusChange={(newStatus) => { onStatusChange?.(wordData.wordId, newStatus); }}
+                onMoreClick={(el) => setMoreMenuAnchorEl(el)}
+              />
             </div>
+
+            {/* Morphology chips */}
+            {hasMorphology && morphData && (
+              <div className="border-t border-border pt-4">
+                <Muted className="text-ui-xs mb-2.5">Morphology</Muted>
+                <div className="flex flex-wrap gap-1.5">
+                  {wordData.pos && <MorphChip label="POS" value={wordData.pos} />}
+                  {cleanSurface !== wordData.lemma && <MorphChip label="Form" value={cleanSurface} />}
+                  {MORPH_DISPLAY_KEYS.filter((k) => morphData[k]).map((k) => (
+                    <MorphChip key={k} label={MORPH_LABELS[k]} value={String(morphData[k])} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Frequencies */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <Muted className="text-ui-xs">Dictionary Frequency</Muted>
+                  <span className="font-sans text-ui-sm text-ink font-medium">
+                    {wordData.dictionaryFrequency}/100
+                  </span>
+                </div>
+                <ProgressBar value={wordData.dictionaryFrequency} max={100} />
+              </div>
+              <div className="flex justify-between items-center">
+                <Muted className="text-ui-xs">Your Encounters</Muted>
+                <span className="font-sans text-ui-sm text-ink font-medium">
+                  {wordData.userFrequency} times
+                </span>
+              </div>
+            </div>
+
           </div>
 
-          {/* Status Selector */}
-          <div className="pt-2 border-t border-border pb-4">
-            <div className="flex items-center justify-between mb-2.5">
-              <Muted className="text-ui-xs">Learning Status</Muted>
-              <StatusDots status={wordData.status} />
-            </div>
-            <GradingSection
-              status={wordData.status}
-              onStatusChange={handleStatusChange}
-              size="default"
-            />
+          {/* ── Footer: lookup links ── */}
+          <div className="shrink-0 px-5 py-3 border-t border-border flex items-center justify-center gap-6">
+            <a
+              href={wiktionaryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1"
+            >
+              Wiktionary <ExternalLink size={10} />
+            </a>
+            <span className="text-border">|</span>
+            <a
+              href={googleTranslateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1"
+            >
+              Google Translate <ExternalLink size={10} />
+            </a>
           </div>
         </div>
       </div>
-    </aside>
+
+      {/* MoreMenu — inside same portal fragment so z-index stacks above modal */}
+      {moreMenuAnchorEl && (
+        <MoreMenu
+          anchorEl={moreMenuAnchorEl}
+          currentStatus={wordData.status}
+          onStatusChange={(newStatus) => {
+            onStatusChange?.(wordData.wordId, newStatus);
+            setMoreMenuAnchorEl(null);
+          }}
+          onClose={() => setMoreMenuAnchorEl(null)}
+        />
+      )}
+    </>,
+    document.body
   );
 }

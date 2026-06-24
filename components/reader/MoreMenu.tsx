@@ -62,16 +62,21 @@ export function MoreMenu({
   const above  = rect.top > MENU_H_EST + GAP;
   const top    = above ? rect.top - MENU_H_EST - GAP : rect.bottom + GAP;
 
-  // ── Close on outside click ────────────────────────────────────────────────
+  // ── Close on outside click / tap ─────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => {
-      const handler = (e: MouseEvent) => {
-        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const handler = (e: MouseEvent | TouchEvent) => {
+        const target = (e as TouchEvent).touches?.[0]?.target ?? (e as MouseEvent).target;
+        if (menuRef.current && !menuRef.current.contains(target as Node)) {
           onClose();
         }
       };
       document.addEventListener('mousedown', handler);
-      return () => document.removeEventListener('mousedown', handler);
+      document.addEventListener('touchstart', handler, { passive: true });
+      return () => {
+        document.removeEventListener('mousedown', handler);
+        document.removeEventListener('touchstart', handler);
+      };
     }, 10);
     return () => clearTimeout(t);
   }, [onClose]);

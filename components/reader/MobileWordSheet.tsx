@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, Ban } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
-import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 
-const PEEK_HEIGHT = 240;
+const PEEK_HEIGHT = 264;
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 
@@ -80,13 +79,26 @@ interface MobileWordSheetProps {
   onClose: () => void;
   onStatusChange: (wordId: string, newStatus: VocabularyStatus) => void;
   onTranslationChange?: (wordId: string, newTranslation: string) => void;
+  /** True on first encounter with this lemma this session — hides translation until user grades */
+  isFirstTest: boolean;
+  /** Called after the user grades a word, so the caller can mark the lemma as tested */
+  onGraded?: (lemma: string) => void;
 }
 
-export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslationChange }: MobileWordSheetProps) {
+export function MobileWordSheet({
+  wordData,
+  onClose,
+  onStatusChange,
+  onTranslationChange,
+  isFirstTest,
+  onGraded,
+}: MobileWordSheetProps) {
   const [expanded, setExpanded] = useState(false);
   const [translation, setTranslation] = useState('');
-  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [dismissing, setDismissing] = useState(false);
+  // True after the user grades in test mode — triggers translation fade-in before auto-dismiss
+  const [translationRevealed, setTranslationRevealed] = useState(false);
+  const [editingTranslation, setEditingTranslation] = useState(false);
 
   const touchStartY = useRef(0);
   const touchCurrentY = useRef(0);
@@ -98,10 +110,8 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
     setExpanded(false);
     setDismissing(false);
     setTranslation(wordData?.translation ?? '');
-    if (dismissTimerRef.current) {
-      clearTimeout(dismissTimerRef.current);
-      dismissTimerRef.current = null;
-    }
+    setTranslationRevealed(false);
+    setEditingTranslation(false);
   }, [wordData?.wordId]);
 
   if (!wordData) return null;
@@ -109,6 +119,20 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
   const dismiss = () => {
     setDismissing(true);
     dismissTimerRef.current = setTimeout(onClose, 280);
+  };
+
+  // Handles grading from both AdaptiveStepper and the precise chip row.
+  // Test mode: reveals translation and stays open — user taps backdrop to dismiss.
+  // Instant mode (re-tap) or IGNORE: dismisses immediately.
+  const handleGrade = (newStatus: VocabularyStatus) => {
+    onStatusChange(wordData.wordId, newStatus);
+    onGraded?.(wordData.lemma);
+
+    if (isFirstTest && newStatus !== VocabularyStatus.IGNORE) {
+      setTranslationRevealed(true);
+    } else {
+      dismiss();
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -132,6 +156,10 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
   const cleanSurface = wordData.surface.replace(/[.,!?;:«»„"]/g, '');
   const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
   const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(cleanSurface)}`;
+
+  const showTranslation = !isFirstTest || translationRevealed;
+  const isIgnored = wordData.status === VocabularyStatus.IGNORE;
+  const showTestPrompt = isFirstTest && !isIgnored;
 
   const sheetStyle: React.CSSProperties = {
     height: expanded ? 'calc(90dvh)' : `${PEEK_HEIGHT}px`,
@@ -170,10 +198,16 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-8 overscroll-contain">
+        <div className="flex-1 overflow-y-auto px-5 pb-6 overscroll-contain">
 
-          {/* ① Status header: dots · label · ✕ */}
-          <div className="flex items-center justify-between mb-4">
+          {/* ① Status header: dots · label · ✕ — also a swipe/tap target to expand */}
+          <div
+            className="flex items-center justify-between mb-3 touch-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onClick={() => !expanded && setExpanded(true)}
+          >
             <div className="flex items-center gap-2.5">
               <StatusDots status={wordData.status} />
               <span className="font-sans text-ui-xs text-muted uppercase tracking-[0.07em] font-semibold">
@@ -181,7 +215,7 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
               </span>
             </div>
             <button
-              onClick={dismiss}
+              onClick={(e) => { e.stopPropagation(); dismiss(); }}
               className="p-1 text-muted hover:text-ink transition-colors"
               aria-label="Close word details"
             >
@@ -189,57 +223,119 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
             </button>
           </div>
 
-          {/* ② Lemma + translation */}
-          <div className="mb-4">
-            <p className="font-serif text-[26px] text-ink font-bold leading-tight">
-              {wordData.lemma}
-            </p>
-            {wordData.translation && wordData.translation !== '—' && (
-              <p className="font-sans text-ui-sm text-muted italic mt-1.5">
-                &ldquo;{wordData.translation}&rdquo;
-              </p>
-            )}
-          </div>
+          {/* ② Lemma */}
+          <p className="font-serif text-[26px] text-ink font-bold leading-tight mb-1">
+            {wordData.lemma}
+          </p>
 
-          {/* ③ AdaptiveStepper */}
-          <div className="mb-3">
+          {/* ③ Translation — hidden in test mode; shown prominently in instant mode */}
+          {showTranslation && (
+            <div className="mb-3">
+              {!editingTranslation ? (
+                <button
+                  disabled={isFirstTest}
+                  onClick={() => { if (!isFirstTest) setEditingTranslation(true); }}
+                  className={cn('w-full text-left group', isFirstTest && 'cursor-default')}
+                >
+                  <p className="font-sans text-base text-ink/75 font-medium leading-snug">
+                    {translation || (
+                      <span className="font-normal italic text-muted/50">Add translation…</span>
+                    )}
+                  </p>
+                  {!isFirstTest && (
+                    <span className="font-sans text-[10px] text-muted/60 group-hover:text-primary transition-colors">
+                      tap to edit
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <input
+                  type="text"
+                  autoFocus
+                  value={translation}
+                  onChange={(e) => setTranslation(e.target.value)}
+                  onBlur={() => {
+                    onTranslationChange?.(wordData.wordId, translation);
+                    setEditingTranslation(false);
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                  className="w-full h-10 px-3 font-sans text-base text-ink
+                             bg-desk border border-primary rounded-sm
+                             focus:outline-none focus:ring-2 focus:ring-primary
+                             transition-all"
+                />
+              )}
+            </div>
+          )}
+
+          {/* ④ "Know this word?" prompt — test mode only */}
+          {showTestPrompt && (
+            <p className="font-sans text-[11px] text-muted text-center mb-2 tracking-wide">
+              Know this word?
+            </p>
+          )}
+
+          {/* ⑤ Grading buttons */}
+          <div className="mb-1.5">
             <AdaptiveStepper
               status={wordData.status}
-              onStatusChange={(s) => onStatusChange(wordData.wordId, s)}
-              onMoreClick={(el) => setMoreMenuAnchorEl(el)}
+              onStatusChange={handleGrade}
+              hideMore
             />
           </div>
 
-          {/* ④ 6-chip status row */}
-          <div className="flex gap-1.5 mb-5">
-            {STATUS_CHIPS.map(({ status, label, color }) => {
-              const isActive = wordData.status === status;
-              return (
-                <button
-                  key={status}
-                  onClick={() => onStatusChange(wordData.wordId, status)}
-                  style={{
-                    borderColor: isActive ? color : 'var(--border)',
-                    background: isActive ? `${color}22` : 'transparent',
-                    color: isActive ? 'var(--ink)' : 'var(--muted)',
-                  }}
-                  className={cn(
-                    'flex-1 h-7 rounded-sm font-sans text-[10px] font-medium transition-all active:scale-95',
-                    isActive ? 'border-2 font-semibold' : 'border',
-                  )}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only */}
+          {showTestPrompt && (
+            <div className="flex justify-center mt-3 mb-2">
+              <button
+                onClick={() => handleGrade(VocabularyStatus.IGNORE)}
+                className="flex items-center gap-1.5 font-sans text-ui-xs text-muted hover:text-ink transition-colors py-1 px-2"
+              >
+                <Ban size={11} strokeWidth={1.5} />
+                Ignore word
+              </button>
+            </div>
+          )}
 
           {/* ── Expanded content ── */}
           {expanded && (
             <>
-              <div className="h-px bg-border mb-5" />
+              <div className="h-px bg-border mt-3 mb-5" />
 
-              {/* ⑤ Morphology */}
+              {/* ⑦ Precise status chips (colored dots + label) */}
+              <section className="mb-5">
+                <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
+                  Set exact status
+                </p>
+                <div className="flex gap-1.5">
+                  {STATUS_CHIPS.map(({ status, label, color }) => {
+                    const isActive = wordData.status === status;
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => { onStatusChange(wordData.wordId, status); dismiss(); }}
+                        style={{
+                          borderColor: isActive ? color : 'var(--border)',
+                          background: isActive ? `${color}22` : 'transparent',
+                          color: isActive ? 'var(--ink)' : 'var(--muted)',
+                        }}
+                        className={cn(
+                          'flex-1 h-8 rounded-sm font-sans text-[10px] font-medium transition-all active:scale-95 flex items-center justify-center gap-1',
+                          isActive ? 'border-2 font-semibold' : 'border',
+                        )}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: color }}
+                        />
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* ⑧ Morphology */}
               <section className="mb-5">
                 <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
                   Morphology
@@ -254,25 +350,7 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
                 </div>
               </section>
 
-              {/* ⑥ Translation — editable */}
-              <section className="mb-5">
-                <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
-                  Translation
-                </p>
-                <input
-                  type="text"
-                  value={translation}
-                  onChange={(e) => setTranslation(e.target.value)}
-                  onBlur={() => onTranslationChange?.(wordData.wordId, translation)}
-                  placeholder="Add translation…"
-                  className="w-full h-11 px-3 font-sans text-ui-sm text-ink
-                             bg-desk border border-border rounded-sm
-                             focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-                             transition-all placeholder:text-muted/60"
-                />
-              </section>
-
-              {/* ⑦ Frequency & history */}
+              {/* ⑨ Frequency & history */}
               <section className="mb-5">
                 <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
                   Frequency & History
@@ -298,7 +376,7 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
                 </div>
               </section>
 
-              {/* ⑧ Lookup links */}
+              {/* ⑩ Lookup links */}
               <section>
                 <div className="grid grid-cols-2 gap-2">
                   <LookupLink href={wiktionaryUrl} label="Wiktionary" />
@@ -309,16 +387,6 @@ export function MobileWordSheet({ wordData, onClose, onStatusChange, onTranslati
           )}
         </div>
       </div>
-
-      {/* MoreMenu — floats above the sheet (z-[60] > sheet z-50) */}
-      {moreMenuAnchorEl && (
-        <MoreMenu
-          anchorEl={moreMenuAnchorEl}
-          currentStatus={wordData.status}
-          onStatusChange={(s) => { onStatusChange(wordData.wordId, s); setMoreMenuAnchorEl(null); }}
-          onClose={() => setMoreMenuAnchorEl(null)}
-        />
-      )}
     </>
   );
 }

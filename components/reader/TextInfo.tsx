@@ -32,8 +32,6 @@ interface TextInfoProps {
   seriesId: string;
   seriesName: string;
   tags: string[];
-  onRightPanelToggle?: () => void;
-  isRightPanelOpen?: boolean;
 }
 
 export function TextInfo({
@@ -46,8 +44,6 @@ export function TextInfo({
   seriesId,
   seriesName,
   tags,
-  onRightPanelToggle,
-  isRightPanelOpen = false,
 }: TextInfoProps) {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -273,20 +269,6 @@ export function TextInfo({
           Edit Text
         </Button>
       </div>
-
-      {/* Toggle Word Details Panel (Desktop only) */}
-      {onRightPanelToggle && (
-        <div className="pt-4 pb-2 border-t border-border hidden md:block">
-          <Button
-            variant={isRightPanelOpen ? "primary" : "secondary"}
-            size="md"
-            onClick={onRightPanelToggle}
-            className="w-full"
-          >
-            {isRightPanelOpen ? 'Hide' : 'Show'} Word Details
-          </Button>
-        </div>
-      )}
 
       <EditTextModal
         isOpen={isEditOpen}

@@ -86,7 +86,7 @@ export function Word({
             : "hover:underline decoration-1 underline-offset-2"
         ),
         // Ignore styling - dashed underline only
-        isIgnored && "underline decoration-dashed decoration-1 underline-offset-2 opacity-70",
+        isIgnored && "underline decoration-dashed decoration-1 underline-offset-2",
         // Well-known words - dimmed if showWellKnownWords is false
         isWellKnown && !showWellKnownWords && "opacity-50",
         // Selected state
