@@ -135,7 +135,7 @@ export function ReaderContent({
 
   if (isLoading) {
     return (
-      <article className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
+      <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="space-y-3">
             <div className="animate-shimmer h-5 rounded w-full" />
@@ -153,7 +153,7 @@ export function ReaderContent({
 
   if (loadError) {
     return (
-      <article className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
+      <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
         <div className="p-4 bg-paper rounded-lg border border-border">
           <p className="font-sans text-ui-sm text-ink font-medium mb-2">Failed to load word data</p>
           <p className="font-sans text-ui-xs text-muted">{loadError}</p>
@@ -166,7 +166,7 @@ export function ReaderContent({
   }
 
   return (
-    <article className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
+    <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
       {parsedContent.map((paragraph) => (
         <p
           key={paragraph.id}

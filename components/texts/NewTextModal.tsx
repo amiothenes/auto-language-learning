@@ -13,6 +13,13 @@ import type { ImportTextResponse } from '@/lib/types/api';
 // Modal for adding a single text to a series
 // ============================================================================
 
+const IMPORT_STAGES = [
+  'Tokenizing text…',
+  'Lemmatizing words…',
+  'Romanizing script…',
+  'Saving to database…',
+] as const;
+
 interface NewTextModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,6 +49,7 @@ export function NewTextModal({
   });
   const [tagsInput, setTagsInput] = useState('');
   const [userEditedTitle, setUserEditedTitle] = useState(false);
+  const [stageIndex, setStageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -112,6 +120,17 @@ export function NewTextModal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, mutation.isPending]);
+
+  // Cycle through NLP stage labels while mutation is pending
+  useEffect(() => {
+    if (!mutation.isPending) {
+      setStageIndex(0);
+      return;
+    }
+    if (stageIndex >= IMPORT_STAGES.length - 1) return;
+    const timer = setTimeout(() => setStageIndex((prev) => prev + 1), 3000);
+    return () => clearTimeout(timer);
+  }, [mutation.isPending, stageIndex]);
 
   // Focus trap
   useEffect(() => {
@@ -228,19 +247,26 @@ export function NewTextModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="new-text-dialog-title"
-          className="w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Loading Overlay (shown during NLP processing) */}
+          {/* NLP Processing Overlay */}
           {mutation.isPending && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-card overflow-hidden">
               <div className="absolute inset-0 animate-shimmer" />
-              <div className="relative text-center">
+              <div className="relative text-center px-6">
+                <img
+                  src="/illustrations/quill.svg"
+                  width={72}
+                  height={72}
+                  alt=""
+                  className="mx-auto mb-4 opacity-90"
+                />
                 <p className="font-sans text-ui-sm font-medium text-ink">
-                  {estimatedParts > 1 ? `Processing ${estimatedParts} parts...` : 'Processing text...'}
+                  {estimatedParts > 1 ? `Processing ${estimatedParts} parts…` : 'Processing text…'}
                 </p>
                 <p className="font-sans text-ui-xs text-muted mt-1">
-                  {estimatedParts > 1 ? 'Running NLP on each part — may take a moment' : 'This may take a few seconds'}
+                  {IMPORT_STAGES[stageIndex]}
                 </p>
               </div>
             </div>

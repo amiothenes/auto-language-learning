@@ -324,10 +324,14 @@ export function MobileWordSheet({
                           isActive ? 'border-2 font-semibold' : 'border',
                         )}
                       >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: color }}
-                        />
+                        {status === VocabularyStatus.WELL_KNOWN ? (
+                          <span className="w-2 h-2 rounded-full shrink-0 border border-ink/70" />
+                        ) : (
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: color }}
+                          />
+                        )}
                         {label}
                       </button>
                     );

@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-import { Download, AlertTriangle, Upload } from 'lucide-react';
+import { AlertTriangle, Upload } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -100,42 +100,6 @@ export default function DataSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Export Data Section */}
-      <SettingSection
-        title="Export Your Data"
-        description="Download your vocabulary and progress data"
-      >
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="secondary"
-            size="md"
-            disabled
-            leftIcon={<Download size={16} strokeWidth={2} />}
-          >
-            Export CSV
-          </Button>
-          <Button
-            variant="secondary"
-            size="md"
-            disabled
-            leftIcon={<Download size={16} strokeWidth={2} />}
-          >
-            Export JSON
-          </Button>
-          <Button
-            variant="secondary"
-            size="md"
-            disabled
-            leftIcon={<Download size={16} strokeWidth={2} />}
-          >
-            Export ZIP
-          </Button>
-        </div>
-        <p className="font-sans text-ui-xs text-muted mt-2">
-          Coming soon — CSV vocab list · JSON full export · ZIP complete backup
-        </p>
-      </SettingSection>
-
       {/* LWT Import Section */}
       <SettingSection
         title="Import LWT Vocabulary"

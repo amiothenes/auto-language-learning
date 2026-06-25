@@ -12,6 +12,13 @@ import type { ImportedTextData } from '@/lib/types/forms';
 // Bulk import multiple texts into a series from files
 // ============================================================================
 
+const IMPORT_STAGES = [
+  'Tokenizing text…',
+  'Lemmatizing words…',
+  'Romanizing script…',
+  'Saving to database…',
+] as const;
+
 type TitleMode = 'filename' | 'series-increment' | 'custom';
 type EnrichedTextData = ImportedTextData & { sourceTitle: string };
 
@@ -48,6 +55,7 @@ export function ImportTextsModal({
   const [titleMode, setTitleMode] = useState<TitleMode>('filename');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stageIndex, setStageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -103,6 +111,17 @@ export function ImportTextsModal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isProcessing, isSubmitting, onClose]);
+
+  // Cycle through NLP stage labels while submitting
+  useEffect(() => {
+    if (!isSubmitting) {
+      setStageIndex(0);
+      return;
+    }
+    if (stageIndex >= IMPORT_STAGES.length - 1) return;
+    const timer = setTimeout(() => setStageIndex((prev) => prev + 1), 3000);
+    return () => clearTimeout(timer);
+  }, [isSubmitting, stageIndex]);
 
   // Focus trap
   useEffect(() => {
@@ -367,9 +386,33 @@ export function ImportTextsModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="import-texts-dialog-title"
-          className="w-full max-w-3xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-3xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* NLP Processing Overlay */}
+          {isSubmitting && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-card overflow-hidden">
+              <div className="absolute inset-0 animate-shimmer" />
+              <div className="relative text-center px-6">
+                <img
+                  src="/illustrations/quill.svg"
+                  width={72}
+                  height={72}
+                  alt=""
+                  className="mx-auto mb-4 opacity-90"
+                />
+                <p className="font-sans text-ui-sm font-medium text-ink">
+                  {enrichedTexts.length > 1
+                    ? `Importing ${enrichedTexts.length} texts…`
+                    : 'Importing text…'}
+                </p>
+                <p className="font-sans text-ui-xs text-muted mt-1">
+                  {IMPORT_STAGES[stageIndex]}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Title */}
           <h2
             id="import-texts-dialog-title"

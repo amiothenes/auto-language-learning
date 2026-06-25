@@ -5,7 +5,6 @@
 
 import { Github, Book, Bug, ExternalLink, FileText } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
-import { SettingRow } from '@/components/settings/SettingRow';
 import { Button } from '@/components/ui/Button';
 
 export default function AboutSettingsPage() {
@@ -113,46 +112,30 @@ export default function AboutSettingsPage() {
 
       {/* License */}
       <SettingSection title="License" description="Software license information">
-        <div className="space-y-4">
-          <SettingRow label="License Type" description="Open source license">
-            <span className="font-sans text-ui-base font-semibold text-ink">
-              MIT License
+        <div className="space-y-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="font-sans text-ui-xs font-semibold px-2 py-0.5 bg-desk border border-border rounded-full text-ink">
+              MIT
             </span>
-          </SettingRow>
-
-          <SettingRow label="Copyright" description="Software copyright">
-            <span className="font-sans text-ui-base font-semibold text-ink">
+            <span className="font-sans text-ui-sm text-muted">
               © 2026 Auto Language Learning
             </span>
-          </SettingRow>
-
-          <div className="pt-2">
-            <a
-              href="https://opensource.org/licenses/MIT"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<FileText size={16} strokeWidth={2} />}
-                rightIcon={<ExternalLink size={12} strokeWidth={2} />}
-                className="hover:bg-desk"
-              >
-                View Full License
-              </Button>
-            </a>
           </div>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-border">
-          <p className="font-sans text-ui-sm text-muted leading-relaxed">
-            Permission is hereby granted, free of charge, to any person obtaining a copy
-            of this software and associated documentation files, to deal in the Software
-            without restriction, including without limitation the rights to use, copy,
-            modify, merge, publish, distribute, sublicense, and/or sell copies of the
-            Software.
-          </p>
+          <a
+            href="https://opensource.org/licenses/MIT"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<FileText size={14} strokeWidth={2} />}
+              rightIcon={<ExternalLink size={11} strokeWidth={2} />}
+              className="hover:bg-desk -ml-2"
+            >
+              View Full License
+            </Button>
+          </a>
         </div>
       </SettingSection>
 

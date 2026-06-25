@@ -118,7 +118,11 @@ export function MoreMenu({
                 isActive && 'bg-primary-05',
               )}
             >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+              {status === VocabularyStatus.WELL_KNOWN ? (
+                <span className="w-2 h-2 rounded-full shrink-0 border border-ink/70" />
+              ) : (
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+              )}
               <span className={cn('font-sans text-ui-sm text-ink', isActive && 'font-semibold')}>
                 {label}
               </span>

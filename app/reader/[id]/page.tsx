@@ -100,6 +100,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [isParaMapOpen, setIsParaMapOpen] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   const { settings, toggleImmersionMode } = useReaderSettings();
 
@@ -218,6 +219,12 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   }, [paragraphProgress]);
 
   // ── Effects ───────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!localStorage.getItem('verbista_reader_hint_dismissed')) {
+      setShowHint(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (textData?.seriesId) {
@@ -505,10 +512,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           </div>
         </header>
 
-        {/* 4px vocabulary density strip — tappable to open ¶ map */}
+        {/* 10px vocabulary density strip — tappable to open ¶ map */}
         {!settings.isImmersionMode && (
           <div
-            className="h-1 cursor-pointer"
+            className="h-2.5 cursor-pointer"
             style={{ background: densityStripGradient }}
             onClick={() => setIsParaMapOpen(true)}
             role="button"
@@ -570,6 +577,55 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           className="order-1 xl:order-2 flex flex-col items-center px-4 md:px-6 lg:px-8 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
           style={mainRightPadding !== undefined ? { paddingRight: mainRightPadding } : undefined}
         >
+          {/* ── STATUS HINT BANNER — first visit only ── */}
+          {showHint && (
+            <div className="relative w-full max-w-prose mb-4 bg-primary/5 border border-primary/20 rounded-card px-4 py-2.5 pr-9">
+              <button
+                onClick={() => {
+                  localStorage.setItem('verbista_reader_hint_dismissed', 'true');
+                  setShowHint(false);
+                }}
+                className="absolute top-2 right-2 p-1 text-muted hover:text-ink transition-colors cursor-pointer rounded"
+                aria-label="Dismiss hint"
+              >
+                <X size={14} strokeWidth={2} />
+              </button>
+              <div className="flex items-start gap-x-3 gap-y-2 flex-wrap font-sans text-ui-xs text-ink">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'hsl(205,80%,58%)' }} />
+                  Unknown
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'hsl(2,75%,60%)' }} />
+                  Newly Seen
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'hsl(32,90%,56%)' }} />
+                  Familiar
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: 'hsl(78,60%,48%)' }} />
+                  Known
+                </span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0 border border-ink/70" />
+                    Well Known
+                  </span>
+                  <span className="text-[9px] text-muted pl-3.5 leading-tight">I know this perfectly</span>
+                </span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0 opacity-35" style={{ background: 'hsl(0,0%,50%)' }} />
+                    <span className="border-b border-dashed" style={{ borderColor: 'hsl(0,0%,55%)' }}>Ignored</span>
+                  </span>
+                  <span className="text-[9px] text-muted pl-3.5 leading-tight">proper noun or skip</span>
+                </span>
+                <span className="text-muted self-center">tap any word to grade it</span>
+              </div>
+            </div>
+          )}
+
           {adjacentQuery.isPending && (textData?.wordCount ?? 0) >= 226 ? (
             <nav className="invisible flex justify-between w-full max-w-prose mb-6 pb-4 border-b border-border" aria-hidden="true">
               <span className="font-sans text-ui-sm">.</span>

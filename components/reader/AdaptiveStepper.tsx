@@ -116,7 +116,7 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore 
           className={cn(BTN_SECONDARY, 'flex-1')}
           onClick={() => onStatusChange(VocabularyStatus.WELL_KNOWN)}
         >
-          <span className="w-2 h-2 rounded-full bg-[hsl(145,45%,40%)] shrink-0" />
+          <span className="w-2 h-2 rounded-full shrink-0 border border-ink/70" />
           Yes, I know it
         </button>
         {!hideMore && <MoreBtn />}
@@ -140,7 +140,12 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore 
           {[1, 2, 3, 4].map((i) => (
             <span
               key={i}
-              className={cn('block w-2 h-2 rounded-full transition-colors', i <= level ? dotColor : 'bg-border')}
+              className={cn(
+                'block w-2 h-2 rounded-full transition-colors',
+                status === VocabularyStatus.WELL_KNOWN
+                  ? 'border border-ink/70'
+                  : i <= level ? dotColor : 'bg-border',
+              )}
             />
           ))}
         </div>

@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { MoreVertical, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// ============================================================================
-// SeriesCard Component
-// Displays a series card with name, description, progress, and actions menu
-// ============================================================================
+function readinessLabel(progress: number): { label: string; className: string } {
+  if (progress >= 80) return { label: 'Ready to read', className: 'text-green-600 bg-green-50 dark:bg-green-950/30' };
+  if (progress >= 65) return { label: 'Challenging',   className: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' };
+  return                      { label: 'Too hard',      className: 'text-red-600 bg-red-50 dark:bg-red-950/30' };
+}
 
 interface SeriesCardProps {
   id: string;
@@ -39,6 +41,7 @@ export function SeriesCard({
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const readiness = progress > 0 ? readinessLabel(progress) : null;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -150,6 +153,11 @@ export function SeriesCard({
         <Muted size="xs" className="text-primary font-medium">
           {progress}% complete
         </Muted>
+        {readiness && (
+          <span className={cn('font-sans text-[10px] font-medium px-1.5 py-0.5 rounded-full', readiness.className)}>
+            {readiness.label}
+          </span>
+        )}
       </div>
 
       {/* Progress Bar */}

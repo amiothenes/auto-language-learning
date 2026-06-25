@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CheckCircle2, Circle, AlertTriangle, XCircle, ChevronDown } from 'lucide-react';
+import { CheckCircle2, Circle, AlertTriangle, XCircle, ChevronDown, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ReadingMapText {
@@ -39,7 +39,9 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [tierFilter, setTierFilter] = useState<TierFilter>('all');
   const [isTierOpen, setIsTierOpen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const tierRef = useRef<HTMLDivElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -52,6 +54,18 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isTierOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
+        setShowInfo(false);
+      }
+    }
+    if (showInfo) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showInfo]);
 
   if (texts.length === 0) return null;
 
@@ -70,6 +84,30 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
       {/* Header row */}
       <div className="flex items-center gap-2 mb-2">
         <h3 className="font-semibold text-ui-sm font-sans flex-1">Reading Map</h3>
+
+        {/* ? info popover */}
+        <div ref={infoRef} className="relative">
+          <button
+            onClick={() => setShowInfo((v) => !v)}
+            className="text-muted hover:text-ink transition-colors p-0.5 rounded"
+            aria-label="Reading map guide"
+          >
+            <HelpCircle size={13} strokeWidth={1.5} />
+          </button>
+          {showInfo && (
+            <div className="absolute top-6 right-0 z-20 w-56 rounded-card border border-border bg-paper p-3 shadow-modal">
+              <p className="font-sans text-ui-xs text-muted leading-snug">
+                Color = known% — green is reading-ready, red needs more vocabulary
+              </p>
+              <button
+                onClick={() => setShowInfo(false)}
+                className="mt-2 font-sans text-ui-xs text-primary hover:underline"
+              >
+                Got it
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Tier filter */}
         <div ref={tierRef} className="relative">
