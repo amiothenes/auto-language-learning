@@ -39,9 +39,8 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import { Plus, Upload, ChevronDown, ArrowUpDown } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
-import type { ImportTextResponse } from '@/lib/types/api';
+import type { ImportTextRequest, ImportTextResponse } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
-import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
@@ -108,7 +107,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
   const router = useRouter();
   const queryClient = useQueryClient();
-  const importMutation = useImportText();
   const { selectedLanguage, currentLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState('');
@@ -293,25 +291,51 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const handleImportTexts = async (texts: ImportedTextData[]) => {
     if (isDemo) return;
     const results: ImportTextResponse[] = [];
+    const failed: string[] = [];
+
     for (const text of texts) {
-      const result = await importMutation.mutateAsync({
-        title: text.title,
-        content: text.content,
-        tags: text.tags ?? [],
-        languageCode: selectedLanguage,
-        seriesId: id,
-        sourceURI: text.sourceURI,
-      });
-      results.push(result);
+      try {
+        const payload: ImportTextRequest = {
+          title: text.title,
+          content: text.content,
+          tags: text.tags ?? [],
+          languageCode: selectedLanguage,
+          seriesId: id,
+          sourceURI: text.sourceURI,
+        };
+        const response = await fetch('/api/texts/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const err = (await response.json()) as { error?: string };
+          throw new Error(err.error ?? 'Import failed');
+        }
+        const result = (await response.json()) as ImportTextResponse;
+        results.push(result);
+      } catch (err) {
+        failed.push(text.title || 'Untitled');
+      }
     }
-    await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
-    queryClient.invalidateQueries({ queryKey: ['series-list'] });
-    const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
-    const msg = totalParts > texts.length
-      ? `${texts.length} file${texts.length > 1 ? 's' : ''} imported as ${totalParts} parts`
-      : `${texts.length} text${texts.length > 1 ? 's' : ''} imported successfully`;
-    showToast(msg);
-    setIsImportModalOpen(false);
+
+    if (results.length > 0) {
+      await queryClient.refetchQueries({ queryKey: ['series', id], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
+      const totalParts = results.reduce((s, r) => s + r.texts.length, 0);
+      const successMsg =
+        totalParts > results.length
+          ? `${results.length} file${results.length > 1 ? 's' : ''} imported as ${totalParts} parts`
+          : `${results.length} text${results.length > 1 ? 's' : ''} imported successfully`;
+      const msg = failed.length > 0 ? `${successMsg} · ${failed.length} failed` : successMsg;
+      showToast(msg);
+      setIsImportModalOpen(false);
+    } else {
+      throw new Error(`Failed to import ${failed.length} text${failed.length > 1 ? 's' : ''}`);
+    }
   };
 
   const handleConfirmDeleteSeries = async () => {

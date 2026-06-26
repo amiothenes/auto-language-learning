@@ -25,7 +25,7 @@ export async function POST(
       );
     }
 
-    const body = await request.json() as { content?: string };
+    const body = await request.json() as { content?: string; firstChangedParagraphIndex?: number };
 
     if (!body.content || body.content.trim().length < 10) {
       return NextResponse.json<ApiErrorResponse>(
@@ -34,9 +34,14 @@ export async function POST(
       );
     }
 
-    console.log(`[Reprocess] Starting reprocess for text: ${id}`);
+    const firstChangedParagraphIndex =
+      typeof body.firstChangedParagraphIndex === 'number' && body.firstChangedParagraphIndex > 0
+        ? body.firstChangedParagraphIndex
+        : undefined;
 
-    const result = await reprocessTextContent(id, body.content.trim());
+    console.log(`[Reprocess] Starting reprocess for text: ${id}${firstChangedParagraphIndex !== undefined ? ` (partial from para ${firstChangedParagraphIndex})` : ''}`);
+
+    const result = await reprocessTextContent(id, body.content.trim(), undefined, firstChangedParagraphIndex);
 
     console.log(
       `[Reprocess] Complete: ${result.wordCount} words, ${result.knownPercentage}% known, ${result.processingTime}ms`

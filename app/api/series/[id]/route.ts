@@ -31,20 +31,12 @@ export async function GET(
     console.log(`[Series Detail] Fetching series: ${id}`);
 
     // ========================================================================
-    // Query series with texts (including their tags)
+    // Query series, then texts separately to avoid Drizzle nested-with
+    // dropping rows in complex multi-level joins
     // ========================================================================
 
     const s = await db.query.series.findFirst({
       where: eq(series.id, id),
-      with: {
-        texts: {
-          with: {
-            tags: {
-              with: { tag: true },
-            },
-          },
-        },
-      },
     });
 
     if (!s) {
@@ -54,26 +46,35 @@ export async function GET(
       );
     }
 
-    console.log(`[Series Detail] Found: "${s.name}" with ${s.texts.length} texts`);
+    const seriesTexts = await db.query.texts.findMany({
+      where: eq(texts.seriesId, id),
+      with: {
+        tags: {
+          with: { tag: true },
+        },
+      },
+    });
+
+    console.log(`[Series Detail] Found: "${s.name}" with ${seriesTexts.length} texts`);
 
     // ========================================================================
     // Compute aggregate statistics
     // ========================================================================
 
-    const textCount = s.texts.length;
-    const totalWords = s.texts.reduce((sum, t) => sum + t.wordCount, 0);
+    const textCount = seriesTexts.length;
+    const totalWords = seriesTexts.reduce((sum, t) => sum + t.wordCount, 0);
     const overallProgress =
       textCount > 0
-        ? Math.round(s.texts.reduce((sum, t) => sum + t.knownPercentage, 0) / textCount)
+        ? Math.round(seriesTexts.reduce((sum, t) => sum + t.knownPercentage, 0) / textCount)
         : 0;
 
-    const latestText = s.texts.reduce<(typeof s.texts)[0] | null>((latest, t) => {
+    const latestText = seriesTexts.reduce<(typeof seriesTexts)[0] | null>((latest, t) => {
       if (!latest) return t;
       return t.updatedAt > latest.updatedAt ? t : latest;
     }, null);
 
     // Last-read text — most recently viewed text in this series
-    const lastReadText = s.texts
+    const lastReadText = seriesTexts
       .filter((t) => t.lastViewedAt !== null)
       .sort((a, b) => (b.lastViewedAt?.getTime() ?? 0) - (a.lastViewedAt?.getTime() ?? 0))[0] ?? null;
 
@@ -85,7 +86,7 @@ export async function GET(
     // Map texts to Text[] shape
     // ========================================================================
 
-    const texts: Text[] = s.texts.map((t) => ({
+    const mappedTexts: Text[] = seriesTexts.map((t) => ({
       id: t.id,
       title: t.title,
       wordCount: t.wordCount,
@@ -103,7 +104,7 @@ export async function GET(
       totalWords,
       overallProgress,
       lastUpdated: formatRelativeTime(latestText?.updatedAt ?? s.updatedAt),
-      texts,
+      texts: mappedTexts,
       lastReadTextId: lastReadText?.id ?? null,
       lastReadParagraphIndex: lastReadText?.lastParagraphIndex ?? null,
       lastReadTotalParagraphs,

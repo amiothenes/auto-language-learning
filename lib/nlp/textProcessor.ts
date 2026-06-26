@@ -22,7 +22,7 @@ import {
   type NewWordInstance,
   type Language,
 } from '@/lib/db/schema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql, gte } from 'drizzle-orm';
 import { romanizeBatch } from '@/lib/nlp/romanizer';
 import { processWithSpacy } from '@/lib/nlp/spacyClient';
 import { matchesLanguageScript, requiresRomanization } from '@/lib/nlp/utils/script-detector';
@@ -292,9 +292,14 @@ export async function processTextForImport(
       );
     }
 
+    // Strip [bracket annotations] so the stored content exactly matches what
+    // spaCy processes. Without this, token.idx positions (from cleaned text)
+    // are misaligned with the stored text, causing broken reader highlights.
+    const processedContent = content.replace(/\[[^\]]*\]/g, '');
+
     // Steps 2-5: NLP via spaCy (tokenize, lemmatize, romanize, extract sentences)
     const { wordTokens, lemmaResults, romanizations, sentenceData, uniqueCleanForms } =
-      await runNLPPhase(content, language, progressCallback);
+      await runNLPPhase(processedContent, language, progressCallback);
 
     // ========================================================================
     // PHASE 2: DATABASE OPERATIONS (Inside Transaction)
@@ -406,7 +411,7 @@ export async function processTextForImport(
           .insert(texts)
           .values({
             title,
-            content,
+            content: processedContent,
             languageId,
             seriesId,
             order: order ?? 1,
@@ -571,7 +576,8 @@ export interface ReprocessResult {
 export async function reprocessTextContent(
   textId: string,
   newContent: string,
-  progressCallback?: ProgressCallback
+  progressCallback?: ProgressCallback,
+  firstChangedParagraphIndex?: number
 ): Promise<ReprocessResult> {
   const startTime = Date.now();
 
@@ -598,15 +604,41 @@ export async function reprocessTextContent(
       throw new TextProcessingError(`Language not found: ${text.languageId}`, 'tokenizing');
     }
 
+    // Strip bracket annotations so stored content == what spaCy processes (position alignment)
+    const processedContent = newContent.replace(/\[[^\]]*\]/g, '');
+
+    // Compute the character offset of the first changed paragraph in processedContent.
+    // Unchanged leading paragraphs have identical absolute positions — safe to skip.
+    const paras = processedContent.split('\n\n');
+    const firstChangedIdx = firstChangedParagraphIndex ?? 0;
+    let firstChangedStart = 0;
+    for (let i = 0; i < firstChangedIdx && i < paras.length; i++) {
+      firstChangedStart += paras[i].length + 2; // +2 for '\n\n' separator
+    }
+
+    const nlpInput = firstChangedStart > 0
+      ? processedContent.slice(firstChangedStart)
+      : processedContent;
+
     const { wordTokens, lemmaResults, romanizations, sentenceData, uniqueCleanForms } =
-      await runNLPPhase(newContent, language, progressCallback);
+      await runNLPPhase(nlpInput, language, progressCallback);
+
+    // Shift spaCy positions to be absolute within processedContent
+    for (const t of wordTokens) t.position += firstChangedStart;
 
     try {
       const result = await db.transaction(async (tx) => {
         reportProgress(progressCallback, 'querying_db', 65, 'Clearing old word data');
 
-        // Delete old instances first (sentenceId FK is SET NULL, not cascade)
-        await tx.delete(wordInstances).where(eq(wordInstances.textId, textId));
+        // Delete word instances only for the changed region; unchanged leading paragraphs
+        // have correct absolute positions and are preserved as-is.
+        const instanceDeleteFilter = firstChangedStart > 0
+          ? and(eq(wordInstances.textId, textId), gte(wordInstances.position, firstChangedStart))
+          : eq(wordInstances.textId, textId);
+        await tx.delete(wordInstances).where(instanceDeleteFilter);
+
+        // Always delete sentences — we only have spaCy sentence data for the changed
+        // portion. The sentenceId FK on word_instances is SET NULL, not cascade.
         await tx.delete(sentences).where(eq(sentences.textId, textId));
 
         reportProgress(progressCallback, 'querying_db', 68, 'Checking existing vocabulary');
@@ -656,7 +688,7 @@ export async function reprocessTextContent(
 
         await tx
           .update(texts)
-          .set({ content: newContent, wordCount, uniqueWordCount, updatedAt: new Date() })
+          .set({ content: processedContent, wordCount, uniqueWordCount, updatedAt: new Date() })
           .where(eq(texts.id, textId));
 
         reportProgress(progressCallback, 'inserting', 80, 'Updated text content');

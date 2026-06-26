@@ -6,11 +6,18 @@ import { Button } from '@/components/ui/Button';
 
 const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 
+const REPROCESS_STAGES = [
+  'Sending to NLP service…',
+  'Lemmatizing words…',
+  'Romanizing script…',
+  'Updating database…',
+] as const;
+
 // ============================================================================
 // EditTextModal Component
-// Modal for editing text metadata (title + tags). Content is not editable
-// because changing it would require re-running the NLP pipeline.
-// Fetches current values from GET /api/texts/[id] on open, then PATCHes.
+// Modal for editing text title, tags, and content. Content edits trigger a
+// full NLP reprocess via POST /api/texts/[id]/reprocess. Unchanged leading
+// paragraphs are skipped (paragraph-level caching).
 // ============================================================================
 
 interface EditTextModalProps {
@@ -28,6 +35,9 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
   const [isFetching, setIsFetching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
+  const [stageIndex, setStageIndex] = useState(0);
+  const [changedParaCount, setChangedParaCount] = useState<number | null>(null);
+  const [totalParaCount, setTotalParaCount] = useState<number | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -35,6 +45,9 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Derived — placed early so effects and callbacks can reference it
+  const hasContentChanged = contentInput !== originalContent;
 
   useEffect(() => {
     setMounted(true);
@@ -132,6 +145,14 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  // Cycle shimmer stage labels while NLP reprocess is running
+  useEffect(() => {
+    if (!isSaving || !hasContentChanged) { setStageIndex(0); return; }
+    if (stageIndex >= REPROCESS_STAGES.length - 1) return;
+    const t = setTimeout(() => setStageIndex((p) => p + 1), 3000);
+    return () => clearTimeout(t);
+  }, [isSaving, hasContentChanged, stageIndex]);
+
   const handleBackdropClick = useCallback(() => {
     if (!isSaving) onClose();
   }, [isSaving, onClose]);
@@ -142,8 +163,6 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
       .map((t) => t.trim())
       .filter((t) => t.length > 0 && t.length <= 30)
       .slice(0, 10);
-
-  const hasContentChanged = contentInput !== originalContent;
 
   const isFormValid = useMemo(
     () =>
@@ -163,19 +182,34 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
 
       try {
         if (hasContentChanged) {
-          setSaveStatus('Re-processing text with NLP…');
-          const reprocessRes = await fetch(`/api/texts/${textId}/reprocess`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-            },
-            body: JSON.stringify({ content: contentInput.trim() }),
-          });
+          // Paragraph-level diff: find the first paragraph that changed so the
+          // server can skip sending unchanged leading paragraphs to spaCy.
+          const oldParas = originalContent.split('\n\n');
+          const newParas = contentInput.trim().split('\n\n');
+          const firstChangedIdx = newParas.findIndex((p, i) => p !== (oldParas[i] ?? ''));
 
-          if (!reprocessRes.ok) {
-            const data = await reprocessRes.json() as { error?: string };
-            throw new Error(data.error ?? 'NLP reprocessing failed');
+          if (firstChangedIdx === -1) {
+            // Content is identical after normalisation — skip reprocess entirely
+          } else {
+            setChangedParaCount(newParas.length - firstChangedIdx);
+            setTotalParaCount(newParas.length);
+
+            const reprocessRes = await fetch(`/api/texts/${textId}/reprocess`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
+              },
+              body: JSON.stringify({
+                content: contentInput.trim(),
+                firstChangedParagraphIndex: firstChangedIdx,
+              }),
+            });
+
+            if (!reprocessRes.ok) {
+              const data = await reprocessRes.json() as { error?: string };
+              throw new Error(data.error ?? 'NLP reprocessing failed');
+            }
           }
         }
 
@@ -203,7 +237,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
         setSaveStatus('');
       }
     },
-    [isFormValid, hasContentChanged, textId, title, tagsInput, contentInput, onSaved, onClose]
+    [isFormValid, hasContentChanged, textId, title, tagsInput, contentInput, originalContent, onSaved, onClose]
   );
 
   if (!mounted || !isOpen) return null;
@@ -224,9 +258,34 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-text-dialog-title"
-          className="w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* NLP Reprocess Shimmer Overlay */}
+          {isSaving && hasContentChanged && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-card overflow-hidden">
+              <div className="absolute inset-0 animate-shimmer" />
+              <div className="relative text-center px-6">
+                <img
+                  src="/illustrations/quill.svg"
+                  width={72}
+                  height={72}
+                  alt=""
+                  className="mx-auto mb-4 opacity-90"
+                />
+                <p className="font-sans text-ui-sm font-medium text-ink">Re-processing text…</p>
+                <p className="font-sans text-ui-xs text-muted mt-1">
+                  {REPROCESS_STAGES[stageIndex]}
+                </p>
+                {changedParaCount !== null && totalParaCount !== null && (
+                  <p className="font-sans text-ui-xs text-muted mt-2">
+                    {changedParaCount} of {totalParaCount} paragraph{totalParaCount !== 1 ? 's' : ''} changed
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <h2
             id="edit-text-dialog-title"
             className="font-sans text-ui-lg font-semibold text-ink"

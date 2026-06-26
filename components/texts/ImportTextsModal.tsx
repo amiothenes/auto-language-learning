@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
-import { Upload, FileText, Trash2, AlertCircle, Link } from 'lucide-react';
+import { Upload, FileText, Trash2, AlertCircle, Link, Pencil, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ImportedTextData } from '@/lib/types/forms';
 import { useFetchUrl } from '@/lib/hooks/useFetchUrl';
@@ -68,6 +68,8 @@ export function ImportTextsModal({
   const [urlInput, setUrlInput] = useState('');
   const [langMismatch, setLangMismatch] = useState<{ detected: string; importing: string } | null>(null);
   const [langWarningDismissed, setLangWarningDismissed] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<{ title: string; content: string }>({ title: '', content: '' });
 
   const fetchUrlMutation = useFetchUrl();
 
@@ -324,15 +326,17 @@ export function ImportTextsModal({
         setError('Maximum 50 texts per import. Only first 50 will be imported.');
       }
 
-      // Capture current titleMode for closure consistency
+      // Capture current titleMode for closure consistency; append to any
+      // existing texts so the user can pick files from multiple directories
       const currentMode = titleMode;
-      setEnrichedTexts(
-        trimmed.map((t, i) => ({
+      setEnrichedTexts((prev) => [
+        ...prev,
+        ...trimmed.map((t, i) => ({
           ...t,
           sourceTitle: t.title,
-          title: computeTitle(currentMode, t.title, i, seriesName, textCount),
-        }))
-      );
+          title: computeTitle(currentMode, t.title, prev.length + i, seriesName, textCount),
+        })),
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process files');
     } finally {
@@ -353,6 +357,25 @@ export function ImportTextsModal({
     setEnrichedTexts((prev) =>
       prev.map((text, i) => (i === index ? { ...text, title: newTitle } : text))
     );
+  };
+
+  // Open the content editor for a preview card
+  const handleEditOpen = (index: number) => {
+    setEditDraft({ title: enrichedTexts[index].title, content: enrichedTexts[index].content });
+    setEditingIndex(index);
+  };
+
+  // Save edits and close the overlay
+  const handleEditSave = () => {
+    if (editingIndex === null) return;
+    setEnrichedTexts((prev) =>
+      prev.map((t, i) =>
+        i === editingIndex
+          ? { ...t, title: editDraft.title, content: editDraft.content }
+          : t
+      )
+    );
+    setEditingIndex(null);
   };
 
   // Fetch a URL server-side and inject the extracted text into the preview list
@@ -421,7 +444,7 @@ export function ImportTextsModal({
   );
 
   const titleModeOptions = [
-    { value: 'filename' as const, label: 'From filename' },
+    { value: 'filename' as const, label: activeTab === 'url' ? 'Page title' : 'From filename' },
     { value: 'series-increment' as const, label: 'Series #N' },
     { value: 'custom' as const, label: 'Custom' },
   ];
@@ -532,6 +555,11 @@ export function ImportTextsModal({
                 </button>
               ))}
             </div>
+            {titleMode === 'filename' && activeTab === 'url' && (
+              <p className="font-sans text-ui-xs text-muted mt-1">
+                Title auto-filled from the page &lt;title&gt; tag — editable in the preview below
+              </p>
+            )}
             {titleMode === 'series-increment' && (
               <p className="font-sans text-ui-xs text-muted mt-1">
                 Titles: {seriesName} #{textCount + 1}, #{textCount + 2}, ...
@@ -552,10 +580,12 @@ export function ImportTextsModal({
             </div>
           )}
 
-          {/* File Upload Section */}
-          {activeTab === 'file' && (
-            <>
-              <div className="mt-6">
+          {/* Tab panels — grid stack keeps modal height stable regardless of active tab */}
+          <div className="mt-6 grid">
+
+            {/* File Upload Panel */}
+            <div className={cn('col-start-1 row-start-1', activeTab !== 'file' && 'invisible pointer-events-none')}>
+              <div>
                 <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
                   Upload Files
                 </label>
@@ -607,12 +637,10 @@ export function ImportTextsModal({
                   </li>
                 </ul>
               </div>
-            </>
-          )}
+            </div>
 
-          {/* URL Import Section */}
-          {activeTab === 'url' && (
-            <div className="mt-6 space-y-4">
+            {/* URL Import Panel */}
+            <div className={cn('col-start-1 row-start-1 space-y-4', activeTab !== 'url' && 'invisible pointer-events-none')}>
               {/* Language mismatch warning */}
               {langMismatch && !langWarningDismissed && (
                 <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded">
@@ -665,7 +693,8 @@ export function ImportTextsModal({
                 </p>
               </div>
             </div>
-          )}
+
+          </div>
 
           {/* Imported Texts Preview */}
           {enrichedTexts.length > 0 && (
@@ -715,6 +744,14 @@ export function ImportTextsModal({
                       })()}
                     </div>
                     <button
+                      type="button"
+                      onClick={() => handleEditOpen(index)}
+                      className="text-muted hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0"
+                      aria-label={`Edit content of ${text.title}`}
+                    >
+                      <Pencil size={16} strokeWidth={1.5} />
+                    </button>
+                    <button
                       onClick={() => handleRemoveText(index)}
                       className="text-muted hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0"
                       aria-label={`Remove ${text.title}`}
@@ -725,6 +762,16 @@ export function ImportTextsModal({
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Content editor overlay */}
+          {editingIndex !== null && (
+            <ContentEditOverlay
+              draft={editDraft}
+              onChange={setEditDraft}
+              onSave={handleEditSave}
+              onCancel={() => setEditingIndex(null)}
+            />
           )}
 
           {/* Action buttons */}
@@ -748,6 +795,106 @@ export function ImportTextsModal({
               {isSubmitting
                 ? 'Importing...'
                 : `Import${enrichedTexts.length > 0 ? ` ${enrichedTexts.length} Text${enrichedTexts.length > 1 ? 's' : ''}` : ''}`}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+// ============================================================================
+// Content Edit Overlay — rendered as a separate portal above the import modal
+// ============================================================================
+
+interface ContentEditOverlayProps {
+  draft: { title: string; content: string };
+  onChange: (draft: { title: string; content: string }) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+function ContentEditOverlay({ draft, onChange, onSave, onCancel }: ContentEditOverlayProps) {
+  const wordCount = draft.content.split(/\s+/).filter(Boolean).length;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-60 bg-ink/60"
+        onClick={onCancel}
+        aria-hidden="true"
+      />
+      <div className="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none">
+        <div
+          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal p-6 flex flex-col gap-4 pointer-events-auto max-h-[85vh]"
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit text content"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="font-sans text-ui-md font-semibold text-ink">Edit Text</h3>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-muted hover:text-ink transition-colors rounded p-1 focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Close editor"
+            >
+              <X size={18} strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <div>
+            <label className="block font-sans text-ui-sm font-medium text-ink mb-1">Title</label>
+            <input
+              type="text"
+              value={draft.title}
+              onChange={(e) => onChange({ ...draft, title: e.target.value })}
+              className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-sans text-ui-sm font-medium text-ink">Content</label>
+              <span className="font-sans text-ui-xs text-muted">
+                {wordCount.toLocaleString()} words
+                {wordCount > 750 && (
+                  <span className="ml-1 text-amber-600 font-medium">
+                    · ~{Math.ceil(wordCount / 750)} parts after split
+                  </span>
+                )}
+              </span>
+            </div>
+            <textarea
+              value={draft.content}
+              onChange={(e) => onChange({ ...draft, content: e.target.value })}
+              className="w-full h-72 resize-y px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
+              spellCheck={false}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-border">
+            <Button type="button" variant="ghost" size="md" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={onSave}
+              disabled={draft.content.trim().length < 10 || draft.title.trim().length === 0}
+            >
+              Save
             </Button>
           </div>
         </div>

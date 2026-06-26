@@ -82,16 +82,7 @@ export function ReaderContent({
       ) ?? [];
 
     for (const inst of paraInstances) {
-      // Defensive: existing DB records may have positions pointing one char before the
-      // word (into inter-sentence whitespace) due to a tokenizer trim bug now fixed.
-      // Advance past any non-letter characters to find the actual word start.
-      let wordStart = inst.position;
-      while (
-        wordStart - paraStart < paragraph.length &&
-        !/\p{L}/u.test(paragraph[wordStart - paraStart])
-      ) {
-        wordStart++;
-      }
+      const wordStart = inst.position;
 
       if (wordStart > cursor) {
         tokens.push({
