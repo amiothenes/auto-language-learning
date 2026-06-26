@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { processTranslationsForText } from '@/lib/translation/translationService';
 import { db } from '@/lib/db';
 import {
   languages,
@@ -239,6 +240,18 @@ export async function POST(request: NextRequest) {
       },
       tags: processedTags,
     };
+
+    // Trigger auto-translation after response is sent — does not block the client
+    const textIds = results.map((r) => r.textId);
+    after(async () => {
+      for (const id of textIds) {
+        try {
+          await processTranslationsForText(id);
+        } catch (err) {
+          console.error(`[Text Import] Translation job failed for text ${id}:`, err);
+        }
+      }
+    });
 
     return NextResponse.json<ImportTextResponse>(response, { status: 201 });
   } catch (error) {

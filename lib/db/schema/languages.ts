@@ -14,6 +14,9 @@ export const languages = pgTable('languages', {
   characterSubstitutions: json('character_substitutions').$type<Record<string, string>>(),
   sentenceSplitRegex: text('sentence_split_regex'),
   includeForeignScript: boolean('include_foreign_script').default(false).notNull(),
+  // Default target language for auto-translation (e.g. 'en' for a Spanish-learning app)
+  // TODO(auth): override per-user when auth lands — move to user profile settings
+  defaultTranslationLangCode: text('default_translation_lang_code'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

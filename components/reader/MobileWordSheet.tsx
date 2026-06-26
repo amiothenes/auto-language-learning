@@ -339,7 +339,40 @@ export function MobileWordSheet({
                 </div>
               </section>
 
-              {/* ⑧ Morphology */}
+              {/* ⑧ All Meanings (lemma-level, from auto-translation) */}
+              {wordData.meanings && wordData.meanings.length > 0 && (
+                <section className="mb-5">
+                  <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
+                    All meanings
+                  </p>
+                  <div className="space-y-2">
+                    {wordData.meanings.map((m, i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5">
+                          {m.pos}
+                        </span>
+                        <span className="font-sans text-sm text-ink/80 leading-snug">
+                          {m.definitions.slice(0, 3).join(', ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {wordData.exampleSentence && (
+                    <div className="mt-3 pl-2 border-l-2 border-border">
+                      <p className="font-sans text-xs text-ink/70 italic leading-relaxed">
+                        {wordData.exampleSentence}
+                      </p>
+                      {wordData.exampleSentenceTranslation && (
+                        <p className="font-sans text-xs text-muted leading-relaxed mt-0.5">
+                          {wordData.exampleSentenceTranslation}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* ⑩ Morphology */}
               <section className="mb-5">
                 <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
                   Morphology
@@ -354,7 +387,7 @@ export function MobileWordSheet({
                 </div>
               </section>
 
-              {/* ⑨ Frequency & history */}
+              {/* ⑪ Frequency & history */}
               <section className="mb-5">
                 <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
                   Frequency & History
@@ -380,7 +413,7 @@ export function MobileWordSheet({
                 </div>
               </section>
 
-              {/* ⑩ Lookup links */}
+              {/* ⑫ Lookup links */}
               <section>
                 <div className="grid grid-cols-2 gap-2">
                   <LookupLink href={wiktionaryUrl} label="Wiktionary" />

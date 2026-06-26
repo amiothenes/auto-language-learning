@@ -140,11 +140,18 @@ export function WordTooltip({
               <div className="mt-1">
                 {!editingTranslation ? (
                   <button className="w-full text-left group" onClick={() => setEditingTranslation(true)}>
-                    <p className="font-sans text-sm text-ink/70 font-medium leading-snug">
-                      {translationValue || (
-                        <span className="italic text-muted/50 font-normal">Add translation…</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-sans text-sm text-ink/70 font-medium leading-snug">
+                        {translationValue || (
+                          <span className="italic text-muted/50 font-normal">Add translation…</span>
+                        )}
+                      </p>
+                      {wordData.meanings && wordData.meanings.length > 1 && (
+                        <span className="font-sans text-[9.5px] text-muted/60 bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0">
+                          {wordData.meanings.length} meanings
+                        </span>
                       )}
-                    </p>
+                    </div>
                     <span className="font-sans text-[10px] text-muted/50 group-hover:text-primary transition-colors">
                       click to edit
                     </span>

@@ -5,6 +5,7 @@
 
 import { Github, Book, Bug, ExternalLink, FileText } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
+import { SettingRow } from '@/components/settings/SettingRow';
 import { Button } from '@/components/ui/Button';
 
 export default function AboutSettingsPage() {

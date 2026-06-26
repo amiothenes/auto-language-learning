@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { languages } from './languages';
 import { words } from './words';
 import { wordInstances } from './wordInstances';
+import { wordTranslations } from './wordTranslations';
 import { series } from './series';
 import { texts } from './texts';
 import { sentences } from './sentences';
@@ -26,6 +27,15 @@ export const wordsRelations = relations(words, ({ one, many }) => ({
   }),
   instances: many(wordInstances),
   tags: many(posTags),
+  translations: many(wordTranslations),
+}));
+
+// Word Translation Relations
+export const wordTranslationsRelations = relations(wordTranslations, ({ one }) => ({
+  word: one(words, {
+    fields: [wordTranslations.wordId],
+    references: [words.id],
+  }),
 }));
 
 // Word Instance Relations

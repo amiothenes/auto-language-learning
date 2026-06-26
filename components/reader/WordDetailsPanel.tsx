@@ -174,6 +174,38 @@ export function WordDetailsPanel({
               </div>
             )}
 
+            {/* All Meanings (lemma-level, from auto-translation) */}
+            {wordData.meanings && wordData.meanings.length > 0 && (
+              <div className="border-t border-border pt-4">
+                <Muted className="text-ui-xs mb-2.5">All meanings of &ldquo;{wordData.lemma}&rdquo;</Muted>
+                <div className="space-y-2">
+                  {wordData.meanings.map((m, i) => (
+                    <div key={i} className="flex gap-2 items-start">
+                      <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5">
+                        {m.pos}
+                      </span>
+                      <span className="font-sans text-sm text-ink/80 leading-snug">
+                        {m.definitions.slice(0, 3).join(', ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {wordData.exampleSentence && (
+                  <div className="mt-3 pl-2 border-l-2 border-border">
+                    <p className="font-sans text-xs text-ink/70 italic leading-relaxed">
+                      {wordData.exampleSentence}
+                    </p>
+                    {wordData.exampleSentenceTranslation && (
+                      <p className="font-sans text-xs text-muted leading-relaxed mt-0.5">
+                        {wordData.exampleSentenceTranslation}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Frequencies */}
             <div className="border-t border-border pt-4 space-y-3">
               <div>

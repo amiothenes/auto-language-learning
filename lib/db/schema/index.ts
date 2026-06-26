@@ -13,6 +13,7 @@ export * from './posTags';
 export * from './textTags';
 export * from './users';
 export * from './settings';
+export * from './wordTranslations';
 
 // Relations
 export * from './relations';

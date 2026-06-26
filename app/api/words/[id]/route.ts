@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { words } from '@/lib/db/schema';
+import { words, languages, wordTranslations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
@@ -37,6 +37,7 @@ export async function PATCH(
       setFields.statusChangedAt = new Date();
     }
     if (translation !== undefined) {
+      // Keep words.translation in sync for backward compatibility
       setFields.translation = translation;
     }
 
@@ -44,13 +45,37 @@ export async function PATCH(
       .update(words)
       .set(setFields)
       .where(eq(words.id, id))
-      .returning({ id: words.id, status: words.status, translation: words.translation });
+      .returning({ id: words.id, status: words.status, translation: words.translation, languageId: words.languageId });
 
     if (!updated) {
       return NextResponse.json<ApiErrorResponse>(
         { error: `Word not found: ${id}` },
         { status: 404 }
       );
+    }
+
+    // Write user translation to word_translations as source:'user' — never overwritten by auto-translation
+    // TODO(auth): scope by userId when auth lands
+    if (translation !== undefined) {
+      const language = await db.query.languages.findFirst({
+        where: eq(languages.id, updated.languageId),
+        columns: { defaultTranslationLangCode: true },
+      });
+      const targetLangCode = language?.defaultTranslationLangCode;
+      if (targetLangCode) {
+        await db
+          .insert(wordTranslations)
+          .values({
+            wordId: id,
+            targetLangCode,
+            translation,
+            source: 'user',
+          })
+          .onConflictDoUpdate({
+            target: [wordTranslations.wordId, wordTranslations.targetLangCode],
+            set: { translation, source: 'user', updatedAt: new Date() },
+          });
+      }
     }
 
     if (status !== undefined) {

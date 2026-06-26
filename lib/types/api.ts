@@ -4,6 +4,7 @@
 
 import type { Series, SeriesDetail, TextData } from './content';
 import type { VocabularyStatus } from './vocabulary';
+import type { TranslationMeaning, TranslationSource } from '../db/schema/wordTranslations';
 
 // ============================================================================
 // Text Import API
@@ -190,6 +191,14 @@ export interface WordInstanceItem {
   sentenceId: string | null;
   /** Grammatical inflection metadata from NLP */
   inflectionData: Record<string, unknown> | null;
+  /** All possible meanings grouped by POS (lemma-level, from auto-translation) */
+  meanings: TranslationMeaning[] | null;
+  /** Example sentence in the source language */
+  exampleSentence: string | null;
+  /** Example sentence translated into the user's target language */
+  exampleSentenceTranslation: string | null;
+  /** Which service provided the translation */
+  translationSource: TranslationSource | null;
 }
 
 export interface WordInstancesResponse {

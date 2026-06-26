@@ -36,6 +36,13 @@
       "when": 1779285737065,
       "tag": "0004_boring_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782480046060,
+      "tag": "0005_fast_slayback",
+      "breakpoints": true
     }
   ]
 }

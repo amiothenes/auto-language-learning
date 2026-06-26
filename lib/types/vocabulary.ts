@@ -118,6 +118,12 @@ export type WordData = {
   inflectionData?: Record<string, unknown> | null;
   /** Formatted relative date of first encounter (e.g. "3 days ago") */
   firstSeen?: string;
+  /** All possible meanings grouped by POS from auto-translation (lemma-level, not context-specific) */
+  meanings?: { pos: string; definitions: string[]; confidence: number }[] | null;
+  /** Example sentence in the source language */
+  exampleSentence?: string | null;
+  /** Example sentence translated into the user's native language */
+  exampleSentenceTranslation?: string | null;
 }
 
 // ============================================================================

@@ -114,6 +114,9 @@ export function ReaderContent({
         userFrequency: inst.userFrequency,
         status: inst.status,
         inflectionData: inst.inflectionData ?? null,
+        meanings: inst.meanings ?? null,
+        exampleSentence: inst.exampleSentence ?? null,
+        exampleSentenceTranslation: inst.exampleSentenceTranslation ?? null,
       };
 
       tokens.push({ type: 'word', data: wordData, key: inst.instanceId });
