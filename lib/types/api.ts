@@ -57,6 +57,9 @@ export interface ImportTextResponse {
 
   /** Tags associated with the first text page */
   tags: Array<{ id: string; name: string }>;
+
+  /** Number of UNKNOWN proper nouns auto-ignored during import */
+  ignoredPropnCount: number;
 }
 
 /**

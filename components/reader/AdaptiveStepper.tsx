@@ -73,7 +73,8 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore 
   const label      = STATUS_LABEL[status];
 
   const idx     = PROGRESSION.indexOf(status as typeof PROGRESSION[number]);
-  const stepDown = idx > 0  ? PROGRESSION[idx - 1] : undefined;
+  // NEWLY_SEEN is the user-facing floor — "Didn't" at NS sends NS (no-op), not UNKNOWN
+  const stepDown = idx >= 1 ? PROGRESSION[Math.max(1, idx - 1)] : undefined;
   const stepUp   = idx >= 0 && idx < PROGRESSION.length - 1 ? PROGRESSION[idx + 1] : undefined;
 
   const MoreBtn = () => (
@@ -92,9 +93,9 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore 
       <div className="flex gap-1.5">
         <button
           className={cn(BTN_PRIMARY, 'flex-1')}
-          onClick={() => onStatusChange(VocabularyStatus.UNKNOWN)}
+          onClick={() => onStatusChange(VocabularyStatus.NEWLY_SEEN)}
         >
-          Restore to Unknown
+          Reset to Newly Seen
         </button>
         {!hideMore && <MoreBtn />}
       </div>

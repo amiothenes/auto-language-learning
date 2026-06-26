@@ -27,7 +27,6 @@ const STATUS_LABEL: Record<VocabularyStatus, string> = {
 };
 
 const STATUS_CHIPS = [
-  { status: VocabularyStatus.UNKNOWN,    label: '?',   color: 'hsl(205,80%,58%)' },
   { status: VocabularyStatus.NEWLY_SEEN, label: 'NS',  color: 'hsl(2,75%,60%)'   },
   { status: VocabularyStatus.FAMILIAR,   label: 'Fam', color: 'hsl(32,90%,56%)'  },
   { status: VocabularyStatus.KNOWN,      label: 'Kno', color: 'hsl(78,60%,48%)'  },
@@ -98,6 +97,8 @@ export function MobileWordSheet({
   const [dismissing, setDismissing] = useState(false);
   // True after the user grades in test mode — triggers translation fade-in before auto-dismiss
   const [translationRevealed, setTranslationRevealed] = useState(false);
+  // True immediately after first-test grade — hides stepper, enlarges translation
+  const [justGraded, setJustGraded] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState(false);
 
   const touchStartY = useRef(0);
@@ -111,6 +112,7 @@ export function MobileWordSheet({
     setDismissing(false);
     setTranslation(wordData?.translation ?? '');
     setTranslationRevealed(false);
+    setJustGraded(false);
     setEditingTranslation(false);
   }, [wordData?.wordId]);
 
@@ -122,14 +124,21 @@ export function MobileWordSheet({
   };
 
   // Handles grading from both AdaptiveStepper and the precise chip row.
-  // Test mode: reveals translation and stays open — user taps backdrop to dismiss.
+  // Test mode: reveals translation, hides stepper, auto-dismisses on WELL_KNOWN after 1s.
   // Instant mode (re-tap) or IGNORE: dismisses immediately.
+  // Same-status grades (NEWLY_SEEN floor "Didn't") skip the API call — no-op status-wise.
   const handleGrade = (newStatus: VocabularyStatus) => {
-    onStatusChange(wordData.wordId, newStatus);
+    if (newStatus !== wordData.status) {
+      onStatusChange(wordData.wordId, newStatus);
+    }
     onGraded?.(wordData.lemma);
 
     if (isFirstTest && newStatus !== VocabularyStatus.IGNORE) {
       setTranslationRevealed(true);
+      setJustGraded(true);
+      if (newStatus === VocabularyStatus.WELL_KNOWN) {
+        setTimeout(dismiss, 1000);
+      }
     } else {
       dismiss();
     }
@@ -159,7 +168,7 @@ export function MobileWordSheet({
 
   const showTranslation = !isFirstTest || translationRevealed;
   const isIgnored = wordData.status === VocabularyStatus.IGNORE;
-  const showTestPrompt = isFirstTest && !isIgnored;
+  const showTestPrompt = isFirstTest && !isIgnored && !translationRevealed;
 
   const sheetStyle: React.CSSProperties = {
     height: expanded ? 'calc(90dvh)' : `${PEEK_HEIGHT}px`,
@@ -228,18 +237,31 @@ export function MobileWordSheet({
             {wordData.lemma}
           </p>
 
-          {/* ③ Translation — hidden in test mode; shown prominently in instant mode */}
+          {/* ③ Translation — hidden in test mode; enlarged post-grade; editable in instant mode */}
           {showTranslation && (
             <div className="mb-3">
-              {!editingTranslation ? (
+              {justGraded ? (
+                <div>
+                  <p className="font-serif text-2xl text-ink/65 font-normal italic leading-snug">
+                    {translation || (
+                      <span className="not-italic text-muted/40 text-xl">No translation</span>
+                    )}
+                  </p>
+                  {wordData.meanings && wordData.meanings.length > 1 && (
+                    <span className="font-sans text-[9.5px] text-muted/60 bg-desk border border-border rounded-sm px-1.5 py-0.5 mt-1.5 inline-block">
+                      {wordData.meanings.length} meanings
+                    </span>
+                  )}
+                </div>
+              ) : !editingTranslation ? (
                 <button
                   disabled={isFirstTest}
                   onClick={() => { if (!isFirstTest) setEditingTranslation(true); }}
                   className={cn('w-full text-left group', isFirstTest && 'cursor-default')}
                 >
-                  <p className="font-sans text-base text-ink/75 font-medium leading-snug">
+                  <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
                     {translation || (
-                      <span className="font-normal italic text-muted/50">Add translation…</span>
+                      <span className="not-italic font-sans font-normal text-muted/50">Add translation…</span>
                     )}
                   </p>
                   {!isFirstTest && (
@@ -275,14 +297,16 @@ export function MobileWordSheet({
             </p>
           )}
 
-          {/* ⑤ Grading buttons */}
-          <div className="mb-1.5">
-            <AdaptiveStepper
-              status={wordData.status}
-              onStatusChange={handleGrade}
-              hideMore
-            />
-          </div>
+          {/* ⑤ Grading buttons — hidden immediately after first-test grade */}
+          {!justGraded && (
+            <div className="mb-1.5">
+              <AdaptiveStepper
+                status={wordData.status}
+                onStatusChange={handleGrade}
+                hideMore
+              />
+            </div>
+          )}
 
           {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only */}
           {showTestPrompt && (
@@ -313,7 +337,7 @@ export function MobileWordSheet({
                     return (
                       <button
                         key={status}
-                        onClick={() => { onStatusChange(wordData.wordId, status); dismiss(); }}
+                        onClick={() => { if (status !== wordData.status) onStatusChange(wordData.wordId, status); dismiss(); }}
                         style={{
                           borderColor: isActive ? color : 'var(--border)',
                           background: isActive ? `${color}22` : 'transparent',

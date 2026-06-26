@@ -31,12 +31,13 @@ export function useReaderKeyboard({
 
       const idx = PROGRESSION.indexOf(currentStatus as typeof PROGRESSION[number]);
 
+      // Keys 1-4 map to the four user-facing statuses (UNKNOWN excluded — set at import only).
+      // ArrowDown floors at NEWLY_SEEN; Backspace resets to NEWLY_SEEN.
       switch (e.key) {
-        case '1': onStatusChange(VocabularyStatus.UNKNOWN);    e.preventDefault(); break;
-        case '2': onStatusChange(VocabularyStatus.NEWLY_SEEN); e.preventDefault(); break;
-        case '3': onStatusChange(VocabularyStatus.FAMILIAR);   e.preventDefault(); break;
-        case '4': onStatusChange(VocabularyStatus.KNOWN);      e.preventDefault(); break;
-        case '5': onStatusChange(VocabularyStatus.WELL_KNOWN); e.preventDefault(); break;
+        case '1': onStatusChange(VocabularyStatus.NEWLY_SEEN); e.preventDefault(); break;
+        case '2': onStatusChange(VocabularyStatus.FAMILIAR);   e.preventDefault(); break;
+        case '3': onStatusChange(VocabularyStatus.KNOWN);      e.preventDefault(); break;
+        case '4': onStatusChange(VocabularyStatus.WELL_KNOWN); e.preventDefault(); break;
 
         case 'ArrowUp': {
           if (idx >= 0 && idx < PROGRESSION.length - 1) {
@@ -47,8 +48,9 @@ export function useReaderKeyboard({
         }
 
         case 'ArrowDown': {
-          if (idx > 0) {
-            onStatusChange(PROGRESSION[idx - 1]);
+          // Floor at NEWLY_SEEN (idx 1) — can't arrow down to UNKNOWN
+          if (idx >= 1) {
+            onStatusChange(PROGRESSION[Math.max(1, idx - 1)]);
             e.preventDefault();
           }
           break;

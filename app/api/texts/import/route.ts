@@ -13,6 +13,7 @@ import { eq, inArray } from 'drizzle-orm';
 import {
   processTextForImport,
   TextProcessingError,
+  autoIgnoreProperNouns,
 } from '@/lib/nlp/textProcessor';
 import { splitIntoChunks } from '@/lib/nlp/textChunker';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
@@ -223,6 +224,10 @@ export async function POST(request: NextRequest) {
     const totalTime = Date.now() - startTime;
     console.log(`[Text Import] Import complete: ${results.length} page(s) in ${totalTime}ms`);
 
+    // Auto-ignore proper nouns synchronously: pure SQL, <10ms, returns count for toast
+    const textIds = results.map((r) => r.textId);
+    const ignoredPropnCount = await autoIgnoreProperNouns(textIds);
+
     const response: ImportTextResponse = {
       success: true,
       seriesId: resolvedSeriesId,
@@ -239,10 +244,10 @@ export async function POST(request: NextRequest) {
         processingTime: results.reduce((sum, r) => sum + r.processingTime, 0),
       },
       tags: processedTags,
+      ignoredPropnCount,
     };
 
     // Trigger auto-translation after response is sent — does not block the client
-    const textIds = results.map((r) => r.textId);
     after(async () => {
       for (const id of textIds) {
         try {

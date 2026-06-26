@@ -66,6 +66,8 @@ export function WordTooltip({
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
   // SRS state: hidden until graded on first encounter
   const [translationRevealed, setTranslationRevealed] = useState(false);
+  // True immediately after first-test grade — hides stepper, enlarges translation
+  const [justGraded, setJustGraded] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState(false);
   const [translationValue, setTranslationValue] = useState(wordData.translation ?? '');
 
@@ -77,13 +79,20 @@ export function WordTooltip({
     onClose();
   }, [moreMenuAnchorEl, onClose]);
 
-  // Manages close timing: stays open on first-test grade so user can read the
-  // revealed translation; closes immediately in instant mode (re-tap).
+  // After first-test grade: reveals translation, hides stepper, auto-closes on WELL_KNOWN.
+  // Re-tap (isFirstTest=false) closes immediately via the else branch.
+  // Same-status grades (NEWLY_SEEN floor "Didn't") skip the API call — no-op status-wise.
   const handleGrade = (newStatus: VocabularyStatus) => {
-    onStatusChange(wordData.wordId, newStatus);
+    if (newStatus !== wordData.status) {
+      onStatusChange(wordData.wordId, newStatus);
+    }
     onGraded?.(wordData.lemma);
     if (isFirstTest && newStatus !== VocabularyStatus.IGNORE) {
       setTranslationRevealed(true);
+      setJustGraded(true);
+      if (newStatus === VocabularyStatus.WELL_KNOWN) {
+        setTimeout(onClose, 1000);
+      }
     } else {
       onClose();
     }
@@ -138,12 +147,25 @@ export function WordTooltip({
 
             {showTranslation && (
               <div className="mt-1">
-                {!editingTranslation ? (
+                {justGraded ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-serif text-xl text-ink/65 font-normal italic leading-snug">
+                      {translationValue || (
+                        <span className="not-italic text-muted/40 text-base">No translation</span>
+                      )}
+                    </p>
+                    {wordData.meanings && wordData.meanings.length > 1 && (
+                      <span className="font-sans text-[9.5px] text-muted/60 bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0">
+                        {wordData.meanings.length} meanings
+                      </span>
+                    )}
+                  </div>
+                ) : !editingTranslation ? (
                   <button className="w-full text-left group" onClick={() => setEditingTranslation(true)}>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-sans text-sm text-ink/70 font-medium leading-snug">
+                      <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
                         {translationValue || (
-                          <span className="italic text-muted/50 font-normal">Add translation…</span>
+                          <span className="not-italic text-muted/50 font-sans text-sm">Add translation…</span>
                         )}
                       </p>
                       {wordData.meanings && wordData.meanings.length > 1 && (
@@ -222,14 +244,16 @@ export function WordTooltip({
             </p>
           )}
 
-          {/* ⑤ Adaptive Stepper */}
-          <div className="mb-3">
-            <AdaptiveStepper
-              status={wordData.status}
-              onStatusChange={handleGrade}
-              onMoreClick={(el) => setMoreMenuAnchorEl(el)}
-            />
-          </div>
+          {/* ⑤ Adaptive Stepper — hidden immediately after first-test grade */}
+          {!justGraded && (
+            <div className="mb-3">
+              <AdaptiveStepper
+                status={wordData.status}
+                onStatusChange={handleGrade}
+                onMoreClick={(el) => setMoreMenuAnchorEl(el)}
+              />
+            </div>
+          )}
 
           {/* ⑥ Lookup links + "More →" details link */}
           <div className="pt-3 border-t border-border flex items-center justify-between">

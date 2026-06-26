@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NewSeriesModal } from '@/components/series/NewSeriesModal';
 import { EditSeriesModal } from '@/components/series/EditSeriesModal';
 import { NewTextModal } from '@/components/texts/NewTextModal';
+import type { ImportTextResponse } from '@/lib/types/api';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { TextCard } from '@/components/series/TextCard';
@@ -258,9 +259,16 @@ function SeriesPageContent() {
     await seriesQuery.refetch();
   };
 
-  const handleAddTextDone = () => {
+  const handleAddTextDone = (result: ImportTextResponse) => {
     setAddTextTarget(null);
-    showToast('Text added');
+    if (result.ignoredPropnCount > 0) {
+      showToast(
+        `Auto-ignored ${result.ignoredPropnCount} proper noun${result.ignoredPropnCount !== 1 ? 's' : ''}`,
+        'info',
+      );
+    } else {
+      showToast('Text added');
+    }
     seriesQuery.refetch();
   };
 

@@ -21,17 +21,17 @@ interface MoreMenuProps {
   onClose: () => void;
 }
 
+// UNKNOWN is excluded — it is only set at import time, not by user action.
 const STATUS_ROWS: {
   status: VocabularyStatus;
   label: string;
   color: string;
   key: string;
 }[] = [
-  { status: VocabularyStatus.UNKNOWN,    label: 'Unknown',    color: 'hsl(0,0%,60%)',    key: '1' },
-  { status: VocabularyStatus.NEWLY_SEEN, label: 'Newly Seen', color: 'hsl(2,72%,58%)',   key: '2' },
-  { status: VocabularyStatus.FAMILIAR,   label: 'Familiar',   color: 'hsl(32,88%,54%)',  key: '3' },
-  { status: VocabularyStatus.KNOWN,      label: 'Known',      color: 'hsl(78,58%,46%)',  key: '4' },
-  { status: VocabularyStatus.WELL_KNOWN, label: 'Well-Known', color: 'hsl(145,45%,40%)', key: '5' },
+  { status: VocabularyStatus.NEWLY_SEEN, label: 'Newly Seen', color: 'hsl(2,72%,58%)',   key: '1' },
+  { status: VocabularyStatus.FAMILIAR,   label: 'Familiar',   color: 'hsl(32,88%,54%)',  key: '2' },
+  { status: VocabularyStatus.KNOWN,      label: 'Known',      color: 'hsl(78,58%,46%)',  key: '3' },
+  { status: VocabularyStatus.WELL_KNOWN, label: 'Well-Known', color: 'hsl(145,45%,40%)', key: '4' },
 ];
 
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -144,7 +144,7 @@ export function MoreMenu({
           <Kbd>I</Kbd>
         </button>
 
-        {/* Reset */}
+        {/* Reset — power-user escape hatch back to UNKNOWN (pre-review state) */}
         <button
           role="menuitem"
           onClick={() => { onStatusChange(VocabularyStatus.UNKNOWN); onClose(); }}
@@ -158,7 +158,7 @@ export function MoreMenu({
         {/* Keyboard hint footer */}
         <div className="border-t border-border mt-1 px-3 py-2">
           <p className="font-sans text-[10px] text-muted leading-relaxed">
-            <kbd className="border border-border border-b-2 rounded px-1">1</kbd>–<kbd className="border border-border border-b-2 rounded px-1">5</kbd>
+            <kbd className="border border-border border-b-2 rounded px-1">1</kbd>–<kbd className="border border-border border-b-2 rounded px-1">4</kbd>
             {' '}set exact{' · '}
             <kbd className="border border-border border-b-2 rounded px-1">↑↓</kbd>
             {' '}nudge{' · '}

@@ -27,6 +27,7 @@ import { romanizeBatch } from '@/lib/nlp/romanizer';
 import { processWithSpacy } from '@/lib/nlp/spacyClient';
 import { matchesLanguageScript, requiresRomanization } from '@/lib/nlp/utils/script-detector';
 import type { LemmatizeResult } from '@/lib/nlp/types';
+import { VocabularyStatus } from '@/lib/types/vocabulary';
 
 // ============================================================================
 // Type Definitions
@@ -746,4 +747,39 @@ export async function reprocessTextContent(
       error instanceof Error ? error : undefined
     );
   }
+}
+
+// ============================================================================
+// autoIgnoreProperNouns
+// Sets UNKNOWN words tagged PROPN by spaCy to IGNORE for a set of just-imported
+// texts. Runs synchronously before the import response so the count can be
+// returned to the client. Pure SQL — no external API calls.
+// ============================================================================
+
+export async function autoIgnoreProperNouns(textIds: string[]): Promise<number> {
+  if (textIds.length === 0) return 0;
+
+  const propnWords = await db
+    .select({ wordId: wordInstances.wordId })
+    .from(wordInstances)
+    .innerJoin(words, eq(wordInstances.wordId, words.id))
+    .where(
+      and(
+        inArray(wordInstances.textId, textIds),
+        eq(wordInstances.pos, 'PROPN'),
+        eq(words.status, VocabularyStatus.UNKNOWN)
+      )
+    )
+    .groupBy(wordInstances.wordId);
+
+  if (propnWords.length === 0) return 0;
+
+  const ids = propnWords.map((r) => r.wordId);
+  await db
+    .update(words)
+    .set({ status: VocabularyStatus.IGNORE, updatedAt: new Date() })
+    .where(inArray(words.id, ids));
+
+  console.log(`[PROPN Auto-Ignore] Ignored ${ids.length} proper noun(s)`);
+  return ids.length;
 }
