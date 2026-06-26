@@ -109,7 +109,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const importMutation = useImportText();
-  const { selectedLanguage } = useLanguage();
+  const { selectedLanguage, currentLanguage } = useLanguage();
   const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState('');
   const seriesNameInitialized = useRef(false);
@@ -300,6 +300,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         tags: text.tags ?? [],
         languageCode: selectedLanguage,
         seriesId: id,
+        sourceURI: text.sourceURI,
       });
       results.push(result);
     }
@@ -648,6 +649,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         seriesId={id}
         seriesName={seriesName}
         textCount={seriesData?.textCount ?? 0}
+        currentLanguageCode={selectedLanguage}
+        currentLanguageName={currentLanguage?.name}
       />
 
       {/* Edit Text Modal */}

@@ -28,6 +28,9 @@ export interface ImportTextRequest {
 
   /** Optional array of tag names (create if new, max 10 tags) */
   tags?: string[];
+
+  /** Source URL when text was imported from a web page — saved to texts.sourceURI on first chunk */
+  sourceURI?: string;
 }
 
 /**
@@ -288,4 +291,27 @@ export interface StatsHistoryPoint {
 
 export interface StatsHistoryResponse {
   history: StatsHistoryPoint[];
+}
+
+// ============================================================================
+// URL Fetch API — POST /api/texts/fetch-url
+// ============================================================================
+
+export interface FetchUrlRequest {
+  url: string;
+}
+
+export interface FetchUrlResponse {
+  /** Extracted article title from Readability (or hostname fallback) */
+  title: string;
+  /** Extracted plain-text content */
+  content: string;
+  /** Final URL after any redirects */
+  resolvedUrl: string;
+  /**
+   * BCP-47 lang code read from <html lang=""> BEFORE Readability runs —
+   * Readability strips the html element so this must be captured first.
+   * Empty string if the attribute was absent.
+   */
+  detectedLang: string;
 }

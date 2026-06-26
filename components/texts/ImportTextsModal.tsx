@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
-import { Upload, FileText, Trash2, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Trash2, AlertCircle, Link } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ImportedTextData } from '@/lib/types/forms';
+import { useFetchUrl } from '@/lib/hooks/useFetchUrl';
 
 // ============================================================================
 // ImportTextsModal Component
@@ -20,6 +21,7 @@ const IMPORT_STAGES = [
 ] as const;
 
 type TitleMode = 'filename' | 'series-increment' | 'custom';
+type ImportTab = 'file' | 'url';
 type EnrichedTextData = ImportedTextData & { sourceTitle: string };
 
 function computeTitle(
@@ -41,6 +43,8 @@ interface ImportTextsModalProps {
   seriesId: string;
   seriesName: string;
   textCount: number;
+  currentLanguageCode?: string;
+  currentLanguageName?: string;
 }
 
 export function ImportTextsModal({
@@ -50,6 +54,8 @@ export function ImportTextsModal({
   seriesId: _seriesId,
   seriesName,
   textCount,
+  currentLanguageCode,
+  currentLanguageName,
 }: ImportTextsModalProps) {
   const [enrichedTexts, setEnrichedTexts] = useState<EnrichedTextData[]>([]);
   const [titleMode, setTitleMode] = useState<TitleMode>('filename');
@@ -58,6 +64,12 @@ export function ImportTextsModal({
   const [stageIndex, setStageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<ImportTab>('file');
+  const [urlInput, setUrlInput] = useState('');
+  const [langMismatch, setLangMismatch] = useState<{ detected: string; importing: string } | null>(null);
+  const [langWarningDismissed, setLangWarningDismissed] = useState(false);
+
+  const fetchUrlMutation = useFetchUrl();
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -76,6 +88,10 @@ export function ImportTextsModal({
       setError(null);
       setIsProcessing(false);
       setIsSubmitting(false);
+      setActiveTab('file');
+      setUrlInput('');
+      setLangMismatch(null);
+      setLangWarningDismissed(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
@@ -339,6 +355,48 @@ export function ImportTextsModal({
     );
   };
 
+  // Fetch a URL server-side and inject the extracted text into the preview list
+  const handleFetchUrl = async () => {
+    const trimmedUrl = urlInput.trim();
+    if (!trimmedUrl) return;
+
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      setError('Please enter a URL starting with http:// or https://');
+      return;
+    }
+
+    setError(null);
+    setLangMismatch(null);
+    setLangWarningDismissed(false);
+
+    try {
+      const data = await fetchUrlMutation.mutateAsync({ url: trimmedUrl });
+
+      // Warn if the page language differs from the active learning language
+      if (
+        data.detectedLang &&
+        currentLanguageCode &&
+        data.detectedLang.split('-')[0].toLowerCase() !== currentLanguageCode.split('-')[0].toLowerCase()
+      ) {
+        setLangMismatch({ detected: data.detectedLang, importing: currentLanguageName ?? currentLanguageCode });
+      }
+
+      const currentMode = titleMode;
+      const newIndex = enrichedTexts.length;
+      const newItem: EnrichedTextData = {
+        title: computeTitle(currentMode, data.title, newIndex, seriesName, textCount),
+        sourceTitle: data.title,
+        content: data.content,
+        sourceURI: data.resolvedUrl,
+      };
+
+      setEnrichedTexts((prev) => [...prev, newItem]);
+      setUrlInput('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch URL');
+    }
+  };
+
   // Final submission
   const handleSubmit = useCallback(async () => {
     if (enrichedTexts.length === 0 || isSubmitting) return;
@@ -426,6 +484,32 @@ export function ImportTextsModal({
             Importing into series: <span className="font-medium text-ink">{seriesName}</span>
           </p>
 
+          {/* Import Method Tabs */}
+          <div className="mt-4 flex border-b border-border">
+            <button
+              type="button"
+              onClick={() => { setActiveTab('file'); setError(null); }}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 font-sans text-ui-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'file' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'
+              )}
+            >
+              <Upload size={14} strokeWidth={1.5} />
+              From File
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveTab('url'); setError(null); }}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 font-sans text-ui-sm font-medium border-b-2 -mb-px transition-colors',
+                activeTab === 'url' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'
+              )}
+            >
+              <Link size={14} strokeWidth={1.5} />
+              From URL
+            </button>
+          </div>
+
           {/* Title Format Selector */}
           <div className="mt-4">
             <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
@@ -468,60 +552,120 @@ export function ImportTextsModal({
             </div>
           )}
 
-          {/* Upload Section */}
-          <div className="mt-6">
-            <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-              Upload Files
-            </label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".txt,.csv,.json"
-              multiple
-              onChange={handleFileUpload}
-              disabled={isProcessing}
-              className="hidden"
-              id="import-file-input"
-            />
-            <label htmlFor="import-file-input">
-              <div
-                className={`flex items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded cursor-pointer hover:border-primary transition-colors ${
-                  isProcessing ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <Upload size={20} strokeWidth={1.5} className="text-muted" />
-                <div className="text-center">
-                  <p className="font-sans text-ui-sm text-ink font-medium">
-                    {isProcessing ? 'Processing files...' : 'Choose files to import'}
-                  </p>
-                  <p className="font-sans text-ui-xs text-muted mt-1">
-                    Supports .txt, .csv, .json (max 10MB per file, 50 texts max)
-                  </p>
-                </div>
+          {/* File Upload Section */}
+          {activeTab === 'file' && (
+            <>
+              <div className="mt-6">
+                <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                  Upload Files
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.csv,.json"
+                  multiple
+                  onChange={handleFileUpload}
+                  disabled={isProcessing}
+                  className="hidden"
+                  id="import-file-input"
+                />
+                <label htmlFor="import-file-input">
+                  <div
+                    className={`flex items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded cursor-pointer hover:border-primary transition-colors ${
+                      isProcessing ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    <Upload size={20} strokeWidth={1.5} className="text-muted" />
+                    <div className="text-center">
+                      <p className="font-sans text-ui-sm text-ink font-medium">
+                        {isProcessing ? 'Processing files...' : 'Choose files to import'}
+                      </p>
+                      <p className="font-sans text-ui-xs text-muted mt-1">
+                        Supports .txt, .csv, .json (max 10MB per file, 50 texts max)
+                      </p>
+                    </div>
+                  </div>
+                </label>
               </div>
-            </label>
-          </div>
 
-          {/* Format Guide */}
-          <div className="mt-4 p-3 bg-desk border border-border rounded">
-            <p className="font-sans text-ui-xs font-medium text-ink mb-1">
-              Supported Formats:
-            </p>
-            <ul className="font-sans text-ui-xs text-muted space-y-0.5 ml-4 list-disc">
-              <li>
-                <strong>.txt</strong> - Each file becomes one text (may split if long)
-              </li>
-              <li>
-                <strong>.csv</strong> - Must have &quot;title&quot; and &quot;content&quot; columns
-              </li>
-              <li>
-                <strong>.json</strong> - Array of objects with &quot;title&quot; and &quot;content&quot; fields
-              </li>
-              <li>
-                Texts over <strong>750 words</strong> are automatically split into ordered parts
-              </li>
-            </ul>
-          </div>
+              <div className="mt-4 p-3 bg-desk border border-border rounded">
+                <p className="font-sans text-ui-xs font-medium text-ink mb-1">
+                  Supported Formats:
+                </p>
+                <ul className="font-sans text-ui-xs text-muted space-y-0.5 ml-4 list-disc">
+                  <li>
+                    <strong>.txt</strong> - Each file becomes one text (may split if long)
+                  </li>
+                  <li>
+                    <strong>.csv</strong> - Must have &quot;title&quot; and &quot;content&quot; columns
+                  </li>
+                  <li>
+                    <strong>.json</strong> - Array of objects with &quot;title&quot; and &quot;content&quot; fields
+                  </li>
+                  <li>
+                    Texts over <strong>750 words</strong> are automatically split into ordered parts
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
+
+          {/* URL Import Section */}
+          {activeTab === 'url' && (
+            <div className="mt-6 space-y-4">
+              {/* Language mismatch warning */}
+              {langMismatch && !langWarningDismissed && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-sans text-ui-sm text-amber-800">
+                      This page appears to be in <strong>{langMismatch.detected}</strong>, but you are importing into{' '}
+                      <strong>{langMismatch.importing}</strong>. Continue anyway?
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLangWarningDismissed(true)}
+                    className="font-sans text-ui-xs font-medium text-amber-700 hover:text-amber-900 shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              {/* URL input */}
+              <div>
+                <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                  Article URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !fetchUrlMutation.isPending) void handleFetchUrl();
+                    }}
+                    placeholder="https://example.com/article"
+                    disabled={fetchUrlMutation.isPending}
+                    className="flex-1 px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    onClick={() => void handleFetchUrl()}
+                    disabled={fetchUrlMutation.isPending || !urlInput.trim()}
+                  >
+                    {fetchUrlMutation.isPending ? 'Fetching…' : 'Fetch'}
+                  </Button>
+                </div>
+                <p className="font-sans text-ui-xs text-muted mt-1">
+                  Works on most articles and blogs. Paywalled and JavaScript-only pages cannot be extracted.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Imported Texts Preview */}
           {enrichedTexts.length > 0 && (

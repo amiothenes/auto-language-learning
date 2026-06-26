@@ -59,6 +59,8 @@ export interface ImportedTextData {
   content: string;
   /** Optional tags (from CSV/JSON metadata) */
   tags?: string[];
+  /** Source URL when text was imported via URL fetch */
+  sourceURI?: string;
 }
 
 // ============================================================================

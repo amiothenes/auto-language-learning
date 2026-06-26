@@ -6,6 +6,7 @@ import {
   series,
   tags,
   textTags,
+  texts,
   type NewTag,
   type NewTextTag,
 } from '@/lib/db/schema';
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, content, languageCode, seriesId, tags: tagNames } = body;
+    const { title, content, languageCode, seriesId, tags: tagNames, sourceURI } = body;
 
     if (!title || title.trim().length === 0) {
       return NextResponse.json<ApiErrorResponse>(
@@ -218,7 +219,19 @@ export async function POST(request: NextRequest) {
     }
 
     // ========================================================================
-    // 6. Return Success Response
+    // 6. Save sourceURI to first text page (non-fatal, URL imports only)
+    // ========================================================================
+
+    if (sourceURI && firstTextId) {
+      try {
+        await db.update(texts).set({ sourceURI }).where(eq(texts.id, firstTextId));
+      } catch (error) {
+        console.error('[Text Import] Failed to save sourceURI:', error);
+      }
+    }
+
+    // ========================================================================
+    // 7. Return Success Response
     // ========================================================================
 
     const totalTime = Date.now() - startTime;
