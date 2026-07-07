@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reprocessTextContent, TextProcessingError } from '@/lib/nlp/textProcessor';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
+import { db } from '@/lib/db';
+import { texts } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 // ============================================================================
 // POST /api/texts/[id]/reprocess — Re-run NLP on updated text content
@@ -10,10 +14,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -23,6 +25,15 @@ export async function POST(
         { error: 'Text ID is required' },
         { status: 400 }
       );
+    }
+
+    // Verify text ownership before reprocessing
+    const text = await db.query.texts.findFirst({
+      where: and(eq(texts.id, id), eq(texts.userId, user.id)),
+      columns: { id: true },
+    });
+    if (!text) {
+      return NextResponse.json<ApiErrorResponse>({ error: 'Not found' }, { status: 404 });
     }
 
     const body = await request.json() as { content?: string; firstChangedParagraphIndex?: number };
@@ -41,7 +52,7 @@ export async function POST(
 
     console.log(`[Reprocess] Starting reprocess for text: ${id}${firstChangedParagraphIndex !== undefined ? ` (partial from para ${firstChangedParagraphIndex})` : ''}`);
 
-    const result = await reprocessTextContent(id, body.content.trim(), undefined, firstChangedParagraphIndex);
+    const result = await reprocessTextContent(id, body.content.trim(), undefined, firstChangedParagraphIndex, user.id);
 
     console.log(
       `[Reprocess] Complete: ${result.wordCount} words, ${result.knownPercentage}% known, ${result.processingTime}ms`

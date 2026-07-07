@@ -4,8 +4,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 const REPROCESS_STAGES = [
   'Sending to NLP service…',
   'Lemmatizing words…',
@@ -175,7 +173,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (isDemo || !isFormValid) return;
+      if (!isFormValid) return;
 
       setSaveError(null);
       setIsSaving(true);
@@ -196,10 +194,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
 
             const reprocessRes = await fetch(`/api/texts/${textId}/reprocess`, {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 content: contentInput.trim(),
                 firstChangedParagraphIndex: firstChangedIdx,
@@ -216,10 +211,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
         setSaveStatus('Saving metadata…');
         const patchRes = await fetch(`/api/texts/${textId}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: title.trim(), newTags: parseTags(tagsInput) }),
         });
 
@@ -294,21 +286,21 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
           </h2>
 
           {fetchError ? (
-            <div className="mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded">
-              <p className="font-sans text-ui-sm text-red-800">{fetchError}</p>
+            <div className="mt-4 px-3 py-2 bg-danger/10 border border-danger/30 rounded">
+              <p className="font-sans text-ui-sm text-danger">{fetchError}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               {saveError && (
-                <div className="px-3 py-2 bg-red-50 border border-red-200 rounded">
-                  <p className="font-sans text-ui-sm text-red-800">{saveError}</p>
+                <div className="px-3 py-2 bg-danger/10 border border-danger/30 rounded">
+                  <p className="font-sans text-ui-sm text-danger">{saveError}</p>
                 </div>
               )}
 
               {/* Title */}
               <div>
                 <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                  Title <span className="text-red-600">*</span>
+                  Title <span className="text-danger">*</span>
                 </label>
                 <input
                   ref={titleInputRef}
@@ -350,7 +342,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                 </label>
                 <p className="font-sans text-ui-xs text-muted mb-2">
                   {hasContentChanged
-                    ? 'Content changed — NLP will re-run on save (~10–30s)'
+                    ? 'Content changed. NLP will re-run on save (~10–30s)'
                     : 'Edit to re-parse with NLP and rebuild word highlights'}
                 </p>
                 <textarea
@@ -361,7 +353,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                   className="w-full px-3 py-2 font-serif text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 resize-y"
                 />
                 {hasContentChanged && contentInput.trim().length < 10 && (
-                  <p className="font-sans text-ui-xs text-red-600 mt-1">
+                  <p className="font-sans text-ui-xs text-danger mt-1">
                     Content must be at least 10 characters.
                   </p>
                 )}
@@ -381,12 +373,11 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                 >
                   Cancel
                 </Button>
-                <span title={isDemo ? 'Not available in demo mode' : undefined}>
-                  <Button
+                <Button
                     type="submit"
                     variant="primary"
                     size="md"
-                    disabled={isDemo || !isFormValid || isFetching || isSaving}
+                    disabled={!isFormValid || isFetching || isSaving}
                   >
                     {isSaving
                       ? hasContentChanged
@@ -394,7 +385,6 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                         : 'Saving…'
                       : 'Save Changes'}
                   </Button>
-                </span>
               </div>
             </form>
           )}

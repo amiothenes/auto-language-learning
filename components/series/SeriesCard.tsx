@@ -10,9 +10,9 @@ import { MoreVertical, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function readinessLabel(progress: number): { label: string; className: string } {
-  if (progress >= 80) return { label: 'Ready to read', className: 'text-green-600 bg-green-50 dark:bg-green-950/30' };
-  if (progress >= 65) return { label: 'Challenging',   className: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' };
-  return                      { label: 'Too hard',      className: 'text-red-600 bg-red-50 dark:bg-red-950/30' };
+  if (progress >= 80) return { label: 'Ready to read', className: 'text-primary bg-primary/10' };
+  if (progress >= 65) return { label: 'Challenging',   className: 'text-amber-600 bg-amber-50' };
+  return                      { label: 'Too hard',      className: 'text-danger bg-danger/10' };
 }
 
 interface SeriesCardProps {

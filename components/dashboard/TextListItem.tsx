@@ -51,7 +51,7 @@ export function TextListItem({
         </div>
         <div className="shrink-0">
           <button
-            className="px-4 py-1.5 bg-white text-primary text-ui-sm font-medium font-sans rounded hover:opacity-90 transition-opacity cursor-pointer"
+            className="px-4 py-1.5 bg-white text-primary text-ui-sm font-medium font-sans rounded hover:brightness-90 transition-all cursor-pointer"
             onClick={(e) => { e.stopPropagation(); onClick?.(); }}
           >
             Resume →

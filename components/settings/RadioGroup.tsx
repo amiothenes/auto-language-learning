@@ -45,7 +45,7 @@ export function RadioGroup({
                 'px-4 py-2 text-ui-base',
                 // Variant styles
                 isSelected
-                  ? 'bg-primary text-white shadow-raised hover:opacity-90 hover:shadow-raised-hover active:translate-y-px'
+                  ? 'bg-primary text-white shadow-raised hover:brightness-90 hover:shadow-raised-hover active:translate-y-px'
                   : 'bg-paper border border-border text-ink hover:bg-desk transition-colors',
                 // Focus styles (applied when radio input is focused)
                 'focus-within:outline-none focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2'

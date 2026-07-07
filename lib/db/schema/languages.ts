@@ -1,11 +1,14 @@
-import { pgTable, text, boolean, json, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, json, timestamp, unique } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
 
-export const languages = pgTable('languages', {
+export const languages = pgTable(
+  'languages',
+  {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => createId()),
-  code: text('code').notNull().unique(),
+  code: text('code').notNull(),
+  userId: text('user_id').notNull(),
   name: text('name').notNull(),
   isRTL: boolean('is_rtl').default(false).notNull(),
   dictURI: text('dict_uri'),
@@ -19,7 +22,11 @@ export const languages = pgTable('languages', {
   defaultTranslationLangCode: text('default_translation_lang_code'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+  },
+  (table) => ({
+    uniqueCodeUser: unique('languages_code_user_id_unique').on(table.code, table.userId),
+  })
+);
 
 export type Language = typeof languages.$inferSelect;
 export type NewLanguage = typeof languages.$inferInsert;

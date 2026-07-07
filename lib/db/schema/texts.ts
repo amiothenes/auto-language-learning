@@ -14,6 +14,7 @@ export const texts = pgTable(
     languageId: text('language_id')
       .notNull()
       .references(() => languages.id, { onDelete: 'restrict' }),
+    userId: text('user_id').notNull(),
     seriesId: text('series_id')
       .notNull()
       .references(() => series.id, { onDelete: 'cascade' }),

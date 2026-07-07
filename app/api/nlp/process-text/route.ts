@@ -7,11 +7,12 @@
  * tokenization + lemmatization + POS tagging in one call.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages } from '@/lib/db/schema/languages';
 import { eq } from 'drizzle-orm';
 import { processWithSpacy } from '@/lib/nlp/spacyClient';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // Request/Response Types
@@ -45,11 +46,9 @@ interface ProcessTextResponse {
 // API Route Handler
 // ============================================================================
 
-export async function POST(request: Request) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export async function POST(request: NextRequest) {
+  const { error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const body = (await request.json()) as ProcessTextRequest;

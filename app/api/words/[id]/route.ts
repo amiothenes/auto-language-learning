@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { words, languages, wordTranslations } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // PATCH /api/words/[id] — Update word status and/or translation
@@ -14,10 +15,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -44,7 +43,7 @@ export async function PATCH(
     const [updated] = await db
       .update(words)
       .set(setFields)
-      .where(eq(words.id, id))
+      .where(and(eq(words.id, id), eq(words.userId, user.id)))
       .returning({ id: words.id, status: words.status, translation: words.translation, languageId: words.languageId });
 
     if (!updated) {
@@ -55,7 +54,7 @@ export async function PATCH(
     }
 
     // Write user translation to word_translations as source:'user' — never overwritten by auto-translation
-    // TODO(auth): scope by userId when auth lands
+    // TODO(auth): add userId to wordTranslations table and scope by user.id (post-A sprint)
     if (translation !== undefined) {
       const language = await db.query.languages.findFirst({
         where: eq(languages.id, updated.languageId),
@@ -102,10 +101,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -117,7 +114,7 @@ export async function DELETE(
         statusChangedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(words.id, id))
+      .where(and(eq(words.id, id), eq(words.userId, user.id)))
       .returning({ id: words.id, status: words.status });
 
     if (!updated) {

@@ -43,8 +43,6 @@ import type { ImportTextRequest, ImportTextResponse } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent';
 
 // ============================================================================
@@ -227,10 +225,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       try {
         await fetch(`/api/series/${id}/reorder`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ textIds: newIds }),
         });
         queryClient.invalidateQueries({ queryKey: ['series', id] });
@@ -250,15 +245,11 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   }, []);
 
   const handleTitleUpdate = async (newTitle: string) => {
-    if (isDemo) return;
     setSeriesName(newTitle);
     try {
       const res = await fetch(`/api/series/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTitle }),
       });
       if (!res.ok) throw new Error('Failed to update series name');
@@ -268,7 +259,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleAddText = () => {
-    if (isDemo) return;
     setIsNewTextModalOpen(true);
   };
 
@@ -284,12 +274,10 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleImport = () => {
-    if (isDemo) return;
     setIsImportModalOpen(true);
   };
 
   const handleImportTexts = async (texts: ImportedTextData[]) => {
-    if (isDemo) return;
     const results: ImportTextResponse[] = [];
     const failed: string[] = [];
 
@@ -305,10 +293,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         };
         const response = await fetch('/api/texts/import', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         if (!response.ok) {
@@ -339,11 +324,10 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleConfirmDeleteSeries = async () => {
-    if (isDemo || !deleteSeriesTarget) return;
+    if (!deleteSeriesTarget) return;
     try {
       const res = await fetch(`/api/series/${deleteSeriesTarget.id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
       });
       if (!res.ok) throw new Error('Failed to delete series');
       setDeleteSeriesTarget(null);
@@ -356,11 +340,10 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleConfirmDeleteText = async () => {
-    if (isDemo || !deleteTextTarget) return;
+    if (!deleteTextTarget) return;
     try {
       const res = await fetch(`/api/texts/${deleteTextTarget.id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
       });
       if (!res.ok) throw new Error('Failed to delete text');
       setDeleteTextTarget(null);
@@ -397,7 +380,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             overallProgress={seriesData.overallProgress}
             lastUpdated={seriesData.lastUpdated}
             onTitleUpdate={handleTitleUpdate}
-            onDelete={isDemo ? () => {} : setDeleteSeriesTarget}
+            onDelete={setDeleteSeriesTarget}
           />
         ) : null}
 
@@ -530,42 +513,33 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
               </div>
 
               {/* Reorder toggle */}
-              <span title={isDemo ? 'Not available in demo mode' : undefined}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<ArrowUpDown size={14} strokeWidth={2} />}
-                  onClick={handleToggleReorder}
-                  disabled={isDemo}
-                  className={reorderMode ? 'border-primary text-primary' : ''}
-                >
-                  {reorderMode ? 'Done' : 'Reorder'}
-                </Button>
-              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<ArrowUpDown size={14} strokeWidth={2} />}
+                onClick={handleToggleReorder}
+                className={reorderMode ? 'border-primary text-primary' : ''}
+              >
+                {reorderMode ? 'Done' : 'Reorder'}
+              </Button>
 
-              <span title={isDemo ? 'Not available in demo mode' : undefined}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<Plus size={14} strokeWidth={2} />}
-                  onClick={handleAddText}
-                  disabled={isDemo}
-                >
-                  Add
-                </Button>
-              </span>
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus size={14} strokeWidth={2} />}
+                onClick={handleAddText}
+              >
+                Add
+              </Button>
 
-              <span title={isDemo ? 'Not available in demo mode' : undefined}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<Upload size={14} strokeWidth={1.5} />}
-                  onClick={handleImport}
-                  disabled={isDemo}
-                >
-                  Import
-                </Button>
-              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<Upload size={14} strokeWidth={1.5} />}
+                onClick={handleImport}
+              >
+                Import
+              </Button>
             </div>
 
             {/* Texts content */}
@@ -606,8 +580,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                         isCurrentlyReading={text.id === seriesData?.lastReadTextId}
                         reorderMode={reorderMode}
                         onRead={() => router.push(`/reader/${text.id}`)}
-                        onEdit={isDemo ? () => {} : () => setEditTextTarget({ id: text.id, title: text.title })}
-                        onDelete={isDemo ? () => {} : () => setDeleteTextTarget({ id: text.id, title: text.title })}
+                        onEdit={() => setEditTextTarget({ id: text.id, title: text.title })}
+                        onDelete={() => setDeleteTextTarget({ id: text.id, title: text.title })}
                       />
                     ))}
                   </div>
@@ -624,8 +598,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                     knownPercentage={text.knownPercentage}
                     lastRead={text.lastRead}
                     preview={text.preview}
-                    onDelete={isDemo ? () => {} : setDeleteTextTarget}
-                    onEdit={isDemo ? () => {} : setEditTextTarget}
+                    onDelete={setDeleteTextTarget}
+                    onEdit={setEditTextTarget}
                   />
                 ))}
               </div>

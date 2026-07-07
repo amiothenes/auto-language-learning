@@ -261,7 +261,8 @@ export async function processTextForImport(
   languageId: string,
   seriesId: string,
   order?: number,
-  progressCallback?: ProgressCallback
+  progressCallback?: ProgressCallback,
+  userId?: string
 ): Promise<ProcessedTextResult> {
   const startTime = Date.now();
 
@@ -313,9 +314,13 @@ export async function processTextForImport(
         // Get all unique lemmas from lemmatization results
         const uniqueLemmas = [...new Set(Array.from(lemmaResults.values()).map((r) => r.lemma))];
 
-        // Batch query existing words (NOT N+1 queries)
+        // Batch query existing words (NOT N+1 queries) — scoped to this user
         const existingWords = await tx.query.words.findMany({
-          where: and(eq(words.languageId, languageId), inArray(words.lemma, uniqueLemmas)),
+          where: and(
+            eq(words.languageId, languageId),
+            inArray(words.lemma, uniqueLemmas),
+            userId ? eq(words.userId, userId) : undefined,
+          ),
         });
 
         // Create map: lemma → Word record
@@ -347,6 +352,7 @@ export async function processTextForImport(
             return {
               lemma,
               languageId,
+              userId: userId ?? 'system',
               status: 'UNKNOWN' as const,
               romanization,
               dictionaryFrequency: 0, // TODO: Integrate frequency dictionary
@@ -391,7 +397,8 @@ export async function processTextForImport(
             .where(
               and(
                 eq(words.languageId, languageId),
-                inArray(words.lemma, existingLemmas)
+                inArray(words.lemma, existingLemmas),
+                userId ? eq(words.userId, userId) : undefined,
               )
             );
 
@@ -413,6 +420,7 @@ export async function processTextForImport(
             title,
             content: processedContent,
             languageId,
+            userId: userId ?? 'system',
             seriesId,
             order: order ?? 1,
             wordCount,
@@ -480,9 +488,13 @@ export async function processTextForImport(
         // Step 12: Calculate Known Percentage (92-95%)
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
-        // Query word statuses for all unique lemmas in this text
+        // Query word statuses for all unique lemmas in this text — scoped to this user
         const wordStatuses = await tx.query.words.findMany({
-          where: and(eq(words.languageId, languageId), inArray(words.lemma, uniqueLemmas)),
+          where: and(
+            eq(words.languageId, languageId),
+            inArray(words.lemma, uniqueLemmas),
+            userId ? eq(words.userId, userId) : undefined,
+          ),
           columns: {
             lemma: true,
             status: true,
@@ -577,7 +589,8 @@ export async function reprocessTextContent(
   textId: string,
   newContent: string,
   progressCallback?: ProgressCallback,
-  firstChangedParagraphIndex?: number
+  firstChangedParagraphIndex?: number,
+  userId?: string
 ): Promise<ReprocessResult> {
   const startTime = Date.now();
 
@@ -646,7 +659,11 @@ export async function reprocessTextContent(
         const uniqueLemmas = [...new Set(Array.from(lemmaResults.values()).map((r) => r.lemma))];
 
         const existingWords = await tx.query.words.findMany({
-          where: and(eq(words.languageId, language.id), inArray(words.lemma, uniqueLemmas)),
+          where: and(
+            eq(words.languageId, language.id),
+            inArray(words.lemma, uniqueLemmas),
+            userId ? eq(words.userId, userId) : undefined,
+          ),
         });
 
         const existingWordsMap = new Map(existingWords.map((w) => [w.lemma, w]));
@@ -663,6 +680,7 @@ export async function reprocessTextContent(
             return {
               lemma,
               languageId: language.id,
+              userId: userId ?? 'system',
               status: 'UNKNOWN' as const,
               romanization,
               dictionaryFrequency: 0,
@@ -740,7 +758,11 @@ export async function reprocessTextContent(
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
         const wordStatuses = await tx.query.words.findMany({
-          where: and(eq(words.languageId, language.id), inArray(words.lemma, uniqueLemmas)),
+          where: and(
+            eq(words.languageId, language.id),
+            inArray(words.lemma, uniqueLemmas),
+            userId ? eq(words.userId, userId) : undefined,
+          ),
           columns: { lemma: true, status: true },
         });
 

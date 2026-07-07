@@ -192,7 +192,7 @@ export function ReaderContent({
           alt=""
           className="opacity-60"
         />
-        <p className="font-serif italic text-content-base text-muted">— End —</p>
+        <p className="font-serif italic text-content-base text-muted">End</p>
         {seriesId && (
           <Link
             href={`/series/${seriesId}`}

@@ -11,6 +11,7 @@ export const series = pgTable(
     name: text('name').notNull(),
     description: text('description'),
     languageId: text('language_id').notNull().references(() => languages.id, { onDelete: 'restrict' }),
+    userId: text('user_id').notNull(),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

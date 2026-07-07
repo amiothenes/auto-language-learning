@@ -101,10 +101,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
     try {
       const res = await fetch(`/api/words/${item.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, translation }),
       });
       if (!res.ok) throw new Error('Failed to update word');
@@ -186,7 +183,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
             </div>
 
             {error && (
-              <p className="font-sans text-ui-xs text-red-600">{error}</p>
+              <p className="font-sans text-ui-xs text-danger">{error}</p>
             )}
 
             <div className="flex justify-end gap-3 pt-1">

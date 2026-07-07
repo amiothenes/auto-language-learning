@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processTranslationsForText } from '@/lib/translation/translationService';
+import { requireUser } from '@/lib/auth/requireUser';
+import { db } from '@/lib/db';
+import { texts } from '@/lib/db/schema';
+import { and, eq } from 'drizzle-orm';
 
 // ============================================================================
 // POST /api/translations/process
 // Internal endpoint — can also be triggered via cron or external tooling.
 // Core logic lives in translationService.processTranslationsForText.
-// TODO(auth): accept userId to scope target language per-user when auth lands
 // ============================================================================
 
 export async function POST(request: NextRequest) {
-  const secret = request.headers.get('x-admin-key');
-  if (secret !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   let body: { textId: string };
   try {
@@ -24,6 +25,14 @@ export async function POST(request: NextRequest) {
   const { textId } = body;
   if (!textId) {
     return NextResponse.json({ error: 'textId is required' }, { status: 400 });
+  }
+
+  const text = await db.query.texts.findFirst({
+    where: and(eq(texts.id, textId), eq(texts.userId, user.id)),
+    columns: { id: true },
+  });
+  if (!text) {
+    return NextResponse.json({ error: 'Text not found' }, { status: 404 });
   }
 
   await processTranslationsForText(textId);

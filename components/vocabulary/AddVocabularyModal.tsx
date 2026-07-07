@@ -232,7 +232,7 @@ export function AddVocabularyModal({
             {/* Lemma */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Lemma (Root Word) <span className="text-red-600">*</span>
+                Lemma (Root Word) <span className="text-danger">*</span>
               </label>
               <input
                 ref={lemmaInputRef}
@@ -253,7 +253,7 @@ export function AddVocabularyModal({
             {/* Translation */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Translation <span className="text-red-600">*</span>
+                Translation <span className="text-danger">*</span>
               </label>
               <input
                 type="text"

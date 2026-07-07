@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { languages, words } from '@/lib/db/schema';
 import { eq, and, ne, isNotNull, sql } from 'drizzle-orm';
 import type { StatsHistoryResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/stats/history — Cumulative vocab growth over time for a language
@@ -17,6 +18,9 @@ import type { StatsHistoryResponse, ApiErrorResponse } from '@/lib/types/api';
  *   languageCode  string  required
  */
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -50,6 +54,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(words.languageId, language.id),
+          eq(words.userId, user.id),
           ne(words.status, 'UNKNOWN'),
           ne(words.status, 'IGNORE'),
           isNotNull(words.statusChangedAt),
@@ -74,6 +79,7 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(words.languageId, language.id),
+            eq(words.userId, user.id),
             ne(words.status, 'UNKNOWN'),
             ne(words.status, 'IGNORE'),
             isNotNull(words.statusChangedAt),

@@ -282,8 +282,8 @@ export function NewTextModal({
 
           {/* Error banner */}
           {mutation.isError && (
-            <div className="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded">
-              <p className="font-sans text-ui-sm text-red-800">
+            <div className="mt-3 px-3 py-2 bg-danger/10 border border-danger/30 rounded">
+              <p className="font-sans text-ui-sm text-danger">
                 {mutation.error?.message || 'Failed to import text. Please try again.'}
               </p>
             </div>
@@ -294,7 +294,7 @@ export function NewTextModal({
             {/* Text Title */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Title <span className="text-red-600">*</span>
+                Title <span className="text-danger">*</span>
               </label>
               <input
                 ref={titleInputRef}
@@ -323,7 +323,7 @@ export function NewTextModal({
             {!lockedSeriesName && (
               <div>
                 <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                  Series <span className="text-red-600">*</span>
+                  Series <span className="text-danger">*</span>
                 </label>
                 <select
                   value={formData.seriesId}
@@ -357,7 +357,7 @@ export function NewTextModal({
             {/* Text Content */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Content <span className="text-red-600">*</span>
+                Content <span className="text-danger">*</span>
               </label>
               <textarea
                 placeholder="Paste the full text content here..."
@@ -371,7 +371,7 @@ export function NewTextModal({
               />
               <p className="font-sans text-ui-xs text-muted mt-1">
                 {contentLength < 10 ? (
-                  <span className="text-red-600">
+                  <span className="text-danger">
                     Minimum 10 characters required ({contentLength}/10)
                   </span>
                 ) : estimatedParts > 1 ? (

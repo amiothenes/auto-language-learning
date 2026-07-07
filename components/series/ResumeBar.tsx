@@ -34,7 +34,7 @@ export function ResumeBar() {
       {/* Right: resume button */}
       <button
         onClick={() => router.push(`/reader/${textId}`)}
-        className="shrink-0 bg-white text-primary font-sans text-ui-xs font-bold px-3 py-1.5 rounded-sm cursor-pointer hover:opacity-90 transition-opacity"
+        className="shrink-0 bg-white text-primary font-sans text-ui-xs font-bold px-3 py-1.5 rounded-sm cursor-pointer hover:brightness-90 transition-all"
       >
         Resume →
       </button>

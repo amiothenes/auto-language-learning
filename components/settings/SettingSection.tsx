@@ -23,12 +23,12 @@ export function SettingSection({
     <Card
       variant="default"
       padding="lg"
-      className={variant === 'danger' ? 'border-red-300 bg-red-50/30' : ''}
+      className={variant === 'danger' ? 'border-danger/30 bg-danger/10' : ''}
     >
       <CardHeader>
         <h2
           className={`font-sans text-ui-lg font-semibold ${
-            variant === 'danger' ? 'text-red-700' : 'text-ink'
+            variant === 'danger' ? 'text-danger' : 'text-ink'
           }`}
         >
           {title}

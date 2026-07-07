@@ -7,6 +7,7 @@ import { SettingsHeaderDecoration } from '@/components/ui/SettingsHeaderDecorati
 import { SettingsSearch } from '@/components/settings/SettingsSearch';
 
 const tabs = [
+  { id: 'account', label: 'Account', href: '/settings/account' },
   { id: 'display', label: 'Display', href: '/settings/display' },
   { id: 'languages', label: 'Languages', href: '/settings/languages' },
   { id: 'data', label: 'Data', href: '/settings/data' },

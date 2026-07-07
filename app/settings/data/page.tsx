@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
 import { AlertTriangle, Upload } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Button } from '@/components/ui/Button';
@@ -23,12 +21,8 @@ export default function DataSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDeleteAllData = async () => {
-    if (isDemo) return;
     try {
-      const res = await fetch('/api/data', {
-        method: 'DELETE',
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
-      });
+      const res = await fetch('/api/data', { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         console.error('Failed to delete data:', err);
@@ -46,7 +40,7 @@ export default function DataSettingsPage() {
   };
 
   const handleLwtImport = async () => {
-    if (isDemo || !lwtFile) return;
+    if (!lwtFile) return;
     setLwtStatus(null);
 
     const text = await lwtFile.text();
@@ -69,14 +63,10 @@ export default function DataSettingsPage() {
     form.append('languageId', languageId);
 
     try {
-      const res = await fetch('/api/vocabulary/import-lwt', {
-        method: 'POST',
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
-        body: form,
-      });
+      const res = await fetch('/api/vocabulary/import-lwt', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok) {
-        setLwtStatus(`Error: ${data.error}${data.details ? ` — ${data.details}` : ''}`);
+        setLwtStatus(`Error: ${data.error}${data.details ? `. ${data.details}` : ''}`);
       } else {
         setLwtStatus(`Imported ${data.imported} words. Skipped ${data.skipped}.`);
       }
@@ -106,7 +96,6 @@ export default function DataSettingsPage() {
         description="Bulk-import vocabulary from a Learning With Texts .tsv/.txt export"
       >
         <div className="space-y-3">
-          {/* Drag-and-drop zone */}
           <div
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
@@ -142,20 +131,18 @@ export default function DataSettingsPage() {
             />
           </div>
 
-          <span title={isDemo ? 'Not available in demo mode' : undefined}>
-            <Button
-              variant="secondary"
-              size="md"
-              leftIcon={<Upload size={18} strokeWidth={2} />}
-              onClick={handleLwtImport}
-              disabled={isDemo || !lwtFile || lwtLoading}
-              className="w-full justify-start"
-            >
-              <span className="flex-1 text-left">
-                {lwtLoading ? 'Importing…' : 'Import from LWT (.tsv / .txt)'}
-              </span>
-            </Button>
-          </span>
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={<Upload size={18} strokeWidth={2} />}
+            onClick={handleLwtImport}
+            disabled={!lwtFile || lwtLoading}
+            className="w-full justify-start"
+          >
+            <span className="flex-1 text-left">
+              {lwtLoading ? 'Importing...' : 'Import from LWT (.tsv / .txt)'}
+            </span>
+          </Button>
           {lwtStatus && (
             <p className="font-sans text-ui-sm text-muted ml-1">{lwtStatus}</p>
           )}
@@ -169,20 +156,20 @@ export default function DataSettingsPage() {
         variant="danger"
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
+          <div className="flex items-start gap-3 p-4 bg-danger/10 border border-danger/30 rounded">
+            <AlertTriangle className="w-5 h-5 text-danger shrink-0 mt-0.5" strokeWidth={2} />
             <div className="flex-1">
-              <h3 className="font-sans text-ui-base font-semibold text-red-900 mb-1">
+              <h3 className="font-sans text-ui-base font-semibold text-ink mb-1">
                 Delete All Data
               </h3>
-              <p className="font-sans text-ui-sm text-red-700 mb-3">
+              <p className="font-sans text-ui-sm text-muted mb-3">
                 Permanently delete all your vocabulary, progress, and settings. This action
                 cannot be undone.
               </p>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block font-sans text-ui-sm font-medium text-red-900 mb-2">
+                  <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
                     Type <span className="font-mono font-bold">DELETE</span> to confirm
                   </label>
                   <input
@@ -190,32 +177,25 @@ export default function DataSettingsPage() {
                     value={deleteInput}
                     onChange={(e) => setDeleteInput(e.target.value)}
                     placeholder="Type DELETE"
-                    className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-white border border-red-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                    className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-danger/40 rounded focus:outline-none focus:ring-2 focus:ring-danger focus:border-danger transition-all"
                   />
                 </div>
 
-                <span title={isDemo ? 'Not available in demo mode' : undefined}>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isDemo || !isDeleteEnabled}
-                    className={`${
-                      isDeleteEnabled && !isDemo
-                        ? 'bg-red-600 hover:bg-red-700'
-                        : 'bg-red-300 cursor-not-allowed'
-                    }`}
-                  >
-                    Delete All Data
-                  </Button>
-                </span>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={!isDeleteEnabled}
+                  className={isDeleteEnabled ? 'bg-danger hover:brightness-90' : 'bg-danger/40 cursor-not-allowed'}
+                >
+                  Delete All Data
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </SettingSection>
 
-      {/* LWT Language Confirmation Modal */}
       <LwtLanguageModal
         isOpen={showLwtLangModal}
         onClose={() => setShowLwtLangModal(false)}
@@ -223,7 +203,6 @@ export default function DataSettingsPage() {
         detectedLanguageName={detectedLangName}
       />
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => {

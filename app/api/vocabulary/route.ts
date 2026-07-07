@@ -5,6 +5,7 @@ import { eq, ne, and, ilike, asc, desc, count, countDistinct, inArray, SQL } fro
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { VocabularyItem } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/vocabulary — Paginated, filtered vocabulary list for a language
@@ -20,6 +21,9 @@ import type { ApiErrorResponse } from '@/lib/types/api';
  *   limit         number  optional — default 50, max 100
  */
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -51,7 +55,7 @@ export async function GET(request: NextRequest) {
     // Build WHERE conditions
     // ========================================================================
 
-    const conditions: SQL[] = [eq(words.languageId, language.id)];
+    const conditions: SQL[] = [eq(words.languageId, language.id), eq(words.userId, user.id)];
 
     if (statusParam && Object.values(VocabularyStatus).includes(statusParam as VocabularyStatus)) {
       conditions.push(eq(words.status, statusParam as VocabularyStatus));

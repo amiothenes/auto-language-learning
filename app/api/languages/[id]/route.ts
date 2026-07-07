@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages, texts, words, series } from '@/lib/db/schema';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, and } from 'drizzle-orm';
 import type { ApiErrorResponse, LanguageItem, UpdateLanguageResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // DELETE /api/languages/[id] — Delete a language by ID
@@ -13,19 +14,26 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json<ApiErrorResponse>({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   const { id } = await params;
 
   try {
+    // Verify ownership
+    const lang = await db.query.languages.findFirst({
+      where: and(eq(languages.id, id), eq(languages.userId, user.id)),
+      columns: { id: true },
+    });
+    if (!lang) {
+      return NextResponse.json<ApiErrorResponse>({ error: 'Language not found' }, { status: 404 });
+    }
+
     // Check for references before deleting
     const [textCount, wordCount, seriesCount] = await Promise.all([
-      db.select({ value: count() }).from(texts).where(eq(texts.languageId, id)),
-      db.select({ value: count() }).from(words).where(eq(words.languageId, id)),
-      db.select({ value: count() }).from(series).where(eq(series.languageId, id)),
+      db.select({ value: count() }).from(texts).where(and(eq(texts.languageId, id), eq(texts.userId, user.id))),
+      db.select({ value: count() }).from(words).where(and(eq(words.languageId, id), eq(words.userId, user.id))),
+      db.select({ value: count() }).from(series).where(and(eq(series.languageId, id), eq(series.userId, user.id))),
     ]);
 
     const totalRefs =
@@ -44,7 +52,7 @@ export async function DELETE(
       );
     }
 
-    await db.delete(languages).where(eq(languages.id, id));
+    await db.delete(languages).where(and(eq(languages.id, id), eq(languages.userId, user.id)));
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
@@ -67,10 +75,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json<ApiErrorResponse>({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   const { id } = await params;
 
@@ -96,7 +102,7 @@ export async function PATCH(
     const [row] = await db
       .update(languages)
       .set(updates)
-      .where(eq(languages.id, id))
+      .where(and(eq(languages.id, id), eq(languages.userId, user.id)))
       .returning();
 
     if (!row) {

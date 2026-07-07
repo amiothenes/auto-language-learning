@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages } from '@/lib/db/schema';
-import { asc } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { LanguageItem, LanguagesListResponse, CreateLanguageResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/languages — List all available languages
 // ============================================================================
 
 export async function GET() {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const rows = await db.query.languages.findMany({
+      where: eq(languages.userId, user.id),
       orderBy: [asc(languages.name)],
     });
 
@@ -42,10 +47,8 @@ export async function GET() {
 // ============================================================================
 
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json<ApiErrorResponse>({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const body = await request.json().catch(() => null);
@@ -74,6 +77,7 @@ export async function POST(request: NextRequest) {
       .values({
         name: name.trim(),
         code: code.trim().toLowerCase(),
+        userId: user.id,
         isRTL: isRTL ?? false,
         dictURI: dictURI?.trim() || null,
         googleTTSCode: googleTTSCode?.trim() || null,

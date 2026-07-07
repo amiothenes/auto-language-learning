@@ -1,19 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UpdateLanguageRequest, UpdateLanguageResponse, LanguageItem } from '@/lib/types/api';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 export function useUpdateLanguage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: UpdateLanguageRequest & { id: string }): Promise<LanguageItem> => {
-      if (isDemo) return {} as LanguageItem;
       const { id, ...body } = data;
       const res = await fetch(`/api/languages/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
         },
         body: JSON.stringify(body),
       });

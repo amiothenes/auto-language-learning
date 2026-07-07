@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { texts } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 interface AdjacentText {
   id: string;
@@ -26,11 +27,14 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   const { id } = await params;
   const sort = (request.nextUrl.searchParams.get('sort') ?? 'title-asc') as SortOption;
 
   const current = await db.query.texts.findFirst({
-    where: eq(texts.id, id),
+    where: and(eq(texts.id, id), eq(texts.userId, user.id)),
     columns: { seriesId: true },
   });
 
@@ -42,7 +46,7 @@ export async function GET(
   }
 
   const allTexts = await db.query.texts.findMany({
-    where: eq(texts.seriesId, current.seriesId),
+    where: and(eq(texts.seriesId, current.seriesId), eq(texts.userId, user.id)),
     columns: { id: true, title: true, knownPercentage: true, lastViewedAt: true },
   });
 

@@ -4,6 +4,7 @@ import { texts, series, languages } from '@/lib/db/schema';
 import { eq, desc, isNotNull, and } from 'drizzle-orm';
 import { formatRelativeTime } from '@/lib/utils';
 import type { LastPositionResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/reader/last-position — Most recently read text for a language
@@ -17,6 +18,9 @@ import type { LastPositionResponse, ApiErrorResponse } from '@/lib/types/api';
  *   languageCode  string  required
  */
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -52,7 +56,7 @@ export async function GET(request: NextRequest) {
       })
       .from(texts)
       .innerJoin(series, eq(texts.seriesId, series.id))
-      .where(and(eq(texts.languageId, language.id), isNotNull(texts.lastViewedAt)))
+      .where(and(eq(texts.languageId, language.id), eq(texts.userId, user.id), isNotNull(texts.lastViewedAt)))
       .orderBy(desc(texts.lastViewedAt))
       .limit(1);
 

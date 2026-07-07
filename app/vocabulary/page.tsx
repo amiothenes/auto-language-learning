@@ -25,8 +25,6 @@ import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@
 import { useVocabulary } from '@/lib/hooks/useVocabulary';
 import { useStats } from '@/lib/hooks/useStats';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 // ============================================================================
 // Vocabulary Page Component
 // ============================================================================
@@ -101,13 +99,9 @@ export default function VocabularyPage() {
   // Bulk update mutation (mark as known, etc.)
   const bulkUpdateMutation = useMutation({
     mutationFn: async ({ wordIds, status }: { wordIds: string[]; status: VocabularyStatus }) => {
-      if (isDemo) return {} as { updated: number };
       const res = await fetch('/api/vocabulary/bulk-update', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ wordIds, status }),
       });
       if (!res.ok) throw new Error('Failed to update words');
@@ -128,10 +122,8 @@ export default function VocabularyPage() {
   // Single-word delete mutation (soft delete — resets status to UNKNOWN)
   const deleteMutation = useMutation({
     mutationFn: async (wordId: string) => {
-      if (isDemo) return;
       const res = await fetch(`/api/words/${wordId}`, {
         method: 'DELETE',
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
       });
       if (!res.ok) throw new Error('Failed to reset word');
     },
@@ -151,13 +143,9 @@ export default function VocabularyPage() {
   // Bulk delete mutation (soft deletes all selected words in parallel)
   const bulkDeleteMutation = useMutation({
     mutationFn: async (wordIds: string[]) => {
-      if (isDemo) return;
       await Promise.all(
         wordIds.map((id) =>
-          fetch(`/api/words/${id}`, {
-            method: 'DELETE',
-            headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
-          })
+          fetch(`/api/words/${id}`, { method: 'DELETE' })
         )
       );
     },
@@ -213,7 +201,6 @@ export default function VocabularyPage() {
 
   // Bulk action handlers
   const handleMarkAsKnown = () => {
-    if (isDemo) return;
     bulkUpdateMutation.mutate({
       wordIds: Array.from(selectedIds),
       status: VocabularyStatus.KNOWN,
@@ -272,28 +259,22 @@ export default function VocabularyPage() {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <span title={isDemo ? 'Not available in demo mode' : undefined}>
-              <Button
-                variant="secondary"
-                size="lg"
-                leftIcon={<Upload size={18} strokeWidth={1.5} />}
-                onClick={() => setIsImportVocabModalOpen(true)}
-                disabled={isDemo}
-              >
-                Import
-              </Button>
-            </span>
-            <span title={isDemo ? 'Not available in demo mode' : undefined}>
-              <Button
-                variant="primary"
-                size="lg"
-                leftIcon={<Plus size={18} strokeWidth={2} />}
-                onClick={() => setIsAddVocabModalOpen(true)}
-                disabled={isDemo}
-              >
-                Add Vocabulary
-              </Button>
-            </span>
+            <Button
+              variant="secondary"
+              size="lg"
+              leftIcon={<Upload size={18} strokeWidth={1.5} />}
+              onClick={() => setIsImportVocabModalOpen(true)}
+            >
+              Import
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              leftIcon={<Plus size={18} strokeWidth={2} />}
+              onClick={() => setIsAddVocabModalOpen(true)}
+            >
+              Add Vocabulary
+            </Button>
           </div>
         </header>
 

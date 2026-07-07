@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { texts, tags, textTags } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { TextData } from '@/lib/types/content';
 import type { TextDetailResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/texts/[id] — Full text metadata + content for the reader
@@ -17,6 +18,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
 
@@ -34,7 +38,7 @@ export async function GET(
     // ========================================================================
 
     const text = await db.query.texts.findFirst({
-      where: eq(texts.id, id),
+      where: and(eq(texts.id, id), eq(texts.userId, user.id)),
       with: {
         series: true,
         tags: {
@@ -92,10 +96,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -116,7 +118,7 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      await db.update(texts).set({ title: trimmed }).where(eq(texts.id, id));
+      await db.update(texts).set({ title: trimmed }).where(and(eq(texts.id, id), eq(texts.userId, user.id)));
     }
 
     if (body.newTags !== undefined) {
@@ -139,7 +141,7 @@ export async function PATCH(
     }
 
     const updated = await db.query.texts.findFirst({
-      where: eq(texts.id, id),
+      where: and(eq(texts.id, id), eq(texts.userId, user.id)),
       with: { series: true, tags: { with: { tag: true } } },
     });
 
@@ -184,10 +186,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -195,7 +195,7 @@ export async function DELETE(
     // sentences and wordInstances have onDelete: 'cascade' — DB handles cleanup
     const [deleted] = await db
       .delete(texts)
-      .where(eq(texts.id, id))
+      .where(and(eq(texts.id, id), eq(texts.userId, user.id)))
       .returning({ id: texts.id });
 
     if (!deleted) {

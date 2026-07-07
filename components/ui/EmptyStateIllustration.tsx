@@ -1,3 +1,7 @@
+'use client';
+
+import { useId } from 'react';
+
 export type IllustrationType =
   | 'books' | 'pages' | 'vocabulary' | 'search' | 'quill' | 'compass'
   | 'leaf' | 'sprout' | 'stones' | 'lantern' | 'mountain' | 'laurel'
@@ -31,6 +35,8 @@ export function EmptyStateIllustration({
   type: IllustrationType;
   size?: number;
 }) {
+  const filterId = useId();
+
   return (
     <div
       className="relative"
@@ -45,6 +51,36 @@ export function EmptyStateIllustration({
         height={size}
         style={{ width: size, height: size, objectFit: 'contain' }}
       />
+      {/* Risograph grain overlay — subtle analog texture on empty-state line art */}
+      <svg
+        className="absolute inset-0 pointer-events-none"
+        width={size}
+        height={size}
+        aria-hidden="true"
+      >
+        <defs>
+          <filter id={filterId}>
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.68"
+              numOctaves="3"
+              stitchTiles="stitch"
+              result="noise"
+            />
+            <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise" />
+            <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended" />
+            <feComposite in="blended" in2="SourceGraphic" operator="in" />
+          </filter>
+        </defs>
+        <rect
+          width={size}
+          height={size}
+          fill="currentColor"
+          filter={`url(#${filterId})`}
+          opacity="0.06"
+          className="text-ink"
+        />
+      </svg>
     </div>
   );
 }

@@ -9,8 +9,6 @@ import { RecentTextsList } from '@/components/dashboard/RecentTextsList';
 import { ActionButtons } from '@/components/dashboard/ActionButtons';
 import { EmptyState } from '@/components/ui/EmptyState';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 export default function Dashboard() {
   const router = useRouter();
   const { currentLanguage } = useLanguage();
@@ -54,7 +52,7 @@ export default function Dashboard() {
 
           {/* RIGHT COLUMN: Recent Texts — second on mobile, right on desktop */}
           <div className="space-y-6">
-            <RecentTextsList isDemo={isDemo} />
+            <RecentTextsList />
             <div className="hidden xl:block">
               <ActionButtons />
             </div>

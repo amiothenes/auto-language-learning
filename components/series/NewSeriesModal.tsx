@@ -169,7 +169,7 @@ export function NewSeriesModal({
                   Creating series...
                 </p>
                 <p className="font-sans text-ui-xs text-muted mt-1">
-                  {hasText ? 'Processing text — this may take a few seconds' : 'Just a moment'}
+                  {hasText ? 'Processing text, this may take a few seconds' : 'Just a moment'}
                 </p>
               </div>
             </div>
@@ -184,8 +184,8 @@ export function NewSeriesModal({
 
           {/* Error banner */}
           {submitError && (
-            <div className="mb-4 px-3 py-2 bg-red-50 border border-red-200 rounded">
-              <p className="font-sans text-ui-sm text-red-800">{submitError}</p>
+            <div className="mb-4 px-3 py-2 bg-danger/10 border border-danger/30 rounded">
+              <p className="font-sans text-ui-sm text-danger">{submitError}</p>
             </div>
           )}
 
@@ -193,7 +193,7 @@ export function NewSeriesModal({
             {/* Series Name */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Series Name <span className="text-red-600">*</span>
+                Series Name <span className="text-danger">*</span>
               </label>
               <input
                 ref={nameInputRef}

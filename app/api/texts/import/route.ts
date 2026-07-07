@@ -10,7 +10,7 @@ import {
   type NewTag,
   type NewTextTag,
 } from '@/lib/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import {
   processTextForImport,
   TextProcessingError,
@@ -18,16 +18,15 @@ import {
 } from '@/lib/nlp/textProcessor';
 import { splitIntoChunks } from '@/lib/nlp/textChunker';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/texts/import - Import text with NLP processing
 // ============================================================================
 
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   const startTime = Date.now();
 
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     // ========================================================================
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -119,7 +118,7 @@ export async function POST(request: NextRequest) {
     } else {
       const [newSeries] = await db
         .insert(series)
-        .values({ name: title.trim(), languageId: language.id })
+        .values({ name: title.trim(), languageId: language.id, userId: user.id })
         .returning();
       resolvedSeriesId = newSeries.id;
       console.log(`[Text Import] Series auto-created: ${newSeries.id} ("${newSeries.name}")`);
@@ -147,7 +146,9 @@ export async function POST(request: NextRequest) {
           chunks[i],
           language.id,
           resolvedSeriesId,
-          i + 1
+          i + 1,
+          undefined,
+          user.id
         );
 
         console.log(

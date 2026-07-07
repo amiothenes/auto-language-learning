@@ -2,18 +2,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CreateLanguageResponse, LanguageItem } from '@/lib/types/api';
 import type { NewLanguageData } from '@/components/settings/AddLanguageModal';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 export function useCreateLanguage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: NewLanguageData): Promise<LanguageItem> => {
-      if (isDemo) return {} as LanguageItem;
       const res = await fetch('/api/languages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
         },
         body: JSON.stringify({
           name: data.name,

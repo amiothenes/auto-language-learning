@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { languages, words, texts } from '@/lib/db/schema';
 import { eq, and, isNotNull, count, inArray, sql, desc } from 'drizzle-orm';
 import type { StatsResponse, ApiErrorResponse, CefrBand } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/stats — Aggregate dashboard statistics for a language
@@ -18,6 +19,9 @@ import type { StatsResponse, ApiErrorResponse, CefrBand } from '@/lib/types/api'
  *   languageCode  string  required — e.g. "ru", "es"
  */
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
     // ========================================================================
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -61,31 +65,32 @@ export async function GET(request: NextRequest) {
       db
         .select({ status: words.status, total: count() })
         .from(words)
-        .where(eq(words.languageId, language.id))
+        .where(and(eq(words.languageId, language.id), eq(words.userId, user.id)))
         .groupBy(words.status),
 
       db
         .select({ total: count() })
         .from(texts)
-        .where(eq(texts.languageId, language.id)),
+        .where(and(eq(texts.languageId, language.id), eq(texts.userId, user.id))),
 
       db
         .select({ total: count() })
         .from(texts)
-        .where(and(eq(texts.languageId, language.id), isNotNull(texts.lastViewedAt))),
+        .where(and(eq(texts.languageId, language.id), eq(texts.userId, user.id), isNotNull(texts.lastViewedAt))),
 
       db
         .select({ dictionaryFrequency: words.dictionaryFrequency })
         .from(words)
         .where(and(
           eq(words.languageId, language.id),
+          eq(words.userId, user.id),
           inArray(words.status, ['KNOWN', 'WELL_KNOWN']),
         )),
 
       db
         .selectDistinct({ date: sql<string>`DATE(${texts.lastViewedAt} AT TIME ZONE 'UTC')` })
         .from(texts)
-        .where(and(eq(texts.languageId, language.id), isNotNull(texts.lastViewedAt)))
+        .where(and(eq(texts.languageId, language.id), eq(texts.userId, user.id), isNotNull(texts.lastViewedAt)))
         .orderBy(desc(sql`DATE(${texts.lastViewedAt} AT TIME ZONE 'UTC')`)),
     ]);
 

@@ -131,7 +131,7 @@ export function WordTooltip({
               </span>
             </div>
             <button
-              onMouseEnter={onClose}
+              onClick={onClose}
               className="text-muted hover:text-ink transition-colors p-0.5 -mr-1"
               aria-label="Close"
             >

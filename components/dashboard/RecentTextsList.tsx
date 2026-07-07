@@ -14,7 +14,6 @@ import { NewTextModal } from '@/components/texts/NewTextModal';
 
 interface RecentTextsListProps {
   isLoading?: boolean;
-  isDemo?: boolean;
 }
 
 function TextListItemSkeleton() {
@@ -36,7 +35,7 @@ function TextListItemSkeleton() {
   );
 }
 
-export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = false }: RecentTextsListProps) {
+export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentTextsListProps) {
   const router = useRouter();
   const [showNewTextModal, setShowNewTextModal] = useState(false);
   const { data: texts, isLoading: isLoadingTexts } = useTexts(3, {
@@ -50,7 +49,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
   const hasRecentTexts = (texts?.length ?? 0) > 0;
 
   const openNewTextModal = () => {
-    if (!isDemo) setShowNewTextModal(true);
+    setShowNewTextModal(true);
   };
 
   return (
@@ -68,10 +67,9 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
         <div className="flex items-center gap-2 shrink-0">
           {/* New Series */}
           <button
-            onClick={() => !isDemo && router.push('/series?new=true')}
-            disabled={isDemo}
-            title={isDemo ? 'Not available in demo mode' : 'Create a new series'}
-            className="px-3 py-2 border border-border rounded font-sans font-medium text-ui-base hover:border-primary hover:text-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => router.push('/series?new=true')}
+            title="Create a new series"
+            className="px-3 py-2 border border-border rounded font-sans font-medium text-ui-base hover:border-primary hover:text-primary transition-colors cursor-pointer"
           >
             <span className="hidden md:inline">New Series</span>
             <FolderPlus size={20} className="md:hidden" strokeWidth={2} />
@@ -80,9 +78,8 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
           {/* Add Text to Series */}
           <button
             onClick={openNewTextModal}
-            disabled={isDemo}
-            title={isDemo ? 'Not available in demo mode' : 'Add a text to an existing series'}
-            className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:opacity-90 active:translate-y-px transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Add a text to an existing series"
+            className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:brightness-90 active:translate-y-px transition-all cursor-pointer"
           >
             <span className="hidden md:inline">Add Text to Series</span>
             <FilePlus size={20} className="md:hidden" strokeWidth={2} />
@@ -107,7 +104,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
             onClick: () => router.push('/series'),
             icon: <Library size={18} strokeWidth={2} />,
           }}
-          secondaryAction={isDemo ? undefined : {
+          secondaryAction={{
             label: "Add Text to Series",
             onClick: openNewTextModal,
           }}
@@ -132,7 +129,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false, isDemo = fal
               />
             );
           })}
-          {texts!.length < 3 && !isDemo && (
+          {texts!.length < 3 && (
             <button
               onClick={openNewTextModal}
               className="w-full p-4 border-2 border-dashed border-border rounded-lg text-muted text-ui-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center justify-center gap-2"

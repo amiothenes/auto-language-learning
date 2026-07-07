@@ -4,6 +4,7 @@ import { languages, texts } from '@/lib/db/schema';
 import { eq, and, desc, isNotNull, sql } from 'drizzle-orm';
 import { formatRelativeTime } from '@/lib/utils';
 import type { TextListItem, TextsListResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/texts — List texts for a language
@@ -17,6 +18,9 @@ import type { TextListItem, TextsListResponse, ApiErrorResponse } from '@/lib/ty
  *   seriesId      string  optional — filter to a specific series
  */
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
     // ========================================================================
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -58,8 +62,8 @@ export async function GET(request: NextRequest) {
     // ========================================================================
 
     const baseWhere = seriesId
-      ? and(eq(texts.languageId, language.id), eq(texts.seriesId, seriesId))
-      : eq(texts.languageId, language.id);
+      ? and(eq(texts.languageId, language.id), eq(texts.seriesId, seriesId), eq(texts.userId, user.id))
+      : and(eq(texts.languageId, language.id), eq(texts.userId, user.id));
     const whereClause = onlyRead ? and(baseWhere, isNotNull(texts.lastViewedAt)) : baseWhere;
     const orderBy = [
       sql`${texts.lastViewedAt} DESC NULLS LAST`,

@@ -5,6 +5,7 @@ import { eq, asc, and, inArray } from 'drizzle-orm';
 import type { WordInstanceItem, WordInstancesResponse, ApiErrorResponse } from '@/lib/types/api';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/texts/[id]/word-instances — Word instances for reader highlighting
@@ -14,6 +15,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
 
@@ -24,9 +28,9 @@ export async function GET(
       );
     }
 
-    // 1. Verify text exists and get its language
+    // 1. Verify text exists, belongs to user, and get its language
     const text = await db.query.texts.findFirst({
-      where: eq(texts.id, id),
+      where: and(eq(texts.id, id), eq(texts.userId, user.id)),
       columns: { id: true, title: true, languageId: true },
     });
 

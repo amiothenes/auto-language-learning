@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { texts } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/series/[id]/reorder — Reorder texts within a series
@@ -19,10 +20,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id: seriesId } = await params;
@@ -37,13 +36,13 @@ export async function POST(
 
     const textIds: string[] = body.textIds;
 
-    // Write each text's new order in parallel
+    // Write each text's new order in parallel (scoped to user)
     await Promise.all(
       textIds.map((textId, index) =>
         db
           .update(texts)
           .set({ order: index + 1, updatedAt: new Date() })
-          .where(eq(texts.id, textId))
+          .where(and(eq(texts.id, textId), eq(texts.userId, user.id)))
       )
     );
 

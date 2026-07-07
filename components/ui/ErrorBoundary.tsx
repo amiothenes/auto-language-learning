@@ -51,8 +51,8 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="bg-paper border border-border rounded-card shadow-raised p-8 max-w-md text-center">
             {/* Error Icon */}
             <div className="mb-6 flex justify-center">
-              <div className="w-20 h-20 rounded-full bg-red-600/10 flex items-center justify-center">
-                <AlertTriangle size={40} className="text-red-600" strokeWidth={1.5} />
+              <div className="w-20 h-20 rounded-full bg-danger/10 flex items-center justify-center">
+                <AlertTriangle size={40} className="text-danger" strokeWidth={1.5} />
               </div>
             </div>
 

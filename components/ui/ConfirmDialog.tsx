@@ -230,7 +230,7 @@ export function ConfirmDialog({
               }
               className={
                 variant === 'danger'
-                  ? 'bg-red-600! hover:bg-red-700!'
+                  ? 'bg-danger hover:brightness-90'
                   : ''
               }
             >

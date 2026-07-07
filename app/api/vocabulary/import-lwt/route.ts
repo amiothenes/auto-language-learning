@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { words } from '@/lib/db/schema';
-import { sql } from 'drizzle-orm';
+import { words, languages } from '@/lib/db/schema';
+import { sql, eq } from 'drizzle-orm';
 import type { ImportLwtResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/vocabulary/import-lwt — Bulk import vocabulary from LWT .tsv export
@@ -24,10 +25,8 @@ function mapLwtStatus(raw: string): WordStatus {
 }
 
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json<ApiErrorResponse>({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   let formData: FormData;
   try {
@@ -116,7 +115,9 @@ export async function POST(request: NextRequest) {
   // 2. Resolve languages
   // ========================================================================
 
-  const allLanguages = await db.query.languages.findMany();
+  const allLanguages = await db.query.languages.findMany({
+    where: eq(languages.userId, user.id),
+  });
   const langMap = new Map<string, string>(); // languageName (lower) → language_id
 
   if (languageIdOverride) {
@@ -169,6 +170,7 @@ export async function POST(request: NextRequest) {
     const values = batch.map((row) => ({
       lemma: row.lemma,
       languageId: langMap.get(row.languageName.toLowerCase())!,
+      userId: user.id,
       status: row.status,
       definition: row.definition || null,
       exampleSentence: row.exampleSentence || null,

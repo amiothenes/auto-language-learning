@@ -52,7 +52,7 @@ function SegmentedControl({
           className={cn(
             'flex-1 h-8 rounded font-sans text-ui-xs transition-all active:scale-95',
             value === opt.value
-              ? 'bg-primary-10 border-2 border-primary/40 text-primary font-semibold'
+              ? 'bg-primary/10 border-2 border-primary/40 text-primary font-semibold'
               : 'border border-border text-muted hover:bg-desk',
             serif && 'font-serif',
           )}

@@ -4,8 +4,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 // ============================================================================
 // EditSeriesModal Component
 // Modal for editing series name + description.
@@ -124,7 +122,7 @@ export function EditSeriesModal({
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (isDemo || !isFormValid) return;
+      if (!isFormValid) return;
 
       setSaveError(null);
       setIsSaving(true);
@@ -132,10 +130,7 @@ export function EditSeriesModal({
       try {
         const res = await fetch(`/api/series/${seriesId}`, {
           method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: name.trim(),
             description: description.trim(),
@@ -188,15 +183,15 @@ export function EditSeriesModal({
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             {saveError && (
-              <div className="px-3 py-2 bg-red-50 border border-red-200 rounded">
-                <p className="font-sans text-ui-sm text-red-800">{saveError}</p>
+              <div className="px-3 py-2 bg-danger/10 border border-danger/30 rounded">
+                <p className="font-sans text-ui-sm text-danger">{saveError}</p>
               </div>
             )}
 
             {/* Name */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Name <span className="text-red-600">*</span>
+                Name <span className="text-danger">*</span>
               </label>
               <input
                 ref={nameInputRef}
@@ -243,16 +238,14 @@ export function EditSeriesModal({
               >
                 Cancel
               </Button>
-              <span title={isDemo ? 'Not available in demo mode' : undefined}>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  disabled={isDemo || !isFormValid || isSaving}
-                >
-                  {isSaving ? 'Saving…' : 'Save Changes'}
-                </Button>
-              </span>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                disabled={!isFormValid || isSaving}
+              >
+                {isSaving ? 'Saving…' : 'Save Changes'}
+              </Button>
             </div>
           </form>
         </div>

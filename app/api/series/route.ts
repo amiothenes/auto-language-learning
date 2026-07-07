@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { languages, series } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { formatRelativeTime } from '@/lib/utils';
 import type { Series } from '@/lib/types/content';
 import type { SeriesListResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/series — Create a new series
 // ============================================================================
 
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const body = await request.json().catch(() => null);
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode.trim()),
+      where: and(eq(languages.code, languageCode.trim()), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -63,6 +62,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         languageId: language.id,
+        userId: user.id,
       })
       .returning();
 
@@ -92,6 +92,9 @@ export async function POST(request: NextRequest) {
  *   languageCode  string  required — e.g. "ru", "es"
  */
 export async function GET(request: NextRequest) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { searchParams } = new URL(request.url);
     const languageCode = searchParams.get('languageCode');
@@ -112,7 +115,7 @@ export async function GET(request: NextRequest) {
     // ========================================================================
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.code, languageCode),
+      where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
     });
 
     if (!language) {
@@ -129,7 +132,7 @@ export async function GET(request: NextRequest) {
     // ========================================================================
 
     const rows = await db.query.series.findMany({
-      where: eq(series.languageId, language.id),
+      where: and(eq(series.languageId, language.id), eq(series.userId, user.id)),
       with: { texts: true },
       orderBy: [desc(series.createdAt)],
     });

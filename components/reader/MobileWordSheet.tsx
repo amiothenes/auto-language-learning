@@ -63,7 +63,7 @@ function LookupLink({ href, label }: { href: string; label: string }) {
       className="flex items-center justify-center gap-1.5 h-11
                  bg-primary-05 border border-primary/20 rounded-card
                  font-sans text-ui-sm text-primary
-                 hover:opacity-90 transition-opacity active:scale-[0.98]"
+                 hover:brightness-90 transition-all active:scale-[0.98]"
     >
       {label}
       <ExternalLink size={12} strokeWidth={1.5} />

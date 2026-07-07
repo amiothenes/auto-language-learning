@@ -43,6 +43,13 @@
       "when": 1782480046060,
       "tag": "0005_fast_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783234103449,
+      "tag": "0006_chubby_deadpool",
+      "breakpoints": true
     }
   ]
 }

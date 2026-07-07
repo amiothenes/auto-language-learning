@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { series, texts } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { formatRelativeTime } from '@/lib/utils';
 import type { Text, SeriesDetail } from '@/lib/types/content';
 import type { SeriesDetailResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // GET /api/series/[id] — Series detail with all its texts
@@ -18,6 +19,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
 
@@ -36,7 +40,7 @@ export async function GET(
     // ========================================================================
 
     const s = await db.query.series.findFirst({
-      where: eq(series.id, id),
+      where: and(eq(series.id, id), eq(series.userId, user.id)),
     });
 
     if (!s) {
@@ -47,7 +51,7 @@ export async function GET(
     }
 
     const seriesTexts = await db.query.texts.findMany({
-      where: eq(texts.seriesId, id),
+      where: and(eq(texts.seriesId, id), eq(texts.userId, user.id)),
       with: {
         tags: {
           with: { tag: true },
@@ -132,10 +136,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -156,7 +158,7 @@ export async function PATCH(
     const [updated] = await db
       .update(series)
       .set(updates)
-      .where(eq(series.id, id))
+      .where(and(eq(series.id, id), eq(series.userId, user.id)))
       .returning({ id: series.id, name: series.name });
 
     if (!updated) {
@@ -184,10 +186,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -195,7 +195,7 @@ export async function DELETE(
     // texts.seriesId has onDelete: 'set null' in schema — DB handles orphaning automatically
     const [deleted] = await db
       .delete(series)
-      .where(eq(series.id, id))
+      .where(and(eq(series.id, id), eq(series.userId, user.id)))
       .returning({ id: series.id });
 
     if (!deleted) {

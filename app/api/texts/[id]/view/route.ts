@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { texts } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/texts/[id]/view — Increment viewCount + stamp lastViewedAt
@@ -12,10 +13,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const { id } = await params;
@@ -26,7 +25,7 @@ export async function POST(
         viewCount: sql`${texts.viewCount} + 1`,
         lastViewedAt: new Date(),
       })
-      .where(eq(texts.id, id))
+      .where(and(eq(texts.id, id), eq(texts.userId, user.id)))
       .returning({ viewCount: texts.viewCount });
 
     if (!updated) {

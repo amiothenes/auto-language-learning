@@ -217,7 +217,7 @@ export function AddLanguageModal({
             {/* Language Name */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Language Name <span className="text-red-600">*</span>
+                Language Name <span className="text-danger">*</span>
               </label>
               <input
                 ref={nameInputRef}
@@ -234,7 +234,7 @@ export function AddLanguageModal({
             {/* Language Code */}
             <div>
               <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Language Code <span className="text-red-600">*</span>
+                Language Code <span className="text-danger">*</span>
               </label>
               <input
                 type="text"

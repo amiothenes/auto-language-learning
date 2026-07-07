@@ -29,8 +29,6 @@ import { useReaderKeyboard } from '@/lib/hooks/useReaderKeyboard';
 import { MobileWordSheet } from '@/components/reader/MobileWordSheet';
 import { MobileSettingsSheet } from '@/components/reader/MobileSettingsSheet';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 // Per-paragraph heat color for the vocabulary density strip.
 // Interpolates through the status hues: red → orange → yellow-green → green.
 function paraHeatColor(progress: number): string {
@@ -79,10 +77,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const adjacentQuery = useAdjacentTexts(id, adjacentSort);
 
   useEffect(() => {
-    if (isDemo) return;
     fetch(`/api/texts/${id}/view`, {
       method: 'POST',
-      headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
     })
       .then((res) => res.json())
       .then((data: { viewCount: number }) => {
@@ -388,7 +384,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   }, []);
 
   const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
-    if (isDemo || !selectedWord) return;
+    if (!selectedWord) return;
 
     const oldStatus = selectedWord.status;
     const wasKnown = isKnownStatus(oldStatus);

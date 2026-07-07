@@ -317,9 +317,9 @@ export function ImportVocabularyModal({
 
           {/* Error Message */}
           {error && (
-            <div className="mt-4 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded">
-              <AlertCircle size={16} className="text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="font-sans text-ui-sm text-red-800">{error}</p>
+            <div className="mt-4 flex items-start gap-2 p-3 bg-danger/10 border border-danger/30 rounded">
+              <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" />
+              <p className="font-sans text-ui-sm text-danger">{error}</p>
             </div>
           )}
 

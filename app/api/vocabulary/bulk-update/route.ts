@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { words } from '@/lib/db/schema';
-import { inArray } from 'drizzle-orm';
+import { inArray, and, eq } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
 import type { ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/vocabulary/bulk-update — Update status on multiple words at once
@@ -15,10 +16,8 @@ import type { ApiErrorResponse } from '@/lib/types/api';
  * Returns: { updated: number }
  */
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get('x-admin-key')
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, error: authError } = await requireUser();
+  if (authError) return authError;
 
   try {
     const body = await request.json();
@@ -45,7 +44,7 @@ export async function POST(request: NextRequest) {
         statusChangedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(inArray(words.id, wordIds));
+      .where(and(inArray(words.id, wordIds), eq(words.userId, user.id)));
 
     // Sync knownPercentage for all texts containing any of these words
     await Promise.all(wordIds.map((id) => syncAllTextsForWord(id)));

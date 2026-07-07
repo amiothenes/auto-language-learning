@@ -12,6 +12,7 @@ export const words = pgTable(
     languageId: text('language_id')
       .notNull()
       .references(() => languages.id, { onDelete: 'restrict' }),
+    userId: text('user_id').notNull(),
 
     // Core vocabulary data
     status: vocabularyStatusEnum('status').default('UNKNOWN').notNull(),
@@ -34,7 +35,7 @@ export const words = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
-    uniqueLemmaLanguage: unique().on(table.lemma, table.languageId),
+    uniqueLemmaLanguage: unique('words_lemma_language_id_user_id_unique').on(table.lemma, table.languageId, table.userId),
 
     // Single-column indexes
     statusIdx: index('words_status_idx').on(table.status),

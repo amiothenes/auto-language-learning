@@ -28,8 +28,6 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { useTexts } from '@/lib/hooks/useTexts';
 
-const isDemo = !process.env.NEXT_PUBLIC_ADMIN_API_KEY;
-
 // ============================================================================
 // Series Page Component
 // ============================================================================
@@ -198,14 +196,12 @@ function SeriesPageContent() {
   };
 
   const handleCreateSeries = async (seriesData: NewSeriesData) => {
-    if (isDemo) return;
     // Step 1: Create the series
     let created: { id: string; name: string };
     const seriesResponse = await fetch('/api/series', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
       },
       body: JSON.stringify({
         name: seriesData.name,
@@ -228,7 +224,6 @@ function SeriesPageContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '',
           },
           body: JSON.stringify({
             title: text.title,
@@ -273,11 +268,10 @@ function SeriesPageContent() {
   };
 
   const handleConfirmDelete = async () => {
-    if (isDemo || !deleteTarget) return;
+    if (!deleteTarget) return;
     try {
       const res = await fetch(`/api/series/${deleteTarget.id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? '' },
       });
       if (!res.ok) throw new Error('Failed to delete series');
       showToast(`Series "${deleteTarget.name}" deleted`);
@@ -404,17 +398,14 @@ function SeriesPageContent() {
           </div>
 
           {/* New Series Button */}
-          <span title={isDemo ? 'Not available in demo mode' : undefined}>
-            <Button
-              variant="primary"
-              size="lg"
-              leftIcon={<Plus size={18} strokeWidth={2} />}
-              onClick={handleNewSeries}
-              disabled={isDemo}
-            >
-              New Series
-            </Button>
-          </span>
+          <Button
+            variant="primary"
+            size="lg"
+            leftIcon={<Plus size={18} strokeWidth={2} />}
+            onClick={handleNewSeries}
+          >
+            New Series
+          </Button>
         </header>
 
         {/* Filter Bar */}
@@ -518,9 +509,9 @@ function SeriesPageContent() {
               <SeriesCard
                 key={series.id}
                 {...series}
-                onDelete={isDemo ? () => {} : setDeleteTarget}
-                onEdit={isDemo ? () => {} : setEditTarget}
-                onAddText={isDemo ? () => {} : setAddTextTarget}
+                onDelete={setDeleteTarget}
+                onEdit={setEditTarget}
+                onAddText={setAddTextTarget}
               />
             ))}
           </div>

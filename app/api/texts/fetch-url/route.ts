@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import dns from 'dns/promises';
 import net from 'net';
 import type { FetchUrlRequest, FetchUrlResponse, ApiErrorResponse } from '@/lib/types/api';
+import { requireUser } from '@/lib/auth/requireUser';
 
 // ============================================================================
 // POST /api/texts/fetch-url — Fetch a URL and extract readable article text
@@ -34,10 +35,8 @@ function isPrivateIp(ip: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const adminKey = request.headers.get('x-admin-key');
-  if (adminKey !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json<ApiErrorResponse>({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { error: authError } = await requireUser();
+  if (authError) return authError;
 
   let body: FetchUrlRequest;
   try {
@@ -169,7 +168,7 @@ export async function GET() {
     responses: {
       200: 'Extraction successful — returns title, content, resolvedUrl, detectedLang',
       400: 'Invalid request or unsupported URL scheme',
-      401: 'Unauthorized — missing or invalid x-admin-key',
+      401: 'Unauthorized — not authenticated',
       403: 'URL resolves to a private/internal IP address',
       415: 'URL is not an HTML page',
       422: 'Content could not be extracted (paywall, JS-only, etc.)',
