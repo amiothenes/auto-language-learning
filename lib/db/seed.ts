@@ -341,14 +341,14 @@ async function seed() {
     // 2. Seed Series
     console.log('📁 Seeding series...');
     for (const s of seedSeries) {
-      await db.insert(series).values(s).onConflictDoNothing();
+      await db.insert(series).values({ ...s, userId: 'user_default' }).onConflictDoNothing();
     }
     console.log(`  ✓ ${seedSeries.length} series\n`);
 
     // 3. Seed Words
     console.log('📖 Seeding words...');
     for (const word of seedWords) {
-      await db.insert(words).values(word).onConflictDoNothing();
+      await db.insert(words).values({ ...word, userId: 'user_default' }).onConflictDoNothing();
     }
     console.log(`  ✓ ${seedWords.length} words`);
     console.log(`    - ${seedWords.filter((w) => w.status === VocabularyStatus.NEWLY_SEEN).length} NEWLY_SEEN (${((seedWords.filter((w) => w.status === VocabularyStatus.NEWLY_SEEN).length / seedWords.length) * 100).toFixed(0)}%)`);
@@ -392,6 +392,7 @@ async function seed() {
         .insert(texts)
         .values({
           ...text,
+          userId: 'user_default',
           wordCount,
           uniqueWordCount,
           knownPercentage: Math.round(knownPercentage * 10) / 10, // Round to 1 decimal
