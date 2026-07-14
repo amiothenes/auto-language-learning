@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=link_expired', origin));
     }
     const onboarded = data.session.user.user_metadata?.onboardingComplete;
-    return NextResponse.redirect(new URL(onboarded ? '/' : '/onboarding', origin));
+    return NextResponse.redirect(new URL(onboarded ? '/dashboard' : '/onboarding', origin));
   }
 
   return NextResponse.redirect(new URL('/login', origin));

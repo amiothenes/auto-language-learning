@@ -30,7 +30,7 @@ export default function CoverageInfoPage() {
 
         {/* Back link */}
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-2 text-muted hover:text-primary transition-colors font-sans text-ui-sm font-medium"
         >
           <ArrowLeft size={16} strokeWidth={2} />

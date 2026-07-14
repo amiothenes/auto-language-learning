@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
+import { createClient } from '@/lib/supabase/client';
 import {
   Globe,
   LayoutDashboard,
@@ -14,7 +15,8 @@ import {
   Settings,
   ChevronUp,
   ChevronDown,
-  Wrench
+  LogOut,
+  UserRound,
 } from 'lucide-react';
 
 // ============================================================================
@@ -22,7 +24,7 @@ import {
 // ============================================================================
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', href: '/', icon: 'dashboard' },
+  { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { id: 'series', label: 'Series', href: '/series', icon: 'series' },
   { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings' },
@@ -42,6 +44,14 @@ const iconMap = {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
   const {
     selectedLanguage,
     currentLanguage,
@@ -168,18 +178,31 @@ export function Sidebar() {
             })}
           </nav>
 
-          {/* Manage Languages Button */}
-          <div className="mt-4 pt-4 border-t border-border">
+          {/* Bottom Actions: Account + Sign Out */}
+          <div className="mt-4 pt-4 border-t border-border space-y-1">
             <Link
-              href="/settings/languages"
-              className="w-full h-10 px-2 bg-transparent border border-border text-ink font-sans font-medium text-ui-base rounded hover:bg-paper active:translate-y-px transition-all duration-200 flex items-center gap-2 overflow-hidden cursor-pointer"
-              title="Manage Languages"
+              href="/settings/account"
+              className={cn(
+                'w-full h-10 px-2 bg-transparent text-ink font-sans font-medium text-ui-base rounded hover:bg-paper active:translate-y-px transition-all duration-200 flex items-center gap-2 overflow-hidden cursor-pointer',
+                pathname === '/settings/account' ? 'text-primary bg-primary/5' : ''
+              )}
+              title="Account Settings"
             >
-              <Wrench size={18} className="shrink-0 text-ink" strokeWidth={1.5} />
+              <UserRound size={18} className={cn('shrink-0', pathname === '/settings/account' ? 'text-primary' : 'text-muted')} strokeWidth={1.5} />
               <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200 text-ui-sm">
-                Manage Languages
+                Account
               </span>
             </Link>
+            <button
+              onClick={handleSignOut}
+              className="w-full h-10 px-2 bg-transparent text-ink font-sans font-medium text-ui-base rounded hover:bg-paper hover:text-danger active:translate-y-px transition-all duration-200 flex items-center gap-2 overflow-hidden cursor-pointer group/logout"
+              title="Sign out"
+            >
+              <LogOut size={18} className="shrink-0 text-muted group-hover/logout:text-danger transition-colors" strokeWidth={1.5} />
+              <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200 text-ui-sm">
+                Sign out
+              </span>
+            </button>
           </div>
         </div>
       </aside>

@@ -56,13 +56,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiErrorResponse>({ error: 'Request body must be valid JSON' }, { status: 400 });
     }
 
-    const { name, code, isRTL, dictURI, googleTTSCode, includeForeignScript } = body as {
+    const { name, code, isRTL, dictURI, googleTTSCode, includeForeignScript, defaultTranslationLangCode } = body as {
       name?: string;
       code?: string;
       isRTL?: boolean;
       dictURI?: string;
       googleTTSCode?: string;
       includeForeignScript?: boolean;
+      defaultTranslationLangCode?: string;
     };
 
     if (!name?.trim()) {
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
         dictURI: dictURI?.trim() || null,
         googleTTSCode: googleTTSCode?.trim() || null,
         includeForeignScript: includeForeignScript ?? false,
+        defaultTranslationLangCode: defaultTranslationLangCode?.trim() || null,
       })
       .returning();
 

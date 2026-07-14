@@ -1,7 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/signup', '/about', '/og', '/auth/callback'];
+// Prefix-matched public paths (startsWith check)
+const PUBLIC_PATH_PREFIXES = ['/login', '/signup', '/og', '/auth/callback', '/share', '/api/public'];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -30,13 +31,20 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic = PUBLIC_PATHS.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  );
+  const { pathname } = request.nextUrl;
+
+  // Authenticated users on the landing page or auth screens go straight to the dashboard
+  const AUTH_SCREENS = ['/login', '/signup'];
+  if (user && (pathname === '/' || AUTH_SCREENS.some((p) => pathname.startsWith(p)))) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // / is public (landing page); prefix-matched paths are also public
+  const isPublic = pathname === '/' || PUBLIC_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     // API routes: return JSON 401 so fetch() clients handle it gracefully
-    if (request.nextUrl.pathname.startsWith('/api/')) {
+    if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.redirect(new URL('/login', request.url));
@@ -47,6 +55,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ogg|woff2?|ttf|otf|ico)$).*)',
   ],
 };

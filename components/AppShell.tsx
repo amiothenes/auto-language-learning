@@ -8,7 +8,10 @@ import { SkipLink } from '@/components/ui/SkipLink';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
-const SHELL_HIDDEN_PATHS = ['/login', '/signup', '/onboarding'];
+// Prefix-matched: sidebar hidden for these route subtrees
+const SHELL_HIDDEN_PREFIXES = ['/login', '/signup', '/onboarding', '/share'];
+// Exact-matched: sidebar hidden on these specific paths
+const SHELL_HIDDEN_EXACT = ['/'];
 
 interface AppShellProps {
   children: ReactNode;
@@ -16,7 +19,9 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const showShell = !SHELL_HIDDEN_PATHS.some((p) => pathname.startsWith(p));
+  const showShell =
+    !SHELL_HIDDEN_PREFIXES.some((p) => pathname.startsWith(p)) &&
+    !SHELL_HIDDEN_EXACT.includes(pathname);
 
   return (
     <>

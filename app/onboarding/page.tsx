@@ -41,6 +41,7 @@ export default function OnboardingPage() {
           isRTL: false,
           googleTTSCode: lang.googleTTSCode,
           includeForeignScript: lang.includeForeignScript,
+          defaultTranslationLangCode: 'en',
         }),
       });
 
@@ -58,7 +59,7 @@ export default function OnboardingPage() {
         return;
       }
 
-      router.replace('/');
+      router.replace('/dashboard');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {

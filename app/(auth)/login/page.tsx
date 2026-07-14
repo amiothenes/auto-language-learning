@@ -35,7 +35,7 @@ export default function LoginPage() {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(error.message); return; }
-      const destination = data.user?.user_metadata?.onboardingComplete ? '/' : '/onboarding';
+      const destination = data.user?.user_metadata?.onboardingComplete ? '/dashboard' : '/onboarding';
       router.replace(destination);
     } finally {
       setLoading(false);

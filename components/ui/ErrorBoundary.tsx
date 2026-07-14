@@ -94,7 +94,7 @@ class ErrorBoundary extends Component<Props, State> {
                 variant="secondary"
                 size="md"
                 leftIcon={<Home size={16} strokeWidth={2} />}
-                onClick={() => (window.location.href = '/')}
+                onClick={() => (window.location.href = '/dashboard')}
               >
                 Go to Dashboard
               </Button>
