@@ -11,21 +11,27 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { data: dbLanguages = [] } = useLanguages();
 
-  const [selectedLanguage, setSelectedLanguageRaw] = useState<string>(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem(STORAGE_KEY) ?? '';
-  });
+  const [selectedLanguage, setSelectedLanguageRaw] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Load selected language from localStorage on mount (client-only — localStorage
+  // isn't available during SSR, so this can't run in the lazy useState initializer
+  // without causing a server/client hydration mismatch)
+  useEffect(() => {
+    setSelectedLanguageRaw(localStorage.getItem(STORAGE_KEY) ?? '');
+    setIsInitialized(true);
+  }, []);
+
   // Auto-select first language when nothing is stored and DB has loaded
   useEffect(() => {
-    if (!selectedLanguage && dbLanguages.length > 0) {
+    if (isInitialized && !selectedLanguage && dbLanguages.length > 0) {
       const code = dbLanguages[0].code;
       localStorage.setItem(STORAGE_KEY, code);
       setSelectedLanguageRaw(code);
     }
-  }, [selectedLanguage, dbLanguages]);
+  }, [isInitialized, selectedLanguage, dbLanguages]);
 
   const setSelectedLanguage = useCallback((code: string) => {
     localStorage.setItem(STORAGE_KEY, code);
