@@ -9,10 +9,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { languages } from '@/lib/db/schema/languages';
-import { eq } from 'drizzle-orm';
 import { processWithSpacy } from '@/lib/nlp/spacyClient';
 import { requireUser } from '@/lib/auth/requireUser';
+import { ownedBy } from '@/lib/db/scope';
 
 // ============================================================================
 // Request/Response Types
@@ -47,7 +46,7 @@ interface ProcessTextResponse {
 // ============================================================================
 
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireUser();
+  const { user, error: authError } = await requireUser();
   if (authError) return authError;
 
   try {
@@ -63,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.id, languageId),
+      where: ownedBy('languages', languageId, user.id),
     });
 
     if (!language) {

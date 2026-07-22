@@ -19,6 +19,7 @@ import {
 import { splitIntoChunks } from '@/lib/nlp/textChunker';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { ownedBy } from '@/lib/db/scope';
 
 // ============================================================================
 // POST /api/texts/import - Import text with NLP processing
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     if (seriesId) {
       const seriesRecord = await db.query.series.findFirst({
-        where: eq(series.id, seriesId),
+        where: ownedBy('series', seriesId, user.id),
       });
 
       if (!seriesRecord) {

@@ -4,7 +4,33 @@ import { NextResponse, type NextRequest } from 'next/server';
 // Prefix-matched public paths (startsWith check)
 const PUBLIC_PATH_PREFIXES = ['/login', '/signup', '/og', '/auth/callback', '/share', '/api/public'];
 
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function isTrustedOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get('origin');
+  // Fail-closed: a missing/null Origin is treated as untrusted (GHSA-mq59-m269-xvcx
+  // showed a null Origin used to bypass Next.js's own Server Actions CSRF check).
+  if (!origin) return false;
+  try {
+    return new URL(origin).host === request.nextUrl.host;
+  } catch {
+    return false;
+  }
+}
+
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Reject cross-origin mutations before touching auth/cookies at all
+  if (
+    pathname.startsWith('/api/') &&
+    !pathname.startsWith('/api/public') &&
+    STATE_CHANGING_METHODS.has(request.method) &&
+    !isTrustedOrigin(request)
+  ) {
+    return NextResponse.json({ error: 'Origin not allowed' }, { status: 403 });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -30,8 +56,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
 
   // Authenticated users on the landing page or auth screens go straight to the dashboard
   const AUTH_SCREENS = ['/login', '/signup'];

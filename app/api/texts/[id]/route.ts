@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import type { TextData } from '@/lib/types/content';
 import type { TextDetailResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { ownedBy } from '@/lib/db/scope';
 
 // ============================================================================
 // GET /api/texts/[id] — Full text metadata + content for the reader
@@ -110,6 +111,19 @@ export async function PATCH(
       );
     }
 
+    // Verify ownership before any mutation — the tag delete/insert below has no
+    // other ownership gate on `id`.
+    const existing = await db.query.texts.findFirst({
+      where: ownedBy('texts', id, user.id),
+      columns: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: `Text not found: ${id}` },
+        { status: 404 }
+      );
+    }
+
     if (body.title !== undefined) {
       const trimmed = body.title.trim();
       if (!trimmed) {
@@ -118,7 +132,7 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      await db.update(texts).set({ title: trimmed }).where(and(eq(texts.id, id), eq(texts.userId, user.id)));
+      await db.update(texts).set({ title: trimmed }).where(ownedBy('texts', id, user.id));
     }
 
     if (body.newTags !== undefined) {
@@ -141,7 +155,7 @@ export async function PATCH(
     }
 
     const updated = await db.query.texts.findFirst({
-      where: and(eq(texts.id, id), eq(texts.userId, user.id)),
+      where: ownedBy('texts', id, user.id),
       with: { series: true, tags: { with: { tag: true } } },
     });
 

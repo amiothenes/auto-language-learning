@@ -29,6 +29,37 @@ import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { useTexts } from '@/lib/hooks/useTexts';
 
 // ============================================================================
+// Fetch helper — distinguishes network/server failures from API error responses
+// ============================================================================
+
+async function fetchJson<T>(
+  url: string,
+  options: RequestInit,
+  fallbackMessage: string
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, options);
+  } catch {
+    throw new Error(`${fallbackMessage}: could not reach the server. Check your connection and try again.`);
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error(`${fallbackMessage}: the server returned an unexpected response. Please try again.`);
+  }
+
+  if (!response.ok) {
+    const message = (body as { error?: string } | null)?.error;
+    throw new Error(message || fallbackMessage);
+  }
+
+  return body as T;
+}
+
+// ============================================================================
 // Series Page Component
 // ============================================================================
 
@@ -197,46 +228,41 @@ function SeriesPageContent() {
 
   const handleCreateSeries = async (seriesData: NewSeriesData) => {
     // Step 1: Create the series
-    let created: { id: string; name: string };
-    const seriesResponse = await fetch('/api/series', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const { series: created } = await fetchJson<{ series: { id: string; name: string } }>(
+      '/api/series',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: seriesData.name,
+          description: seriesData.description ?? '',
+          languageCode: selectedLanguage,
+        }),
       },
-      body: JSON.stringify({
-        name: seriesData.name,
-        description: seriesData.description ?? '',
-        languageCode: selectedLanguage,
-      }),
-    });
-
-    if (!seriesResponse.ok) {
-      const error = await seriesResponse.json();
-      throw new Error(error.error || 'Failed to create series');
-    }
-
-    ({ series: created } = await seriesResponse.json());
+      'Failed to create series'
+    );
 
     // Step 2: Import texts if provided (NLP runs here — modal stays open with loading overlay)
     if (seriesData.texts && seriesData.texts.length > 0) {
       for (const text of seriesData.texts) {
-        const importRes = await fetch('/api/texts/import', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        await fetchJson(
+          '/api/texts/import',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: text.title,
+              content: text.content,
+              languageCode: selectedLanguage,
+              seriesId: created.id,
+            }),
           },
-          body: JSON.stringify({
-            title: text.title,
-            content: text.content,
-            languageCode: selectedLanguage,
-            seriesId: created.id,
-          }),
-        });
-
-        if (!importRes.ok) {
-          const err = await importRes.json();
-          throw new Error(err.error || 'Series created but text import failed');
-        }
+          'Series created but text import failed'
+        );
       }
 
       showToast(`Series "${seriesData.name}" created with text`);

@@ -260,9 +260,9 @@ export async function processTextForImport(
   content: string,
   languageId: string,
   seriesId: string,
-  order?: number,
-  progressCallback?: ProgressCallback,
-  userId?: string
+  order: number | undefined,
+  progressCallback: ProgressCallback | undefined,
+  userId: string
 ): Promise<ProcessedTextResult> {
   const startTime = Date.now();
 
@@ -319,7 +319,7 @@ export async function processTextForImport(
           where: and(
             eq(words.languageId, languageId),
             inArray(words.lemma, uniqueLemmas),
-            userId ? eq(words.userId, userId) : undefined,
+            eq(words.userId, userId),
           ),
         });
 
@@ -352,7 +352,7 @@ export async function processTextForImport(
             return {
               lemma,
               languageId,
-              userId: userId ?? 'system',
+              userId,
               status: 'UNKNOWN' as const,
               romanization,
               dictionaryFrequency: 0, // TODO: Integrate frequency dictionary
@@ -398,7 +398,7 @@ export async function processTextForImport(
               and(
                 eq(words.languageId, languageId),
                 inArray(words.lemma, existingLemmas),
-                userId ? eq(words.userId, userId) : undefined,
+                eq(words.userId, userId),
               )
             );
 
@@ -420,7 +420,7 @@ export async function processTextForImport(
             title,
             content: processedContent,
             languageId,
-            userId: userId ?? 'system',
+            userId,
             seriesId,
             order: order ?? 1,
             wordCount,
@@ -493,7 +493,7 @@ export async function processTextForImport(
           where: and(
             eq(words.languageId, languageId),
             inArray(words.lemma, uniqueLemmas),
-            userId ? eq(words.userId, userId) : undefined,
+            eq(words.userId, userId),
           ),
           columns: {
             lemma: true,
@@ -588,9 +588,9 @@ export interface ReprocessResult {
 export async function reprocessTextContent(
   textId: string,
   newContent: string,
-  progressCallback?: ProgressCallback,
-  firstChangedParagraphIndex?: number,
-  userId?: string
+  progressCallback: ProgressCallback | undefined,
+  firstChangedParagraphIndex: number | undefined,
+  userId: string
 ): Promise<ReprocessResult> {
   const startTime = Date.now();
 
@@ -662,7 +662,7 @@ export async function reprocessTextContent(
           where: and(
             eq(words.languageId, language.id),
             inArray(words.lemma, uniqueLemmas),
-            userId ? eq(words.userId, userId) : undefined,
+            eq(words.userId, userId),
           ),
         });
 
@@ -680,7 +680,7 @@ export async function reprocessTextContent(
             return {
               lemma,
               languageId: language.id,
-              userId: userId ?? 'system',
+              userId,
               status: 'UNKNOWN' as const,
               romanization,
               dictionaryFrequency: 0,
@@ -761,7 +761,7 @@ export async function reprocessTextContent(
           where: and(
             eq(words.languageId, language.id),
             inArray(words.lemma, uniqueLemmas),
-            userId ? eq(words.userId, userId) : undefined,
+            eq(words.userId, userId),
           ),
           columns: { lemma: true, status: true },
         });
