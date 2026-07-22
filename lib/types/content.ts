@@ -36,8 +36,12 @@ export interface Series {
   textCount: number;
   /** Overall progress percentage (0-100) */
   progress: number;
-  /** Human-readable last updated timestamp (e.g., "2 days ago") */
-  lastUpdated: string;
+  /** ISO timestamp of the most recent `lastViewedAt` across this series' texts, falling back to series creation date if none have been read — used for the "Recently Read" sort */
+  lastReadAt: string;
+  /** Human-readable version of `lastReadAt` (e.g., "2 days ago") — only meaningful when `hasBeenRead` is true */
+  lastRead: string;
+  /** Whether any text in this series has ever been opened in the Reader */
+  hasBeenRead: boolean;
   /** Highest knownPercentage across all texts — used for readiness filtering */
   maxKnownPct: number;
 }

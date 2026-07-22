@@ -8,7 +8,10 @@ import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvide
 import { AuthQuerySync } from "@/components/AuthQuerySync";
 
 export const metadata: Metadata = {
-  title: "Verbista",
+  title: {
+    template: "%s | Verbista",
+    default: "Verbista",
+  },
   description: "Grammar-in-context reading for Russian, Spanish, English, and French. Tap any word for its case, tense, and aspect.",
   manifest: "/manifest.json",
   icons: {

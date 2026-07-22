@@ -87,7 +87,7 @@ export default function VocabularyPage() {
   };
 
   useEffect(() => {
-    document.title = 'Verbista — Vocabulary';
+    document.title = 'Vocabulary | Verbista';
     return () => { document.title = 'Verbista'; };
   }, []);
 

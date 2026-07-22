@@ -154,13 +154,16 @@ export async function GET(request: NextRequest) {
         textCount > 0
           ? Math.round(s.texts.reduce((sum, t) => sum + t.knownPercentage, 0) / textCount)
           : 0;
-      const latestText = s.texts.reduce<(typeof s.texts)[0] | null>((latest, t) => {
-        if (!latest) return t;
-        return t.updatedAt > latest.updatedAt ? t : latest;
-      }, null);
-
       const maxKnownPct =
         textCount > 0 ? Math.max(...s.texts.map((t) => t.knownPercentage)) : 0;
+
+      const lastReadText = s.texts.reduce<(typeof s.texts)[0] | null>((latest, t) => {
+        if (!t.lastViewedAt) return latest;
+        if (!latest?.lastViewedAt) return t;
+        return t.lastViewedAt > latest.lastViewedAt ? t : latest;
+      }, null);
+      const hasBeenRead = lastReadText !== null;
+      const lastReadAt = lastReadText?.lastViewedAt ?? s.createdAt;
 
       return {
         id: s.id,
@@ -168,7 +171,9 @@ export async function GET(request: NextRequest) {
         description: s.description ?? '',
         textCount,
         progress,
-        lastUpdated: formatRelativeTime(latestText?.updatedAt ?? s.updatedAt),
+        lastReadAt: lastReadAt.toISOString(),
+        lastRead: hasBeenRead ? formatRelativeTime(lastReadAt) : 'never',
+        hasBeenRead,
         maxKnownPct,
       };
     });

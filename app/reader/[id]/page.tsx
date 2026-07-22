@@ -81,11 +81,15 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       method: 'POST',
     })
       .then((res) => res.json())
-      .then((data: { viewCount: number }) => {
+      .then((data: { viewCount: number; seriesId: string | null }) => {
         queryClient.setQueryData(['text', id], (old: TextData | undefined) =>
           old ? { ...old, viewCount: data.viewCount } : old
         );
         queryClient.invalidateQueries({ queryKey: ['texts'] });
+        if (data.seriesId) {
+          queryClient.invalidateQueries({ queryKey: ['series', data.seriesId] });
+          queryClient.invalidateQueries({ queryKey: ['series-list'] });
+        }
       })
       .catch(() => {});
   }, [id, queryClient]);
@@ -232,7 +236,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   useEffect(() => {
     if (textData?.title) {
-      document.title = `Verbista — ${textData.title}`;
+      document.title = `${textData.title} | Verbista`;
       return () => { document.title = 'Verbista'; };
     }
   }, [textData?.title]);
@@ -244,7 +248,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       setVocabularyStats({
         totalWords: textData.uniqueWordCount,
         knownWords: Math.round(textData.uniqueWordCount * (textData.knownPercentage / 100)),
-        textKnownPercentage: textData.knownPercentage,
+        textKnownPercentage: Math.round(textData.knownPercentage),
       });
     }
   }, [textData]);

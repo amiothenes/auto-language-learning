@@ -141,7 +141,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
 
   useEffect(() => {
     if (seriesData?.name) {
-      document.title = `Verbista — ${seriesData.name}`;
+      document.title = `${seriesData.name} | Verbista`;
       return () => { document.title = 'Verbista'; };
     }
   }, [seriesData?.name]);

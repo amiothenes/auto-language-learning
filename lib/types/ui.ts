@@ -122,9 +122,9 @@ export interface ReaderSettingsContextType {
  * - `name-asc`: Alphabetical by name (A-Z)
  * - `progress-desc`: Progress high to low
  * - `progress-asc`: Progress low to high
- * - `updated-recent`: Most recently updated first
+ * - `read-recent`: Most recently read first (newest to oldest); series never read fall back to creation date
  */
-export type SeriesSortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'updated-recent';
+export type SeriesSortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'read-recent';
 
 /**
  * Sort options for vocabulary list.

@@ -64,11 +64,14 @@ export function NewTextModal({
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
-      const initialSeriesName = prefilledSeriesId
-        ? (availableSeries.find((s) => s.id === prefilledSeriesId)?.name ?? '')
+      const initialSeries = prefilledSeriesId
+        ? availableSeries.find((s) => s.id === prefilledSeriesId)
+        : undefined;
+      const initialTitle = initialSeries
+        ? `${initialSeries.name} #${initialSeries.textCount + 1}`
         : '';
       setFormData({
-        title: initialSeriesName,
+        title: initialTitle,
         content: '',
         seriesId: prefilledSeriesId || '',
         tags: [],
@@ -330,14 +333,20 @@ export function NewTextModal({
                   onChange={(e) => {
                     const newSeriesId = e.target.value;
                     const newSeries = availableSeries.find((s) => s.id === newSeriesId);
+                    const suggestedTitle = selectedSeries
+                      ? `${selectedSeries.name} #${selectedSeries.textCount + 1}`
+                      : '';
                     const shouldPrefill =
                       !userEditedTitle ||
                       formData.title === '' ||
-                      formData.title === selectedSeries?.name;
+                      formData.title === suggestedTitle;
+                    const newTitle = newSeries
+                      ? `${newSeries.name} #${newSeries.textCount + 1}`
+                      : '';
                     setFormData((prev) => ({
                       ...prev,
                       seriesId: newSeriesId,
-                      title: shouldPrefill ? (newSeries?.name ?? '') : prev.title,
+                      title: shouldPrefill ? newTitle : prev.title,
                     }));
                     if (shouldPrefill) setUserEditedTitle(false);
                   }}

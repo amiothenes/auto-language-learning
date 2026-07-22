@@ -74,7 +74,7 @@ function SeriesPageContent() {
   const textsQuery = useTexts();
   const isLoading = seriesQuery.isPending;
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SeriesSortOption>('updated-recent');
+  const [sortBy, setSortBy] = useState<SeriesSortOption>('read-recent');
   const [readinessFilter, setReadinessFilter] = useState<'all' | 'ready' | 'ok' | 'hard'>('all');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -86,7 +86,7 @@ function SeriesPageContent() {
   const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.title = 'Verbista — Series';
+    document.title = 'Series | Verbista';
     return () => { document.title = 'Verbista'; };
   }, []);
 
@@ -141,18 +141,10 @@ function SeriesPageContent() {
       case 'progress-asc':
         result.sort((a, b) => a.progress - b.progress);
         break;
-      case 'updated-recent':
-        // Simple sorting by lastUpdated string (in real app, would use dates)
-        result.sort((a, b) => {
-          const getOrder = (str: string) => {
-            if (str.includes('day ago')) return 1;
-            if (str.includes('days ago')) return parseInt(str) || 2;
-            if (str.includes('week ago')) return 7;
-            if (str.includes('weeks ago')) return parseInt(str) * 7 || 14;
-            return 999;
-          };
-          return getOrder(a.lastUpdated) - getOrder(b.lastUpdated);
-        });
+      case 'read-recent':
+        result.sort(
+          (a, b) => new Date(b.lastReadAt).getTime() - new Date(a.lastReadAt).getTime()
+        );
         break;
     }
 
@@ -313,7 +305,7 @@ function SeriesPageContent() {
     { value: 'name-asc', label: 'Name (A-Z)' },
     { value: 'progress-desc', label: 'Progress (High-Low)' },
     { value: 'progress-asc', label: 'Progress (Low-High)' },
-    { value: 'updated-recent', label: 'Recently Updated' },
+    { value: 'read-recent', label: 'Recently Read' },
   ] as const;
 
   const currentSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label;

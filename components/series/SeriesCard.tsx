@@ -21,7 +21,8 @@ interface SeriesCardProps {
   description: string;
   textCount: number;
   progress: number;
-  lastUpdated: string;
+  lastRead: string;
+  hasBeenRead: boolean;
   onDelete?: (series: { id: string; name: string }) => void;
   onEdit?: (series: { id: string; name: string; description: string }) => void;
   onAddText?: (series: { id: string; name: string }) => void;
@@ -33,7 +34,8 @@ export function SeriesCard({
   description,
   textCount,
   progress,
-  lastUpdated,
+  lastRead,
+  hasBeenRead,
   onDelete,
   onEdit,
   onAddText,
@@ -163,8 +165,10 @@ export function SeriesCard({
       {/* Progress Bar */}
       <ProgressBar value={progress} className="mb-3" />
 
-      {/* Last Updated */}
-      <Muted size="xs">Updated {lastUpdated}</Muted>
+      {/* Last Read — omitted entirely when the series has no texts to read yet */}
+      {textCount > 0 && (
+        <Muted size="xs">{hasBeenRead ? `Read ${lastRead}` : 'Never read'}</Muted>
+      )}
     </Card>
   );
 }

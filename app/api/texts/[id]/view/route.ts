@@ -26,7 +26,7 @@ export async function POST(
         lastViewedAt: new Date(),
       })
       .where(and(eq(texts.id, id), eq(texts.userId, user.id)))
-      .returning({ viewCount: texts.viewCount });
+      .returning({ viewCount: texts.viewCount, seriesId: texts.seriesId });
 
     if (!updated) {
       return NextResponse.json<ApiErrorResponse>(
@@ -35,7 +35,7 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ viewCount: updated.viewCount });
+    return NextResponse.json({ viewCount: updated.viewCount, seriesId: updated.seriesId });
   } catch (error) {
     console.error('[View Increment] Unexpected error:', error);
     return NextResponse.json<ApiErrorResponse>(
