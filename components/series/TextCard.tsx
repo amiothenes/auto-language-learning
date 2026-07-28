@@ -143,7 +143,7 @@ export function TextCard({
           <Muted size="xs">{wordCount.toLocaleString('en-US')} words</Muted>
         </div>
         <Muted size="xs" className="text-primary font-medium">
-          {knownPercentage}% known
+          {knownPercentage}% complete
         </Muted>
       </div>
 

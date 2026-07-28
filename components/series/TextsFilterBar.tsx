@@ -3,15 +3,9 @@
 import { useRef, useEffect, useState } from 'react';
 import { ChevronDown, Check, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { TextSortOption } from '@/lib/types/ui';
 
-export type TextsSortOption =
-  | 'date-added'
-  | 'recent'
-  | 'title-asc'
-  | 'progress-desc'
-  | 'progress-asc';
-
-const SORT_LABELS: Record<TextsSortOption, string> = {
+const SORT_LABELS: Record<TextSortOption, string> = {
   'date-added': 'Date Added (Newest)',
   recent: 'Last Read (Recent)',
   'title-asc': 'Title (A-Z)',
@@ -20,8 +14,8 @@ const SORT_LABELS: Record<TextsSortOption, string> = {
 };
 
 interface TextsFilterBarProps {
-  sortBy: TextsSortOption;
-  onSortChange: (sort: TextsSortOption) => void;
+  sortBy: TextSortOption;
+  onSortChange: (sort: TextSortOption) => void;
   selectedTags: string[];
   availableTags: string[];
   onTagsChange: (tags: string[]) => void;
@@ -99,7 +93,7 @@ export function TextsFilterBar({
 
         {isSortOpen && (
           <div className="absolute top-full right-0 mt-1 w-52 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
-            {(Object.keys(SORT_LABELS) as TextsSortOption[]).map((option) => (
+            {(Object.keys(SORT_LABELS) as TextSortOption[]).map((option) => (
               <button
                 key={option}
                 onClick={() => {

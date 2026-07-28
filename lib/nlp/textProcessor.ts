@@ -28,6 +28,7 @@ import { processWithSpacy } from '@/lib/nlp/spacyClient';
 import { matchesLanguageScript, requiresRomanization } from '@/lib/nlp/utils/script-detector';
 import type { LemmatizeResult } from '@/lib/nlp/types';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
+import { calculateCompletionPercentage } from '@/lib/utils/textStats';
 
 // ============================================================================
 // Type Definitions
@@ -501,15 +502,10 @@ export async function processTextForImport(
           },
         });
 
-        // knownPercentage = (KNOWN + WELL_KNOWN + FAMILIAR) / all lemmas except IGNORE
-        const gradableStatuses = wordStatuses.filter((w) => w.status !== 'IGNORE');
-        const knownCount = gradableStatuses.filter(
-          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN' || w.status === 'FAMILIAR'
-        ).length;
-        const totalCount = gradableStatuses.length;
-
-        const knownPercentage =
-          totalCount > 0 ? Math.round((knownCount / totalCount) * 100) : 0;
+        // Completion % — see lib/utils/textStats.ts. Unrounded; round at display time.
+        const knownPercentage = calculateCompletionPercentage(
+          wordStatuses.map((w) => w.status as VocabularyStatus)
+        );
 
         // Update text with calculated percentage
         await tx
@@ -525,7 +521,7 @@ export async function processTextForImport(
           progressCallback,
           'inserting',
           95,
-          `Calculated known percentage: ${knownPercentage}%`
+          `Calculated known percentage: ${Math.round(knownPercentage)}%`
         );
 
         // Step 13: Return Result (95-100%)
@@ -766,14 +762,10 @@ export async function reprocessTextContent(
           columns: { lemma: true, status: true },
         });
 
-        const gradableStatuses = wordStatuses.filter((w) => w.status !== 'IGNORE');
-        const knownCount = gradableStatuses.filter(
-          (w) => w.status === 'KNOWN' || w.status === 'WELL_KNOWN' || w.status === 'FAMILIAR'
-        ).length;
-        const knownPercentage =
-          gradableStatuses.length > 0
-            ? Math.round((knownCount / gradableStatuses.length) * 100)
-            : 0;
+        // Completion % — see lib/utils/textStats.ts. Unrounded; round at display time.
+        const knownPercentage = calculateCompletionPercentage(
+          wordStatuses.map((w) => w.status as VocabularyStatus)
+        );
 
         await tx
           .update(texts)

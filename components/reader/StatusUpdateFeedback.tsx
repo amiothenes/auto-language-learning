@@ -163,11 +163,11 @@ export function StatusUpdateFeedback({
 
           {/* Stats Display */}
           <div className="space-y-1">
-            {/* Known Words Change */}
+            {/* Words Seen Change */}
             {knownWordsDelta !== 0 && (
               <div className="font-sans text-ui-sm text-muted">
                 <span className="inline-flex items-center gap-1.5">
-                  <span>Known words:</span>
+                  <span>Words seen:</span>
                   <span className="font-serif text-ui-base text-ink font-semibold tabular-nums">
                     {animatedKnownWords.toLocaleString()}
                   </span>

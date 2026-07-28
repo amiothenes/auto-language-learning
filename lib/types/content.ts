@@ -23,7 +23,8 @@
  * - "French Poetry Collection"
  *
  * **Progress Calculation:**
- * Series progress is the average of `knownPercentage` across all texts in the series.
+ * Series progress is the average of `knownPercentage` (Completion %, not mastery)
+ * across all texts in the series.
  */
 export interface Series {
   /** Unique identifier for this series */
@@ -96,7 +97,9 @@ export interface SeriesDetail {
  * - `uniqueWordCount`: Number of unique lemmas in the text
  *
  * **Progress Tracking:**
- * - `knownPercentage`: Percentage of unique lemmas marked as KNOWN or WELL_KNOWN
+ * - `knownPercentage`: Completion % — non-ignored lemmas that have been seen at
+ *   least once (not UNKNOWN), NOT a mastery/known-well measure. See CLAUDE.md
+ *   "Progress Metrics" for the distinction from the Dashboard's Known %.
  */
 export interface Text {
   /** Unique identifier for this text */
@@ -107,10 +110,16 @@ export interface Text {
   wordCount: number;
   /** Number of unique lemmas in the text */
   uniqueWordCount: number;
-  /** Percentage of unique lemmas that are KNOWN or WELL_KNOWN (0-100) */
+  /** Completion % (0-100): non-ignored lemmas that are not UNKNOWN. Not a mastery stat. */
   knownPercentage: number;
   /** Human-readable last read timestamp (e.g., "1 day ago") */
   lastRead: string;
+  /** ISO timestamp: `lastViewedAt` if ever read, else `createdAt` — used for the "Recently Read" sort */
+  lastReadAt: string;
+  /** Whether this text has ever been opened in the Reader. Never-read texts sort as a group after read ones in "Recently Read", not by creation recency alone. */
+  hasBeenRead: boolean;
+  /** Creation-time sequence within the series (e.g. chunked-import Part 1, 2, 3). Tiebreaker for never-read texts when `createdAt` values are equal (bulk imports can share a timestamp). */
+  order: number;
   /** Short preview of the text content (first ~100 characters) */
   preview: string;
 }
@@ -142,7 +151,7 @@ export interface TextData {
   uniqueWordCount: number;
   /** Number of times this text has been viewed */
   viewCount: number;
-  /** Percentage of unique lemmas that are KNOWN or WELL_KNOWN (0-100) */
+  /** Completion % (0-100): non-ignored lemmas that are not UNKNOWN. Not a mastery stat. */
   knownPercentage: number;
   /** User-defined tags for categorization */
   tags: string[];

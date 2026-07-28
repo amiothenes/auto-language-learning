@@ -97,6 +97,9 @@ export async function GET(
       uniqueWordCount: t.uniqueWordCount,
       knownPercentage: t.knownPercentage,
       lastRead: formatRelativeTime(t.lastViewedAt),
+      lastReadAt: (t.lastViewedAt ?? t.createdAt).toISOString(),
+      hasBeenRead: t.lastViewedAt !== null,
+      order: t.order,
       preview: t.content.slice(0, 150).trimEnd(),
     }));
 

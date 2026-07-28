@@ -173,7 +173,7 @@ export function TextInfo({
         <div>
           <Muted className="text-ui-xs mb-1">Reading Progress</Muted>
           <Heading size="sm" as="h3" className="text-primary">
-            {Math.round(knownPercentage)}% Known
+            {Math.round(knownPercentage)}% Complete
           </Heading>
           <ProgressBar 
             value={knownPercentage} 

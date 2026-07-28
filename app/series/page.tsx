@@ -19,7 +19,8 @@ import { Toast, useToast } from '@/components/ui/Toast';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { TextCard } from '@/components/series/TextCard';
 import { TextsFilterBar } from '@/components/series/TextsFilterBar';
-import type { TextsSortOption } from '@/components/series/TextsFilterBar';
+import type { TextSortOption } from '@/lib/types/ui';
+import { compareByRecentlyRead } from '@/lib/utils/textSort';
 import { Search, Plus, ChevronDown, ArrowLeft } from 'lucide-react';
 import type { SeriesSortOption } from '@/lib/types';
 import { formatRelativeTime } from '@/lib/utils';
@@ -81,7 +82,7 @@ function SeriesPageContent() {
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; description: string } | null>(null);
   const [addTextTarget, setAddTextTarget] = useState<{ id: string; name: string } | null>(null);
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
-  const [textsSortBy, setTextsSortBy] = useState<TextsSortOption>('date-added');
+  const [textsSortBy, setTextsSortBy] = useState<TextSortOption>('date-added');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const sortRef = useRef<HTMLDivElement>(null);
 
@@ -183,22 +184,12 @@ function SeriesPageContent() {
       result = result.filter((t) => selectedTags.every((tag) => t.tags.includes(tag)));
     }
 
-    const getRecentOrder = (str: string) => {
-      if (str.includes('day ago')) return parseInt(str) || 1;
-      if (str.includes('days ago')) return parseInt(str) || 2;
-      if (str.includes('week ago')) return 7;
-      if (str.includes('weeks ago')) return parseInt(str) * 7 || 14;
-      if (str.includes('month ago')) return 30;
-      if (str.includes('months ago')) return parseInt(str) * 30 || 60;
-      return 999;
-    };
-
     switch (textsSortBy) {
       case 'date-added':
         result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
       case 'recent':
-        result.sort((a, b) => getRecentOrder(a.lastRead) - getRecentOrder(b.lastRead));
+        result.sort(compareByRecentlyRead);
         break;
       case 'title-asc':
         result.sort((a, b) => a.title.localeCompare(b.title));

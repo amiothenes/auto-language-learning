@@ -103,7 +103,7 @@ export function TextListRow({
       {/* Tier icon */}
       <TierIcon pct={Math.round(knownPercentage)} />
 
-      {/* Known % — w-10 comfortably holds "100%" at text-ui-sm */}
+      {/* Completion % — w-10 comfortably holds "100%" at text-ui-sm */}
       <span className="text-ui-sm font-semibold w-10 text-right font-sans shrink-0">
         {Math.round(knownPercentage)}%
       </span>

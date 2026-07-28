@@ -43,7 +43,7 @@ export function TextListItem({
               <>
                 <span className="text-ui-xs text-white/40 hidden md:inline">•</span>
                 <span className="text-ui-xs text-white/70 font-sans">
-                  ¶ {paragraphIndex}/{totalParagraphs} · {Math.round(knownPercentage)}% known
+                  ¶ {paragraphIndex}/{totalParagraphs} · {Math.round(knownPercentage)}% complete
                 </span>
               </>
             )}
@@ -75,7 +75,7 @@ export function TextListItem({
           <Muted size="xs" className="hidden md:inline">•</Muted>
           <Muted size="xs">{wordCount} words</Muted>
           <Muted size="xs" className="hidden md:inline">•</Muted>
-          <Muted size="xs">{Math.round(knownPercentage * 10) / 10}% known</Muted>
+          <Muted size="xs">{Math.round(knownPercentage)}% complete</Muted>
         </div>
       </div>
       <div className="text-left md:text-right shrink-0">

@@ -42,8 +42,8 @@ import type { ImportedTextData } from '@/lib/types/forms';
 import type { ImportTextRequest, ImportTextResponse } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-
-type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent';
+import type { TextSortOption } from '@/lib/types/ui';
+import { compareByRecentlyRead } from '@/lib/utils/textSort';
 
 // ============================================================================
 // SortableTextListRow — thin DnD wrapper around TextListRow
@@ -109,7 +109,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState('');
   const seriesNameInitialized = useRef(false);
-  const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [sortBy, setSortBy] = useState<TextSortOption>('recent');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   const [reorderMode, setReorderMode] = useState(false);
@@ -123,8 +123,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   );
 
   useEffect(() => {
-    const saved = localStorage.getItem(`series-sort-${id}`) as SortOption | null;
-    const valid: SortOption[] = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+    const saved = localStorage.getItem(`series-sort-${id}`) as TextSortOption | null;
+    const valid: TextSortOption[] = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
     if (saved && valid.includes(saved)) setSortBy(saved);
   }, [id]);
 
@@ -184,19 +184,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         texts.sort((a, b) => a.knownPercentage - b.knownPercentage);
         break;
       case 'recent':
-        // Simple sorting by lastRead string (in real app, would use dates)
-        texts.sort((a, b) => {
-          const getOrder = (str: string) => {
-            if (str.includes('day ago')) return parseInt(str) || 1;
-            if (str.includes('days ago')) return parseInt(str) || 2;
-            if (str.includes('week ago')) return 7;
-            if (str.includes('weeks ago')) return parseInt(str) * 7 || 14;
-            if (str.includes('month ago')) return 30;
-            if (str.includes('months ago')) return parseInt(str) * 30 || 60;
-            return 999;
-          };
-          return getOrder(a.lastRead) - getOrder(b.lastRead);
-        });
+        texts.sort(compareByRecentlyRead);
         break;
     }
 

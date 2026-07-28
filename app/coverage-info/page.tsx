@@ -182,16 +182,17 @@ export default function CoverageInfoPage() {
 
         {/* Per-text percentage */}
         <Card variant="default" padding="md" as="section" className="space-y-3">
-          <Heading size="lg" as="h2">What does "X% known" mean on a text?</Heading>
+          <Heading size="lg" as="h2">What does "X% complete" mean on a text?</Heading>
           <Body size="sm">
-            Each text card shows a simpler metric: the percentage of unique word forms in that
-            specific text that you have marked as <strong>Known</strong> or <strong>Well-Known</strong>,
-            out of every word in the text — including words you have not reviewed yet.
+            Each text card shows a simpler metric: <strong>Completion %</strong> — the percentage of
+            unique word forms in that specific text you have seen at least once (any status other
+            than Unknown), out of every word in the text except ones you have marked Ignore.
           </Body>
           <Body size="sm">
-            This answers a direct question: <em>"Of the words in this text, how many do I actually know?"</em>
-            It is not frequency-weighted and does not account for the rest of the language —
-            it is a quick indicator of how readable that particular text is for you right now.
+            This answers a direct question: <em>"Of the words in this text, how many have I encountered before?"</em>
+            It tracks exposure, not mastery — a word counts as soon as you have reviewed it once, even at
+            the lowest familiarity level. It is not frequency-weighted and does not account for the rest
+            of the language — it is a quick indicator of how much of that particular text is new to you.
           </Body>
         </Card>
 

@@ -127,6 +127,24 @@ export interface ReaderSettingsContextType {
 export type SeriesSortOption = 'name-asc' | 'progress-desc' | 'progress-asc' | 'read-recent';
 
 /**
+ * Sort options for text lists (within a series detail page, or the series
+ * page's Texts tab).
+ *
+ * **Options:**
+ * - `title-asc`: Alphabetical by title (A-Z)
+ * - `progress-desc`: Completion % high to low
+ * - `progress-asc`: Completion % low to high
+ * - `recent`: Most recently read first (newest to oldest); texts never read fall back to creation date
+ * - `date-added`: Most recently imported first (Texts tab only)
+ */
+export type TextSortOption =
+  | 'title-asc'
+  | 'progress-desc'
+  | 'progress-asc'
+  | 'recent'
+  | 'date-added';
+
+/**
  * Sort options for vocabulary list.
  *
  * Determines the order in which vocabulary items are displayed.

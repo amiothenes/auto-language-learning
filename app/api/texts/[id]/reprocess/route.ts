@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reprocessTextContent, TextProcessingError } from '@/lib/nlp/textProcessor';
+import { reprocessTextContent, autoIgnoreProperNouns, TextProcessingError } from '@/lib/nlp/textProcessor';
+import { syncTextStatistics } from '@/lib/utils/vocabularySync';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { db } from '@/lib/db';
@@ -54,15 +55,22 @@ export async function POST(
 
     const result = await reprocessTextContent(id, body.content.trim(), undefined, firstChangedParagraphIndex, user.id);
 
+    // Auto-ignore proper nouns newly introduced by the edit, then resync so the
+    // returned knownPercentage reflects the corrected denominator (mirrors import).
+    const ignoredPropnCount = await autoIgnoreProperNouns([id]);
+    const knownPercentage = ignoredPropnCount > 0
+      ? await syncTextStatistics(id)
+      : result.knownPercentage;
+
     console.log(
-      `[Reprocess] Complete: ${result.wordCount} words, ${result.knownPercentage}% known, ${result.processingTime}ms`
+      `[Reprocess] Complete: ${result.wordCount} words, ${Math.round(knownPercentage)}% known, ${result.processingTime}ms`
     );
 
     return NextResponse.json({
       success: true,
       wordCount: result.wordCount,
       uniqueWordCount: result.uniqueWordCount,
-      knownPercentage: result.knownPercentage,
+      knownPercentage,
       processingTime: result.processingTime,
     });
   } catch (error) {

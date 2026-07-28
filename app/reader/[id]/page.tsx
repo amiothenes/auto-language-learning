@@ -11,6 +11,7 @@ import { WordTooltip } from '@/components/reader/WordTooltip';
 import { TextInfoSkeleton, ReaderContentSkeleton } from '@/components/reader/ReaderSkeleton';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData, TextData } from '@/lib/types';
+import { calculateCompletionPercentage } from '@/lib/utils/textStats';
 import type { WordInstanceItem } from '@/lib/types/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
@@ -91,7 +92,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           queryClient.invalidateQueries({ queryKey: ['series-list'] });
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error('[Reader] View tracking failed:', err));
   }, [id, queryClient]);
 
   // ── UI state ──────────────────────────────────────────────────────────────
@@ -168,7 +169,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     [textData]
   );
 
-  // Per-paragraph known% for the mini-map
+  // Per-paragraph completion % for the mini-map
   const paragraphProgress = useMemo(() => {
     if (!wordInstances || !textData) return [];
     const content = textData.content;
@@ -189,20 +190,11 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         (inst) => inst.position >= start && inst.position < end
       );
       if (paraInstances.length === 0) return { id: `p${index + 1}`, progress: 0 };
-      const gradableInstances = paraInstances.filter(
-        (inst) => inst.status !== VocabularyStatus.IGNORE
-      );
-      const knownCount = gradableInstances.filter(
-        (inst) =>
-          inst.status === VocabularyStatus.KNOWN ||
-          inst.status === VocabularyStatus.WELL_KNOWN ||
-          inst.status === VocabularyStatus.FAMILIAR
-      ).length;
       return {
         id: `p${index + 1}`,
-        progress: gradableInstances.length > 0
-          ? Math.round((knownCount / gradableInstances.length) * 100)
-          : 0,
+        progress: Math.round(
+          calculateCompletionPercentage(paraInstances.map((inst) => inst.status))
+        ),
       };
     });
   }, [wordInstances, textData, paragraphs]);
@@ -352,8 +344,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const checkMilestone = (knownWords: number): boolean =>
     [100, 250, 500, 1000, 2000, 5000].includes(knownWords);
 
-  const isKnownStatus = (status: VocabularyStatus): boolean =>
-    status === VocabularyStatus.KNOWN || status === VocabularyStatus.WELL_KNOWN;
+  // Completion % counts any status other than UNKNOWN (see lib/utils/textStats.ts) —
+  // must match that rule so the optimistic update below doesn't drift from the server value.
+  const countsTowardCompletion = (status: VocabularyStatus): boolean =>
+    status !== VocabularyStatus.UNKNOWN;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
@@ -391,12 +385,12 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     if (!selectedWord) return;
 
     const oldStatus = selectedWord.status;
-    const wasKnown = isKnownStatus(oldStatus);
-    const isNowKnown = isKnownStatus(newStatus);
+    const wasCounted = countsTowardCompletion(oldStatus);
+    const isNowCounted = countsTowardCompletion(newStatus);
 
     let knownWordsDelta = 0;
-    if (!wasKnown && isNowKnown) knownWordsDelta = 1;
-    else if (wasKnown && !isNowKnown) knownWordsDelta = -1;
+    if (!wasCounted && isNowCounted) knownWordsDelta = 1;
+    else if (wasCounted && !isNowCounted) knownWordsDelta = -1;
 
     // Capture pre-update values for rollback
     const prevStats = { ...vocabularyStats };
@@ -419,7 +413,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
     const isMilestone = knownWordsDelta > 0 && checkMilestone(newKnownWords);
     const message = isMilestone
-      ? `Amazing! You've reached ${newKnownWords.toLocaleString()} known words!`
+      ? `Amazing! You've seen ${newKnownWords.toLocaleString()} words!`
       : 'Status updated!';
 
     if (knownWordsDelta !== 0) {

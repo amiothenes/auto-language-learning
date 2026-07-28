@@ -143,6 +143,12 @@ export interface TextListItem {
   knownPercentage: number;
   /** Human-readable last viewed timestamp (e.g. "2 days ago") */
   lastRead: string;
+  /** ISO timestamp: `lastViewedAt` if ever read, else `createdAt` — used for the "Recently Read" sort */
+  lastReadAt: string;
+  /** Whether this text has ever been opened in the Reader. Never-read texts sort as a group after read ones in "Recently Read", not by creation recency alone. */
+  hasBeenRead: boolean;
+  /** Creation-time sequence within the series (e.g. chunked-import Part 1, 2, 3). Tiebreaker for never-read texts when `createdAt` values are equal (bulk imports can share a timestamp). */
+  order: number;
   /** First ~150 characters of the text content */
   preview: string;
   seriesId: string | null;

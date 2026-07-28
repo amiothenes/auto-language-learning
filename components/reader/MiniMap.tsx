@@ -97,7 +97,7 @@ export function MiniMap({
                   backgroundColor: getProgressColor(para.progress),
                   opacity: isActive ? 1 : 0.8,
                 }}
-                aria-label={`Paragraph ${index + 1}, ${para.progress}% known`}
+                aria-label={`Paragraph ${index + 1}, ${para.progress}% complete`}
               />
             );
           })}

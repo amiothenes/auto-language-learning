@@ -46,7 +46,7 @@ export function ContinueReadingCard({
 
       {/* Meta */}
       <p className="font-sans text-ui-xs text-muted mb-2">
-        {knownPercentage}% known · last read {lastReadAt}
+        {knownPercentage}% complete · last read {lastReadAt}
       </p>
 
       {/* Paragraph progress */}

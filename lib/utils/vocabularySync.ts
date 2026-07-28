@@ -2,28 +2,27 @@ import { db } from '@/lib/db';
 import { words, texts, wordInstances } from '@/lib/db/schema';
 import { and, eq, ne } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
+import { calculateCompletionPercentage } from '@/lib/utils/textStats';
 
 /**
- * Recalculates knownPercentage for a single text and persists it to the DB.
- * knownPercentage = (KNOWN + WELL_KNOWN + FAMILIAR) / (all unique lemmas except IGNORE)
+ * Recalculates knownPercentage (Completion %, see lib/utils/textStats.ts) for
+ * a single text and persists it to the DB. Returns the computed value so
+ * callers (import/reprocess, after auto-ignoring proper nouns) can use it
+ * without an extra round-trip query.
  */
-export async function syncTextStatistics(textId: string): Promise<void> {
+export async function syncTextStatistics(textId: string): Promise<number> {
   const rows = await db
     .selectDistinct({ wordId: wordInstances.wordId, status: words.status })
     .from(wordInstances)
     .innerJoin(words, eq(wordInstances.wordId, words.id))
     .where(and(eq(wordInstances.textId, textId), ne(words.status, VocabularyStatus.IGNORE)));
 
-  const total = rows.length;
-  const known = rows.filter(
-    (r) =>
-      r.status === VocabularyStatus.KNOWN ||
-      r.status === VocabularyStatus.WELL_KNOWN ||
-      r.status === VocabularyStatus.FAMILIAR
-  ).length;
-  const knownPercentage = total > 0 ? (known / total) * 100 : 0;
+  const knownPercentage = calculateCompletionPercentage(
+    rows.map((r) => r.status as VocabularyStatus)
+  );
 
   await db.update(texts).set({ knownPercentage }).where(eq(texts.id, textId));
+  return knownPercentage;
 }
 
 /**

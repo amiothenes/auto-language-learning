@@ -26,7 +26,7 @@ export function ResumeBar() {
         <div className="min-w-0">
           <span className="font-semibold font-sans text-ui-base truncate block">{textTitle}</span>
           <span className="font-sans text-ui-xs opacity-70 truncate block">
-            {seriesName} · ¶ {paragraphIndex + 1}/{totalParagraphs} · {knownPercentage}% known · {lastReadAt}
+            {seriesName} · ¶ {paragraphIndex + 1}/{totalParagraphs} · {knownPercentage}% complete · {lastReadAt}
           </span>
         </div>
       </div>

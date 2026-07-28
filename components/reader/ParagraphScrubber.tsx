@@ -56,7 +56,7 @@ export function ParagraphScrubber({
               <button
                 key={para.id}
                 onClick={() => onNavigate(i)}
-                aria-label={`Paragraph ${i + 1}, ${para.progress}% known`}
+                aria-label={`Paragraph ${i + 1}, ${para.progress}% complete`}
                 className={cn(
                   'w-full flex items-center gap-2 px-1.5 py-1 rounded text-left transition-colors hover:bg-desk',
                   isActive && 'bg-primary-05 ring-1 ring-primary/25',

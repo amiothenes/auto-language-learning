@@ -16,6 +16,7 @@ import {
   TextProcessingError,
   autoIgnoreProperNouns,
 } from '@/lib/nlp/textProcessor';
+import { syncTextStatistics } from '@/lib/utils/vocabularySync';
 import { splitIntoChunks } from '@/lib/nlp/textChunker';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
@@ -243,6 +244,12 @@ export async function POST(request: NextRequest) {
     const textIds = results.map((r) => r.textId);
     const ignoredPropnCount = await autoIgnoreProperNouns(textIds);
 
+    // Auto-ignoring proper nouns changes each text's denominator — resync so the
+    // knownPercentage returned to the client isn't stale from before the ignore.
+    const correctedPercentages = ignoredPropnCount > 0
+      ? await Promise.all(textIds.map((id) => syncTextStatistics(id)))
+      : results.map((r) => r.knownPercentage);
+
     const response: ImportTextResponse = {
       success: true,
       seriesId: resolvedSeriesId,
@@ -251,7 +258,7 @@ export async function POST(request: NextRequest) {
         title: isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim(),
         wordCount: r.wordCount,
         uniqueWordCount: r.uniqueWordCount,
-        knownPercentage: r.knownPercentage,
+        knownPercentage: correctedPercentages[i],
       })),
       statistics: {
         newWordsCreated: results.reduce((sum, r) => sum + r.newWordsCreated, 0),

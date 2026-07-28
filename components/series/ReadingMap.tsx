@@ -97,7 +97,7 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
           {showInfo && (
             <div className="absolute top-6 right-0 z-20 w-56 rounded-card border border-border bg-paper p-3 shadow-modal">
               <p className="font-sans text-ui-xs text-muted leading-snug">
-                Color = known% — green is reading-ready, red needs more vocabulary
+                Color = % complete — green is reading-ready, red needs more vocabulary
               </p>
               <button
                 onClick={() => setShowInfo(false)}
