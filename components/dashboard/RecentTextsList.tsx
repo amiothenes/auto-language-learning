@@ -43,10 +43,11 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
     onlyRead: true,
     staleTime: 0,
   });
-  const { data: seriesList } = useSeriesList();
+  const { data: seriesList, isLoading: isLoadingSeries } = useSeriesList();
   const { data: lastPosition } = useLastPosition();
   const isLoading = isLoadingProp || isLoadingTexts;
   const hasRecentTexts = (texts?.length ?? 0) > 0;
+  const hasSeries = isLoadingSeries || (seriesList?.length ?? 0) > 0;
 
   const openNewTextModal = () => {
     setShowNewTextModal(true);
@@ -75,15 +76,17 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
             <FolderPlus size={20} className="md:hidden" strokeWidth={2} />
           </button>
 
-          {/* Add Text to Series */}
-          <button
-            onClick={openNewTextModal}
-            title="Add a text to an existing series"
-            className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:brightness-90 active:translate-y-px transition-all cursor-pointer"
-          >
-            <span className="hidden md:inline">Add Text to Series</span>
-            <FilePlus size={20} className="md:hidden" strokeWidth={2} />
-          </button>
+          {/* Add Text to Series (only when a series exists to add to) */}
+          {hasSeries && (
+            <button
+              onClick={openNewTextModal}
+              title="Add a text to an existing series"
+              className="px-3 md:px-4 py-2 bg-primary text-white font-sans font-medium text-ui-base rounded hover:brightness-90 active:translate-y-px transition-all cursor-pointer"
+            >
+              <span className="hidden md:inline">Add Text to Series</span>
+              <FilePlus size={20} className="md:hidden" strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -104,10 +107,11 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
             onClick: () => router.push('/series'),
             icon: <Library size={18} strokeWidth={2} />,
           }}
-          secondaryAction={{
-            label: "Add Text to Series",
-            onClick: openNewTextModal,
-          }}
+          secondaryAction={
+            hasSeries
+              ? { label: "Add Text to Series", onClick: openNewTextModal }
+              : undefined
+          }
           className="min-h-75"
         />
       ) : (
