@@ -105,13 +105,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const { settings, toggleImmersionMode } = useReaderSettings();
 
-  const [vocabularyStats, setVocabularyStats] = useState({
-    totalWords: 0,
-    knownWords: 0,
-    textKnownPercentage: 0,
-  });
-  const statsInitialized = useRef(false);
-
   const [feedbackState, setFeedbackState] = useState<{
     isVisible: boolean;
     message: string;
@@ -132,24 +125,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
   const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
-
-  // Dynamic right padding: shifts <main> content left to prevent minimap overlap.
-  // At vw < 1392px (normal mode), the minimap would overlap the centered prose.
-  // Extra padding = max(0, 1392 - vw) closes the gap exactly.
-  const [mainRightPadding, setMainRightPadding] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    const update = () => {
-      const isXl = window.innerWidth >= 1280;
-      if (!isXl || settings.isImmersionMode) {
-        setMainRightPadding(undefined);
-      } else {
-        setMainRightPadding(32 + Math.max(0, 1392 - window.innerWidth));
-      }
-    };
-    update();
-    window.addEventListener('resize', update, { passive: true });
-    return () => window.removeEventListener('resize', update);
-  }, [settings.isImmersionMode]);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -199,6 +174,13 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     });
   }, [wordInstances, textData, paragraphs]);
 
+  // Whole-text completion % for the sidebar — same query, same shared formula as
+  // paragraphProgress above, so the sidebar and the ¶ map can never diverge again.
+  const textKnownPercentage = useMemo(() => {
+    if (!wordInstances) return 0;
+    return calculateCompletionPercentage(wordInstances.map((inst) => inst.status));
+  }, [wordInstances]);
+
   // Hard-stop gradient for the 4px vocabulary density strip (mobile only)
   const densityStripGradient = useMemo(() => {
     if (!paragraphProgress.length) return 'transparent';
@@ -232,18 +214,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       return () => { document.title = 'Verbista'; };
     }
   }, [textData?.title]);
-
-  // Initialize vocabulary stats once when text data first loads
-  useEffect(() => {
-    if (textData && !statsInitialized.current) {
-      statsInitialized.current = true;
-      setVocabularyStats({
-        totalWords: textData.uniqueWordCount,
-        knownWords: Math.round(textData.uniqueWordCount * (textData.knownPercentage / 100)),
-        textKnownPercentage: Math.round(textData.knownPercentage),
-      });
-    }
-  }, [textData]);
 
   // Track current paragraph with IntersectionObserver
   useEffect(() => {
@@ -344,10 +314,18 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const checkMilestone = (knownWords: number): boolean =>
     [100, 250, 500, 1000, 2000, 5000].includes(knownWords);
 
-  // Completion % counts any status other than UNKNOWN (see lib/utils/textStats.ts) —
-  // must match that rule so the optimistic update below doesn't drift from the server value.
-  const countsTowardCompletion = (status: VocabularyStatus): boolean =>
-    status !== VocabularyStatus.UNKNOWN;
+  // Unique-word (deduped by lemma) known-count, for the toast's "X words seen" /
+  // milestone thresholds. IGNORE is excluded from both counts, matching
+  // calculateCompletionPercentage's rule so this can never drift from the
+  // sidebar/map percentages.
+  const uniqueWordCompletion = (instances: WordInstanceItem[] | undefined) => {
+    if (!instances) return { total: 0, known: 0 };
+    const statusByWord = new Map<string, VocabularyStatus>();
+    for (const inst of instances) statusByWord.set(inst.wordId, inst.status);
+    const gradable = Array.from(statusByWord.values()).filter((s) => s !== VocabularyStatus.IGNORE);
+    const known = gradable.filter((s) => s !== VocabularyStatus.UNKNOWN).length;
+    return { total: gradable.length, known };
+  };
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
@@ -384,44 +362,33 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
     if (!selectedWord) return;
 
-    const oldStatus = selectedWord.status;
-    const wasCounted = countsTowardCompletion(oldStatus);
-    const isNowCounted = countsTowardCompletion(newStatus);
-
-    let knownWordsDelta = 0;
-    if (!wasCounted && isNowCounted) knownWordsDelta = 1;
-    else if (wasCounted && !isNowCounted) knownWordsDelta = -1;
-
-    // Capture pre-update values for rollback
-    const prevStats = { ...vocabularyStats };
     const prevWord = { ...selectedWord };
     const prevInstances = queryClient.getQueryData<WordInstanceItem[]>(['word-instances', id]);
-
-    const newKnownWords = vocabularyStats.knownWords + knownWordsDelta;
-    const newTextProgress = Math.round((newKnownWords / vocabularyStats.totalWords) * 100);
-
-    // Optimistic update — patch cache so Word components re-render immediately
-    setVocabularyStats({
-      ...vocabularyStats,
-      knownWords: newKnownWords,
-      textKnownPercentage: newTextProgress,
-    });
-    setSelectedWord({ ...selectedWord, status: newStatus });
-    queryClient.setQueryData<WordInstanceItem[]>(['word-instances', id], (old) =>
-      old?.map((inst) => inst.wordId === wordId ? { ...inst, status: newStatus } : inst) ?? old
+    const nextInstances = prevInstances?.map((inst) =>
+      inst.wordId === wordId ? { ...inst, status: newStatus } : inst
     );
 
-    const isMilestone = knownWordsDelta > 0 && checkMilestone(newKnownWords);
+    const oldUnique = uniqueWordCompletion(prevInstances);
+    const newUnique = uniqueWordCompletion(nextInstances);
+    const oldTextProgress = Math.round(calculateCompletionPercentage((prevInstances ?? []).map((i) => i.status)));
+    const newTextProgress = Math.round(calculateCompletionPercentage((nextInstances ?? []).map((i) => i.status)));
+    const knownWordsDelta = newUnique.known - oldUnique.known;
+
+    // Optimistic update — patch cache so Word components re-render immediately
+    setSelectedWord({ ...selectedWord, status: newStatus });
+    queryClient.setQueryData<WordInstanceItem[]>(['word-instances', id], nextInstances ?? prevInstances);
+
+    const isMilestone = knownWordsDelta > 0 && checkMilestone(newUnique.known);
     const message = isMilestone
-      ? `Amazing! You've seen ${newKnownWords.toLocaleString()} words!`
+      ? `Amazing! You've seen ${newUnique.known.toLocaleString()} words!`
       : 'Status updated!';
 
-    if (knownWordsDelta !== 0) {
+    if (knownWordsDelta !== 0 || oldTextProgress !== newTextProgress) {
       setFeedbackState({
         isVisible: true,
         message,
-        oldStats: { knownWords: prevStats.knownWords, textProgress: prevStats.textKnownPercentage },
-        newStats: { knownWords: newKnownWords, textProgress: newTextProgress },
+        oldStats: { knownWords: oldUnique.known, textProgress: oldTextProgress },
+        newStats: { knownWords: newUnique.known, textProgress: newTextProgress },
         isMilestone,
       });
     }
@@ -431,7 +398,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       { wordId, status: newStatus },
       {
         onError: () => {
-          setVocabularyStats(prevStats);
           setSelectedWord(prevWord);
           queryClient.setQueryData(['word-instances', id], prevInstances);
           setFeedbackState(null);
@@ -529,7 +495,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       {/* Large Desktop: 2-column | Mobile/Tablet: Stacked */}
       <div className={cn(
         'flex flex-col',
-        !settings.isImmersionMode && 'xl:grid xl:grid-cols-[280px_1fr]',
+        !settings.isImmersionMode && 'xl:grid xl:grid-cols-[280px_1fr_188px]',
       )}>
         {/* ── LEFT SIDEBAR ── */}
         <aside
@@ -557,7 +523,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 wordCount={textData.wordCount}
                 uniqueWordCount={textData.uniqueWordCount}
                 viewCount={textData.viewCount}
-                knownPercentage={vocabularyStats.textKnownPercentage}
+                knownPercentage={textKnownPercentage}
                 seriesId={textData.seriesId}
                 seriesName={textData.seriesName}
                 tags={textData.tags}
@@ -569,7 +535,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         {/* ── MAIN READER AREA ── */}
         <main
           className="order-1 xl:order-2 flex flex-col items-center px-4 md:px-6 lg:px-8 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
-          style={mainRightPadding !== undefined ? { paddingRight: mainRightPadding } : undefined}
         >
           {/* ── STATUS HINT BANNER — first visit only ── */}
           {showHint && (
@@ -683,6 +648,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           )}
         </main>
 
+        {/* ── PARAGRAPH SCRUBBER — reserved right-gutter column, xl+ only ── */}
+        <ParagraphScrubber
+          paragraphs={paragraphProgress}
+          currentIndex={currentParagraphIndex}
+          onNavigate={handleParagraphNavigate}
+          hidden={isRightPanelOpen || settings.isImmersionMode}
+        />
+
       </div>
 
       {/* ── WORD DETAILS PANEL — centered modal (desktop only) ── */}
@@ -747,14 +720,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       {settingsAnchorEl && !isDesktop && (
         <MobileSettingsSheet onClose={() => setSettingsAnchorEl(null)} />
       )}
-
-      {/* ── PARAGRAPH SCRUBBER — top-right corner card ── */}
-      <ParagraphScrubber
-        paragraphs={paragraphProgress}
-        currentIndex={currentParagraphIndex}
-        onNavigate={handleParagraphNavigate}
-        hidden={isRightPanelOpen}
-      />
 
       {/* ── DESKTOP WORD TOOLTIP ── */}
       {tooltipWord && tooltipAnchorRect && (

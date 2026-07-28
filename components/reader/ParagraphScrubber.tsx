@@ -3,12 +3,13 @@
 import { cn } from '@/lib/utils';
 
 // ============================================================================
-// ParagraphScrubber — compact ¶ map card, fixed top-right of the reader.
+// ParagraphScrubber — compact ¶ map card, third column of the reader's grid.
 //
-// Layout: fixed right-4, below the desktop top bar (top-15.5).
-// Width is a fixed 172px. The main content area shifts left dynamically
-// (via padding set in page.tsx) to ensure no overlap.
-// Hidden on mobile/tablet via CSS (hidden xl:block).
+// Layout: a real xl:grid-cols column (see page.tsx), sticky below the desktop
+// top bar (top-15.5), so it reserves its own space instead of floating over
+// the prose. Width is a fixed 172px, matched by the grid column's own width.
+// Hidden on mobile/tablet via CSS (hidden xl:block), and in Immersion Mode
+// (via the `hidden` prop, set by the caller).
 // ============================================================================
 
 interface ParagraphScrubberProps {
@@ -36,7 +37,7 @@ export function ParagraphScrubber({
 
   return (
     <div
-      className="fixed right-4 top-15.5 z-20 hidden xl:block"
+      className="hidden xl:block xl:order-3 xl:sticky xl:top-15.5 xl:h-screen xl:pr-4"
       aria-label="Paragraph navigation"
     >
       <div
