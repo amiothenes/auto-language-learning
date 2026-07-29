@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
   type ParsedRow = {
     lemma: string;
-    definition: string;
+    translation: string;
     exampleSentence: string;
     status: WordStatus;
     languageName: string;
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const definition = cols[1].trim();
+    const translation = cols[1].trim();
     const exampleSentence = cols[2].replace(/\{|\}/g, '').trim();
     // cols[3] = tags (ignored)
     const rawStatus = cols[4].trim();
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     parsed.push({
       lemma,
-      definition,
+      translation,
       exampleSentence,
       status: mapLwtStatus(rawStatus),
       languageName,
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       languageId: langMap.get(row.languageName.toLowerCase())!,
       userId: user.id,
       status: row.status,
-      definition: row.definition || null,
+      translation: row.translation || null,
       exampleSentence: row.exampleSentence || null,
     }));
 
@@ -180,10 +180,10 @@ export async function POST(request: NextRequest) {
       .insert(words)
       .values(values)
       .onConflictDoUpdate({
-        target: [words.lemma, words.languageId],
+        target: [words.lemma, words.languageId, words.userId],
         set: {
           status: sql`EXCLUDED.status`,
-          definition: sql`EXCLUDED.definition`,
+          translation: sql`EXCLUDED.translation`,
           exampleSentence: sql`EXCLUDED.example_sentence`,
           updatedAt: sql`now()`,
         },
