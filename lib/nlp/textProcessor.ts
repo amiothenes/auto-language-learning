@@ -182,7 +182,7 @@ async function runNLPPhase(
     (t) => t.is_word && (language.includeForeignScript || matchesLanguageScript(t.surface, language.code))
   )) {
     lemmaResults.set(token.surface.toLowerCase(), {
-      lemma: token.lemma,
+      lemma: token.lemma.toLowerCase(),
       pos: token.pos,
       inflectionData: Object.fromEntries(Object.entries(token.morph).map(([k, v]) => [k.toLowerCase(), v])),
       confidence: 0.95,

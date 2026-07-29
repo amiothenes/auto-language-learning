@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   const languageIdOverride = (formData.get('languageId') as string | null) || null;
 
-  const text = await file.text();
+  const text = (await file.text()).replace(/^﻿/, '');
   const lines = text.split('\n').map((l) => l.trimEnd()).filter(Boolean);
 
   if (lines.length === 0) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   type ParsedRow = {
     lemma: string;
     translation: string;
-    exampleSentence: string;
+    romanization: string;
     status: WordStatus;
     languageName: string;
   };
@@ -78,17 +78,22 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const lemma = cols[0].trim();
+    const lemma = cols[0].trim().toLowerCase();
     if (!lemma) {
       skippedReasons.push(`Line ${i + 1}: empty lemma`);
       continue;
     }
+    if (/\?+$/.test(lemma)) {
+      skippedReasons.push(`Line ${i + 1}: lemma "${lemma}" ends in ? — unresolved by lemmatizer, skipping`);
+      continue;
+    }
 
     const translation = cols[1].trim();
-    const exampleSentence = cols[2].replace(/\{|\}/g, '').trim();
-    // cols[3] = tags (ignored)
+    // cols[2] = merged inflected forms (ignored — lemma is the source of truth)
+    const romanization = cols[3].trim();
     const rawStatus = cols[4].trim();
     const languageName = cols[5].trim();
+    // cols[6] = merged tags (ignored — no per-user tag scoping yet)
 
     if (!languageName) {
       skippedReasons.push(`Line ${i + 1}: empty language name`);
@@ -98,7 +103,7 @@ export async function POST(request: NextRequest) {
     parsed.push({
       lemma,
       translation,
-      exampleSentence,
+      romanization,
       status: mapLwtStatus(rawStatus),
       languageName,
     });
@@ -164,33 +169,35 @@ export async function POST(request: NextRequest) {
 
   let imported = 0;
 
-  for (let offset = 0; offset < parsed.length; offset += BATCH_SIZE) {
-    const batch = parsed.slice(offset, offset + BATCH_SIZE);
+  await db.transaction(async (tx) => {
+    for (let offset = 0; offset < parsed.length; offset += BATCH_SIZE) {
+      const batch = parsed.slice(offset, offset + BATCH_SIZE);
 
-    const values = batch.map((row) => ({
-      lemma: row.lemma,
-      languageId: langMap.get(row.languageName.toLowerCase())!,
-      userId: user.id,
-      status: row.status,
-      translation: row.translation || null,
-      exampleSentence: row.exampleSentence || null,
-    }));
+      const values = batch.map((row) => ({
+        lemma: row.lemma,
+        languageId: langMap.get(row.languageName.toLowerCase())!,
+        userId: user.id,
+        status: row.status,
+        translation: row.translation || null,
+        romanization: row.romanization || null,
+      }));
 
-    await db
-      .insert(words)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [words.lemma, words.languageId, words.userId],
-        set: {
-          status: sql`EXCLUDED.status`,
-          translation: sql`EXCLUDED.translation`,
-          exampleSentence: sql`EXCLUDED.example_sentence`,
-          updatedAt: sql`now()`,
-        },
-      });
+      await tx
+        .insert(words)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [words.lemma, words.languageId, words.userId],
+          set: {
+            status: sql`EXCLUDED.status`,
+            translation: sql`COALESCE(EXCLUDED.translation, ${words.translation})`,
+            romanization: sql`COALESCE(EXCLUDED.romanization, ${words.romanization})`,
+            updatedAt: sql`now()`,
+          },
+        });
 
-    imported += batch.length;
-  }
+      imported += batch.length;
+    }
+  });
 
   console.log(
     `[LWT Import] Done — imported/updated: ${imported}, skipped: ${skippedReasons.length}`
