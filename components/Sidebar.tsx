@@ -71,6 +71,7 @@ export function Sidebar() {
     (lang) => {
       setSelectedLanguage(lang.code);
       setIsDropdownOpen(false);
+      router.push('/dashboard');
     },
     () => setIsDropdownOpen(false),
     dropdownRef
@@ -124,6 +125,7 @@ export function Sidebar() {
                       onClick={() => {
                         setSelectedLanguage(lang.code);
                         setIsDropdownOpen(false);
+                        router.push('/dashboard');
                       }}
                       className={cn(
                         'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
