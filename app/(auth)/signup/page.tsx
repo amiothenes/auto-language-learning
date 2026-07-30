@@ -32,6 +32,8 @@ export default function SignupPage() {
       });
       if (error) { setError(error.message); return; }
       setDone(true);
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.');
     } finally {
       setLoading(false);
     }

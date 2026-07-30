@@ -45,6 +45,8 @@ function LoginForm() {
       if (error) { setError(error.message); return; }
       const destination = data.user?.user_metadata?.onboardingComplete ? '/dashboard' : '/onboarding';
       router.replace(destination);
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -61,6 +63,8 @@ function LoginForm() {
       });
       if (error) { setError(error.message); return; }
       setMagicSent(true);
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
