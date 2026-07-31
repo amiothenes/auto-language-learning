@@ -23,6 +23,8 @@
     "@supabase/supabase-js": "^2.110.0",
     "@tanstack/react-query": "^5.90.20",
     "@types/jsdom": "^21.1.7",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.1",
     "chart.js": "^4.5.1",
     "dotenv": "^17.2.4",
     "drizzle-orm": "^0.45.2",

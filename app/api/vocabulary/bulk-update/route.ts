@@ -6,6 +6,7 @@ import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // ============================================================================
 // POST /api/vocabulary/bulk-update — Update status on multiple words at once
@@ -30,11 +31,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (wordIds.length > 500) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'Maximum 500 word IDs per request' },
+        { status: 400 }
+      );
+    }
+
     if (!Object.values(VocabularyStatus).includes(status as VocabularyStatus)) {
       return NextResponse.json<ApiErrorResponse>(
         { error: `Invalid status: ${status}` },
         { status: 400 }
       );
+    }
+
+    const rateLimit = await checkRateLimit('bulkUpdate', user.id);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse('bulkUpdate', rateLimit);
     }
 
     await db

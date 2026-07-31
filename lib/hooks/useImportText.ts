@@ -39,7 +39,7 @@ export function useImportText() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Import failed');
+        throw Object.assign(new Error(error.error || 'Import failed'), { status: response.status });
       }
 
       return response.json();

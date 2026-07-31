@@ -4,6 +4,7 @@ import { requireUser } from '@/lib/auth/requireUser';
 import { db } from '@/lib/db';
 import { texts } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // ============================================================================
 // POST /api/translations/process
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
   });
   if (!text) {
     return NextResponse.json({ error: 'Text not found' }, { status: 404 });
+  }
+
+  const rateLimit = await checkRateLimit('translationsProcess', user.id);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse('translationsProcess', rateLimit);
   }
 
   await processTranslationsForText(textId);

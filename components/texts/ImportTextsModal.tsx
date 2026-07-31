@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { Upload, FileText, Trash2, AlertCircle, Link, Pencil, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ImportedTextData } from '@/lib/types/forms';
@@ -72,6 +73,7 @@ export function ImportTextsModal({
   const [editDraft, setEditDraft] = useState<{ title: string; content: string }>({ title: '', content: '' });
 
   const fetchUrlMutation = useFetchUrl();
+  const { toast, showToast, hideToast } = useToast();
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -416,7 +418,12 @@ export function ImportTextsModal({
       setEnrichedTexts((prev) => [...prev, newItem]);
       setUrlInput('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch URL');
+      const message = err instanceof Error ? err.message : 'Failed to fetch URL';
+      if (err instanceof Error && (err as Error & { status?: number }).status === 429) {
+        showToast(message, 'error');
+      } else {
+        setError(message);
+      }
     }
   };
 
@@ -799,6 +806,8 @@ export function ImportTextsModal({
           </div>
         </div>
       </div>
+
+      <Toast message={toast.message} isOpen={toast.isOpen} onClose={hideToast} type={toast.type} />
     </>,
     document.body
   );

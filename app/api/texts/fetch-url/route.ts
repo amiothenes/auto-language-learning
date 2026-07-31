@@ -5,6 +5,7 @@ import dns from 'dns/promises';
 import net from 'net';
 import type { FetchUrlRequest, FetchUrlResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // ============================================================================
 // POST /api/texts/fetch-url — Fetch a URL and extract readable article text
@@ -35,7 +36,7 @@ function isPrivateIp(ip: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireUser();
+  const { user, error: authError } = await requireUser();
   if (authError) return authError;
 
   let body: FetchUrlRequest;
@@ -66,6 +67,11 @@ export async function POST(request: NextRequest) {
     parsedUrl = new URL(url.trim());
   } catch {
     return NextResponse.json<ApiErrorResponse>({ error: 'Invalid URL' }, { status: 400 });
+  }
+
+  const rateLimit = await checkRateLimit('fetchUrl', user.id);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse('fetchUrl', rateLimit);
   }
 
   // SSRF protection: resolve hostname and block private/internal IPs
@@ -172,6 +178,7 @@ export async function GET() {
       403: 'URL resolves to a private/internal IP address',
       415: 'URL is not an HTML page',
       422: 'Content could not be extracted (paywall, JS-only, etc.)',
+      429: 'Rate limit exceeded — see Retry-After header',
       502: 'Network error or HTTP error from target URL',
     },
   });

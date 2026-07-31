@@ -77,6 +77,9 @@ export interface ApiErrorResponse {
 
   /** Processing stage where error occurred */
   stage?: string;
+
+  /** Seconds until the caller may retry — present on 429 rate-limit responses */
+  retryAfter?: number;
 }
 
 // ============================================================================

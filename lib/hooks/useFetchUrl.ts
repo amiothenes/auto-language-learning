@@ -14,7 +14,7 @@ export function useFetchUrl() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch URL');
+        throw Object.assign(new Error(error.error || 'Failed to fetch URL'), { status: response.status });
       }
 
       return response.json();

@@ -104,7 +104,10 @@ export default function VocabularyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ wordIds, status }),
       });
-      if (!res.ok) throw new Error('Failed to update words');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw Object.assign(new Error(body.error || 'Failed to update words'), { status: res.status });
+      }
       return res.json() as Promise<{ updated: number }>;
     },
     onSuccess: () => {
@@ -114,8 +117,8 @@ export default function VocabularyPage() {
       queryClient.invalidateQueries({ queryKey: ['text'] });
       setSelectedIds(new Set());
     },
-    onError: () => {
-      showToast('Failed to update words');
+    onError: (error) => {
+      showToast(error instanceof Error ? error.message : 'Failed to update words', 'error');
     },
   });
 
@@ -136,7 +139,7 @@ export default function VocabularyPage() {
       showToast('Word reset to unknown');
     },
     onError: () => {
-      showToast('Failed to delete word');
+      showToast('Failed to delete word', 'error');
     },
   });
 
@@ -159,7 +162,7 @@ export default function VocabularyPage() {
       showToast('Words reset to unknown');
     },
     onError: () => {
-      showToast('Failed to delete words');
+      showToast('Failed to delete words', 'error');
     },
   });
 
@@ -506,6 +509,7 @@ export default function VocabularyPage() {
         message={toast.message}
         isOpen={toast.isOpen}
         onClose={hideToast}
+        type={toast.type}
       />
     </div>
   );

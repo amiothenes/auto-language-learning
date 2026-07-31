@@ -21,6 +21,7 @@ import { splitIntoChunks } from '@/lib/nlp/textChunker';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { ownedBy } from '@/lib/db/scope';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // ============================================================================
 // POST /api/texts/import - Import text with NLP processing
@@ -71,11 +72,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (content.trim().length > 50_000) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'Content must be 50,000 characters or less' },
+        { status: 400 }
+      );
+    }
+
     if (!languageCode || languageCode.trim().length === 0) {
       return NextResponse.json<ApiErrorResponse>(
         { error: 'Language code is required' },
         { status: 400 }
       );
+    }
+
+    const rateLimit = await checkRateLimit('import', user.id);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse('import', rateLimit);
     }
 
     console.log(`[Text Import] Starting import: "${title}" (${content.trim().length} chars)`);

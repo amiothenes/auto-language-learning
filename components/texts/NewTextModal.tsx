@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
+import { Toast, useToast } from '@/components/ui/Toast';
 import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { NewTextData } from '@/lib/types/forms';
@@ -37,6 +38,8 @@ export function NewTextModal({
 }: NewTextModalProps) {
   const { selectedLanguage } = useLanguage();
   const mutation = useImportText();
+  const { toast, showToast, hideToast } = useToast();
+  const [isRateLimited, setIsRateLimited] = useState(false);
   const lockedSeriesName = prefilledSeriesId
     ? availableSeries.find((s) => s.id === prefilledSeriesId)?.name
     : null;
@@ -78,6 +81,7 @@ export function NewTextModal({
       });
       setTagsInput('');
       setUserEditedTitle(false);
+      setIsRateLimited(false);
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
   }, [isOpen, prefilledSeriesId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -209,6 +213,7 @@ export function NewTextModal({
       if (!isFormValid) return;
 
       const tags = parseTags(tagsInput);
+      setIsRateLimited(false);
 
       try {
         const result = await mutation.mutateAsync({
@@ -221,11 +226,15 @@ export function NewTextModal({
 
         onAdd?.(result);
         onClose();
-      } catch {
-        // Error state displayed via mutation.isError — no extra handling needed
+      } catch (err) {
+        if (err instanceof Error && (err as Error & { status?: number }).status === 429) {
+          setIsRateLimited(true);
+          showToast(err.message, 'error');
+        }
+        // Non-429 errors are displayed via the inline mutation.isError banner
       }
     },
-    [formData, tagsInput, isFormValid, selectedLanguage, mutation, onAdd, onClose]
+    [formData, tagsInput, isFormValid, selectedLanguage, mutation, onAdd, onClose, showToast]
   );
 
   // Character counts for validation feedback
@@ -284,7 +293,7 @@ export function NewTextModal({
           </h2>
 
           {/* Error banner */}
-          {mutation.isError && (
+          {mutation.isError && !isRateLimited && (
             <div className="mt-3 px-3 py-2 bg-danger/10 border border-danger/30 rounded">
               <p className="font-sans text-ui-sm text-danger">
                 {mutation.error?.message || 'Failed to import text. Please try again.'}
@@ -435,6 +444,8 @@ export function NewTextModal({
           </form>
         </div>
       </div>
+
+      <Toast message={toast.message} isOpen={toast.isOpen} onClose={hideToast} type={toast.type} />
     </>,
     document.body
   );
