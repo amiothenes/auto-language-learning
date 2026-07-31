@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 
         if (validTagNames.length > 0) {
           const existingTags = await db.query.tags.findMany({
-            where: inArray(tags.name, validTagNames),
+            where: and(inArray(tags.name, validTagNames), eq(tags.userId, user.id)),
           });
 
           const existingTagNames = new Set(existingTags.map((t) => t.name));
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
           let newTags: Array<{ id: string; name: string }> = [];
 
           if (newTagNames.length > 0) {
-            const newTagsData: NewTag[] = newTagNames.map((name) => ({ name }));
+            const newTagsData: NewTag[] = newTagNames.map((name) => ({ name, userId: user.id }));
             newTags = await db.insert(tags).values(newTagsData).returning();
             console.log(`[Text Import] Created ${newTags.length} new tags:`, newTagNames);
           }

@@ -360,7 +360,7 @@ async function seed() {
     // 4. Seed Tags
     console.log('🏷️  Seeding tags...');
     for (const tag of seedTags) {
-      await db.insert(tags).values(tag).onConflictDoNothing();
+      await db.insert(tags).values({ ...tag, userId: 'user_default' }).onConflictDoNothing();
     }
     console.log(`  ✓ ${seedTags.length} tags\n`);
 

@@ -1,9 +1,9 @@
 import { eq, and, type SQL } from 'drizzle-orm';
-import { languages, series, texts, words } from '@/lib/db/schema';
+import { languages, series, texts, words, tags } from '@/lib/db/schema';
 
 // Tables that carry a NOT NULL userId column and must always be scoped to the
 // requesting user in every query that reads, updates, or deletes a row by id.
-const userScopedTables = { languages, series, texts, words } as const;
+const userScopedTables = { languages, series, texts, words, tags } as const;
 
 type UserScopedTableName = keyof typeof userScopedTables;
 

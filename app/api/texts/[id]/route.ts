@@ -144,8 +144,11 @@ export async function PATCH(
 
         const [tag] = await db
           .insert(tags)
-          .values({ name: trimmed })
-          .onConflictDoUpdate({ target: tags.name, set: { name: trimmed } })
+          .values({ name: trimmed, userId: user.id })
+          .onConflictDoUpdate({
+            target: [tags.name, tags.userId],
+            set: { name: trimmed },
+          })
           .returning({ id: tags.id });
 
         if (tag) {
