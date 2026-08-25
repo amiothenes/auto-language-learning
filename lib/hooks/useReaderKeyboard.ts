@@ -13,21 +13,37 @@ interface UseReaderKeyboardOptions {
   currentStatus: VocabularyStatus | null;
   onStatusChange: (newStatus: VocabularyStatus) => void;
   isActive: boolean;
+  /** Space toggles narration play/pause. */
+  onTogglePlayback?: () => void;
 }
 
 export function useReaderKeyboard({
   currentStatus,
   onStatusChange,
   isActive,
+  onTogglePlayback,
 }: UseReaderKeyboardOptions) {
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
+      const target = e.target;
       if (
-        !isActive ||
-        currentStatus === null ||
-        (e.target instanceof HTMLElement &&
-          ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName))
+        target instanceof HTMLElement &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
       ) return;
+
+      // Space controls playback anywhere in the Reader, so it's handled ahead
+      // of the guards below — pausing narration has nothing to do with having
+      // a word selected or a panel being closed. preventDefault is what stops
+      // the browser's default page-scroll (and stops Space from re-activating
+      // a focused button, e.g. the word you just clicked).
+      if (e.code === 'Space') {
+        if (!onTogglePlayback) return;
+        e.preventDefault();
+        onTogglePlayback();
+        return;
+      }
+
+      if (!isActive || currentStatus === null) return;
 
       const idx = PROGRESSION.indexOf(currentStatus as typeof PROGRESSION[number]);
 
@@ -68,7 +84,7 @@ export function useReaderKeyboard({
           break;
       }
     },
-    [isActive, currentStatus, onStatusChange]
+    [isActive, currentStatus, onStatusChange, onTogglePlayback]
   );
 
   useEffect(() => {

@@ -1,26 +1,80 @@
 'use client';
 
 import Link from 'next/link';
+import { Play, Square } from 'lucide-react';
 import { Word, WordData } from './Word';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { cn } from '@/lib/utils';
 import type { WordInstanceItem } from '@/lib/types/api';
+import { buildWordDataFromInstance } from '@/lib/utils/wordData';
+import { extractWordRuns, gapTargetId } from '@/lib/utils/wordRuns';
 
 // ============================================================================
 // ReaderContent Component
 // Renders text by walking pre-computed wordInstances as position-ordered
-// boundaries. Gap characters between word positions are emitted as plain text.
-// No second tokenizer — positions come exclusively from the NLP pipeline that
-// ran at import time.
+// boundaries. Gap characters between word positions are emitted as plain
+// text, except for letter/digit runs within them (numbers, or words in a
+// script that doesn't match the text's language — both excluded from
+// wordInstances at import time, see textProcessor.ts's `is_word`/
+// `matchesLanguageScript` filters). Those still get spoken by TTS, so they're
+// tagged with a `data-tts-target-id` gap key for karaoke highlighting even
+// though they're not real vocabulary (no click handler, no status styling).
+// No second tokenizer for real words — positions come exclusively from the
+// NLP pipeline that ran at import time.
 // ============================================================================
 
 type RenderToken =
   | { type: 'text'; content: string }
+  | { type: 'gapWord'; content: string; targetId: string; key: string }
   | { type: 'word'; data: WordData; key: string };
+
+/** Splits gap text (everything between two wordInstances) so its speakable
+ * runs — numbers, off-script words, accented words the import pipeline
+ * dropped — become individually targetable spans. `gapAbsStart` is the gap's
+ * absolute offset in the text content, the same coordinate space
+ * wordInstance positions use, so the ids computed here match the ones
+ * lib/tts/alignment.ts derives server-side without any shared state. */
+function emitGapTokens(
+  gapText: string,
+  gapAbsStart: number,
+  tokens: RenderToken[],
+  keyPrefix: string
+) {
+  const runs = extractWordRuns(gapText);
+  if (runs.length === 0) {
+    tokens.push({ type: 'text', content: gapText });
+    return;
+  }
+
+  let cursor = 0;
+  runs.forEach((run, i) => {
+    if (run.start > cursor) {
+      tokens.push({ type: 'text', content: gapText.slice(cursor, run.start) });
+    }
+    tokens.push({
+      type: 'gapWord',
+      content: run.text,
+      targetId: gapTargetId(gapAbsStart + run.start),
+      key: `${keyPrefix}-${i}`,
+    });
+    cursor = run.start + run.text.length;
+  });
+  if (cursor < gapText.length) {
+    tokens.push({ type: 'text', content: gapText.slice(cursor) });
+  }
+}
 
 interface ReaderContentProps {
   content: string;
   onWordClick: (data: WordData, anchorRect: DOMRect) => void;
+  /** Ctrl/⌘-click on a word — move the narration cursor there. */
+  onWordSeek?: (data: WordData) => void;
+  /** Hover-revealed ▶ in each paragraph's left margin. */
+  onPlayParagraph?: (paragraphIndex: number) => void;
+  /** Invoked by the ■ that replaces ▶ on the narrating paragraph. */
+  onStopParagraph?: () => void;
+  /** Paragraph the narration is currently in — decides ▶ vs ■. */
+  playingParagraphIndex?: number;
   selectedWordId?: string | null;
   wordInstances?: WordInstanceItem[] | null;
   isLoading?: boolean;
@@ -31,6 +85,10 @@ interface ReaderContentProps {
 export function ReaderContent({
   content,
   onWordClick,
+  onWordSeek,
+  onPlayParagraph,
+  onStopParagraph,
+  playingParagraphIndex = -1,
   selectedWordId,
   wordInstances,
   isLoading,
@@ -38,20 +96,6 @@ export function ReaderContent({
   seriesId,
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
-
-  const formatInflection = (inflectionData: Record<string, unknown>): string => {
-    const d = Object.fromEntries(Object.entries(inflectionData).map(([k, v]) => [k.toLowerCase(), v]));
-    const parts: string[] = [];
-    if (d.tense) parts.push(String(d.tense));
-    if (d.mood) parts.push(String(d.mood));
-    if (d.person) parts.push(`${d.person}p`);
-    if (d.number) parts.push(String(d.number));
-    if (d.gender) parts.push(String(d.gender));
-    if (d.case) parts.push(String(d.case));
-    if (d.voice) parts.push(String(d.voice));
-    if (d.aspect) parts.push(String(d.aspect));
-    return parts.length > 0 ? parts.join(', ') : 'base form';
-  };
 
   // Compute paragraph start positions in the full content string
   const rawParagraphs = content.split('\n\n');
@@ -69,7 +113,9 @@ export function ReaderContent({
   const paragraphs = rawParagraphs.filter((p) => p.trim());
 
   // Gap-filling: walk wordInstances (already sorted by position ASC from the API)
-  // as an ordered oracle. Emit gap text for everything between word boundaries.
+  // as an ordered oracle. Emit gap text for everything between word boundaries,
+  // tagging speakable runs within it (numbers, off-script words, accented
+  // words) as karaoke targets via emitGapTokens.
   const parsedContent = paragraphs.map((paragraph, paraIndex) => {
     const paraStart = paragraphStarts[paraIndex];
     const paraEnd = paraStart + paragraph.length;
@@ -81,41 +127,24 @@ export function ReaderContent({
         (inst) => inst.position >= paraStart && inst.position < paraEnd
       ) ?? [];
 
-    for (const inst of paraInstances) {
+    for (let i = 0; i < paraInstances.length; i++) {
+      const inst = paraInstances[i];
       const wordStart = inst.position;
 
       if (wordStart > cursor) {
-        tokens.push({
-          type: 'text',
-          content: paragraph.slice(cursor - paraStart, wordStart - paraStart),
-        });
+        const gapText = paragraph.slice(cursor - paraStart, wordStart - paraStart);
+        emitGapTokens(gapText, cursor, tokens, `p${paraIndex}-g${i}`);
       }
 
-      const wordData: WordData = {
-        id: inst.instanceId,
-        wordId: inst.wordId,
-        surface: inst.surface,
-        lemma: inst.lemma,
-        pos: inst.pos ?? 'UNKNOWN',
-        inflection: inst.inflectionData
-          ? formatInflection(inst.inflectionData as Record<string, unknown>)
-          : 'base form',
-        translation: inst.translation ?? '—',
-        dictionaryFrequency: inst.dictionaryFrequency,
-        userFrequency: inst.userFrequency,
-        status: inst.status,
-        inflectionData: inst.inflectionData ?? null,
-        meanings: inst.meanings ?? null,
-        exampleSentence: inst.exampleSentence ?? null,
-        exampleSentenceTranslation: inst.exampleSentenceTranslation ?? null,
-      };
+      const wordData: WordData = buildWordDataFromInstance(inst);
 
       tokens.push({ type: 'word', data: wordData, key: inst.instanceId });
       cursor = wordStart + inst.surface.length;
     }
 
     if (cursor - paraStart < paragraph.length) {
-      tokens.push({ type: 'text', content: paragraph.slice(cursor - paraStart) });
+      const gapText = paragraph.slice(cursor - paraStart);
+      emitGapTokens(gapText, cursor, tokens, `p${paraIndex}-tail`);
     }
 
     return { id: `paragraph-${paraIndex}`, tokens };
@@ -161,19 +190,57 @@ export function ReaderContent({
 
   return (
     <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
-      {parsedContent.map((paragraph) => (
+      {parsedContent.map((paragraph, paraIndex) => (
         <p
           key={paragraph.id}
-          className="font-serif text-ink leading-relaxed whitespace-pre-line"
+          className="font-serif text-ink leading-relaxed whitespace-pre-line relative group"
         >
+          {/* Play-from-here / stop, in the left margin so it never reflows the
+              prose. Hover-only in every state — a permanently visible control
+              on the narrating paragraph competes with the karaoke highlight
+              for attention while adding nothing the highlight doesn't say.
+              On the paragraph currently narrating it becomes ■ stop, which is
+              also how you clear the highlight. */}
+          {onPlayParagraph && (
+            <button
+              type="button"
+              onClick={() =>
+                paraIndex === playingParagraphIndex && onStopParagraph
+                  ? onStopParagraph()
+                  : onPlayParagraph(paraIndex)
+              }
+              className={cn(
+                'absolute -left-7 top-1 hidden md:flex items-center justify-center w-5 h-5 rounded-full',
+                'text-muted hover:text-primary hover:bg-primary/10 transition-all cursor-pointer',
+                'opacity-0 group-hover:opacity-100 focus:opacity-100',
+              )}
+              aria-label={
+                paraIndex === playingParagraphIndex
+                  ? 'Stop narration'
+                  : `Play narration from paragraph ${paraIndex + 1}`
+              }
+              title={paraIndex === playingParagraphIndex ? 'Stop' : 'Play from here'}
+            >
+              {paraIndex === playingParagraphIndex ? (
+                <Square size={9} strokeWidth={2} fill="currentColor" />
+              ) : (
+                <Play size={11} strokeWidth={2} fill="currentColor" />
+              )}
+            </button>
+          )}
           {paragraph.tokens.map((token, i) =>
             token.type === 'text' ? (
               <span key={`t-${i}`}>{token.content}</span>
+            ) : token.type === 'gapWord' ? (
+              <span key={token.key} data-tts-target-id={token.targetId}>
+                {token.content}
+              </span>
             ) : (
               <Word
                 key={token.key}
                 data={token.data}
                 onClick={onWordClick}
+                onSeekTo={onWordSeek}
                 isSelected={selectedWordId === token.data.id}
                 highlightIntensity={settings.highlightIntensity}
                 showWellKnownWords={settings.showWellKnownWords}

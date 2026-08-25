@@ -70,7 +70,39 @@ export interface ReaderSettings {
   highlightMode: 'highlight' | 'underline';
   /** Whether immersion mode is active (hides the left sidebar) */
   isImmersionMode: boolean;
+  /** TTS playback speed, 0.5-1.25 (default 0.9 — a gentle rate reduction for learners) */
+  playbackSpeed: number;
+  /** Chosen TTS voice per language code (e.g. { ru: 'ru-RU-DmitryNeural' }).
+   * Keyed by language because a voice only makes sense for its own language;
+   * anything unset falls back to that language's default voice. */
+  preferredVoices: Record<string, string>;
+  /** Whether Tutor Mode pauses on unfamiliar words during sentence playback */
+  tutorModeEnabled: boolean;
+  /** When a Tutor Mode check happens relative to the sentence's audio */
+  tutorModeTiming: TutorModeTiming;
+  /** Highest vocabulary status still worth stopping on — anything ranked above
+   * it is treated as learned and never interrupts. IGNORE never interrupts. */
+  tutorModeThreshold: TutorModeThreshold;
+  /** Max checks within a single sentence (0 = no per-sentence limit) */
+  tutorModeMaxPerSentence: number;
+  /** Max Tutor Mode interrupts per text before it silently degrades to passive autoplay */
+  tutorModeMaxInterrupts: number;
+  /** Whether grading resumes playback, or the user dismissing the word does */
+  tutorModeResume: TutorModeResume;
 }
+
+/**
+ * `atWord` freezes playback the moment the word finishes being spoken, so
+ * it's heard in context before being asked about. `before` front-loads the
+ * checks for a sentence, `after` reviews them once the sentence has played
+ * through (comprehension-first).
+ */
+export type TutorModeTiming = 'before' | 'atWord' | 'after';
+
+/** Ordered along the vocabulary progression — see TUTOR_THRESHOLD_RANK. */
+export type TutorModeThreshold = 'UNKNOWN' | 'NEWLY_SEEN' | 'FAMILIAR' | 'KNOWN';
+
+export type TutorModeResume = 'onGrade' | 'onDismiss';
 
 /**
  * Reader settings context value type.
@@ -105,6 +137,22 @@ export interface ReaderSettingsContextType {
   updateHighlightMode: (mode: 'highlight' | 'underline') => void;
   /** Toggle immersion mode on/off (hides the left sidebar) */
   toggleImmersionMode: () => void;
+  /** Update TTS playback speed (clamped to 0.5-1.25) */
+  updatePlaybackSpeed: (rate: number) => void;
+  /** Set the preferred TTS voice for one language */
+  updatePreferredVoice: (languageCode: string, voiceId: string) => void;
+  /** Toggle Tutor Mode on/off */
+  toggleTutorMode: () => void;
+  /** Update the max Tutor Mode interrupts allowed per text */
+  updateTutorModeMaxInterrupts: (max: number) => void;
+  /** Update when a Tutor Mode check fires relative to the sentence audio */
+  updateTutorModeTiming: (timing: TutorModeTiming) => void;
+  /** Update the highest status that still triggers a check */
+  updateTutorModeThreshold: (threshold: TutorModeThreshold) => void;
+  /** Update the per-sentence check cap (0 = unlimited) */
+  updateTutorModeMaxPerSentence: (max: number) => void;
+  /** Update what resumes playback after a check */
+  updateTutorModeResume: (resume: TutorModeResume) => void;
   /** Reset all settings to defaults */
   resetToDefaults: () => void;
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
+import { AudioSettingsSection } from './AudioSettingsSection';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -17,6 +18,8 @@ import { cn } from '@/lib/utils';
 
 interface MobileSettingsSheetProps {
   onClose: () => void;
+  /** Which tab to open on — 'audio' when reached via the player's gear. */
+  initialTab?: 'reading' | 'audio';
 }
 
 function SegmentedControl({
@@ -52,7 +55,7 @@ function SegmentedControl({
   );
 }
 
-export function MobileSettingsSheet({ onClose }: MobileSettingsSheetProps) {
+export function MobileSettingsSheet({ onClose, initialTab = 'reading' }: MobileSettingsSheetProps) {
   const {
     settings,
     updateFontSize,
@@ -61,6 +64,7 @@ export function MobileSettingsSheet({ onClose }: MobileSettingsSheetProps) {
     updateShowWellKnownWords,
     updateColorScheme,
   } = useReaderSettings();
+  const [tab, setTab] = useState<'reading' | 'audio'>(initialTab);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -102,7 +106,32 @@ export function MobileSettingsSheet({ onClose }: MobileSettingsSheetProps) {
         </div>
 
         {/* Controls — scrollable */}
+        {/* Tabs — mirrors the desktop popover so the two stay conceptually identical */}
+        <div className="shrink-0 px-4 pb-2">
+          <div className="flex gap-1 p-0.5 bg-desk rounded" role="tablist">
+            {([
+              { label: 'Reading', value: 'reading' },
+              { label: 'Audio', value: 'audio' },
+            ] as const).map((t) => (
+              <button
+                key={t.value}
+                role="tab"
+                aria-selected={tab === t.value}
+                onClick={() => setTab(t.value)}
+                className={cn(
+                  'flex-1 h-8 rounded font-sans text-ui-xs transition-all',
+                  tab === t.value ? 'bg-paper text-ink font-semibold shadow-raised' : 'text-muted',
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          {tab === 'audio' && <AudioSettingsSection />}
+          {tab === 'reading' && (<>
           {/* Font Size */}
           <div>
             <p className="font-sans text-ui-xs text-muted mb-2">Font Size</p>
@@ -171,7 +200,7 @@ export function MobileSettingsSheet({ onClose }: MobileSettingsSheetProps) {
           </div>
 
           {/* Color Scheme */}
-          <div className="pb-4">
+          <div>
             <p className="font-sans text-ui-xs text-muted mb-2">Color Scheme</p>
             <SegmentedControl
               options={[
@@ -182,6 +211,8 @@ export function MobileSettingsSheet({ onClose }: MobileSettingsSheetProps) {
               onChange={(v) => updateColorScheme(v as 'light' | 'dark')}
             />
           </div>
+
+          </>)}
         </div>
       </div>
     </>

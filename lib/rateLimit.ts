@@ -12,13 +12,18 @@ try {
   redis = null;
 }
 
-export type RateLimitName = 'import' | 'fetchUrl' | 'translationsProcess' | 'bulkUpdate';
+export type RateLimitName = 'import' | 'fetchUrl' | 'translationsProcess' | 'bulkUpdate' | 'ttsWord' | 'ttsSentence';
 
 const RATE_LIMIT_CONFIG: Record<RateLimitName, { limit: number; window: `${number} ${'s' | 'm' | 'h' | 'd'}` }> = {
   import: { limit: 5, window: '1 h' },
   fetchUrl: { limit: 10, window: '1 h' },
   translationsProcess: { limit: 10, window: '1 h' },
   bulkUpdate: { limit: 20, window: '1 h' },
+  // Only consumed on an actual cache-miss (real Azure synthesis) — see
+  // lib/tts/wordAudioService.ts / sentenceAudioService.ts. Re-listening to
+  // already-cached audio never counts against these.
+  ttsWord: { limit: 120, window: '1 h' },
+  ttsSentence: { limit: 300, window: '1 h' },
 };
 
 const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
@@ -26,6 +31,8 @@ const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
   fetchUrl: 'URL fetches',
   translationsProcess: 'translation requests',
   bulkUpdate: 'bulk vocabulary updates',
+  ttsWord: 'word pronunciation requests',
+  ttsSentence: 'sentence narration requests',
 };
 
 const limiters = redis

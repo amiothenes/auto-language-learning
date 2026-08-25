@@ -428,6 +428,41 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* TTS karaoke highlight — the word currently being spoken during sentence
+     playback. Deliberately a different visual language (tinted fill + bottom
+     rule + colour shift) than vocabulary-status backgrounds and the
+     ring-based "selected" state on Word.tsx, so the two highlight systems
+     never look like the same thing on the same word.
+
+     `!important` is load-bearing, not laziness: Word.tsx applies each word's
+     vocabulary-status colour as an INLINE style, which outranks any class.
+     Without it the fill only ever appeared on words that had no status
+     colour of their own (i.e. Well Known), which is exactly why the karaoke
+     highlight looked like it was skipping most words. The colour shift gives
+     it a second, non-background channel so it stays legible even over a
+     strong status tint.
+
+     Deliberately NO font-weight change: this is running prose, so
+     re-weighting one word re-measures the line and shoves every following
+     word sideways as the highlight advances. Colour and fill carry the whole
+     effect precisely because neither affects text metrics. */
+  .tts-karaoke-active {
+    background-color: color-mix(in srgb, var(--color-primary) 26%, transparent) !important;
+    color: var(--color-primary);
+    box-shadow: 0 2px 0 0 var(--color-primary);
+    border-radius: 3px;
+  }
+
+  /* Where playback is parked while paused — a hollow marker rather than the
+     filled "speaking now" state, so a paused playhead never reads as audio
+     that is still running. */
+  .tts-karaoke-paused {
+    background-color: transparent !important;
+    color: var(--color-primary);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-primary) 55%, transparent);
+    border-radius: 3px;
+  }
 }
 
 /* ============================================================================

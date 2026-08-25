@@ -75,6 +75,9 @@ export type {
   ColorScheme,
   ReaderSettings,
   ReaderSettingsContextType,
+  TutorModeTiming,
+  TutorModeThreshold,
+  TutorModeResume,
   SeriesSortOption,
   VocabularySortOption,
 } from './ui';

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { WordData, VocabularyStatus } from './Word';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
-import { X, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
+import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 
 interface WordTooltipProps {
   wordData: WordData;
@@ -69,7 +70,20 @@ export function WordTooltip({
   // True immediately after first-test grade — hides stepper, enlarges translation
   const [justGraded, setJustGraded] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState(false);
+  // The WELL_KNOWN auto-close below is the only deferred close in here, and an
+  // uncancelled one is dangerous: it fires against whatever tooltip is open
+  // when it lands. In Tutor Mode that was the NEXT word's interrupt, which got
+  // closed out from under the user and left playback waiting on a dismissal
+  // that could never arrive.
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    },
+    []
+  );
   const [translationValue, setTranslationValue] = useState(wordData.translation ?? '');
+  const { state: audioState, play: playAudio } = useWordAudioButton(wordData.wordId);
 
   const showTranslation = !isFirstTest || translationRevealed;
   const showTestPrompt = isFirstTest && !translationRevealed;
@@ -91,7 +105,7 @@ export function WordTooltip({
       setTranslationRevealed(true);
       setJustGraded(true);
       if (newStatus === VocabularyStatus.WELL_KNOWN) {
-        setTimeout(onClose, 1000);
+        autoCloseTimerRef.current = setTimeout(onClose, 1000);
       }
     } else {
       onClose();
@@ -141,9 +155,26 @@ export function WordTooltip({
 
           {/* ② Lemma + translation */}
           <div className="mb-3">
-            <p className="font-serif text-content-lg text-ink font-bold leading-tight">
-              {wordData.lemma}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-serif text-content-lg text-ink font-bold leading-tight">
+                {wordData.lemma}
+              </p>
+              <button
+                type="button"
+                onClick={playAudio}
+                disabled={audioState === 'loading'}
+                className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 disabled:opacity-50"
+                aria-label={`Hear pronunciation of ${wordData.lemma}`}
+              >
+                {audioState === 'loading' ? (
+                  <LoaderCircle size={15} strokeWidth={1.5} className="animate-spin" />
+                ) : audioState === 'error' ? (
+                  <VolumeX size={15} strokeWidth={1.5} />
+                ) : (
+                  <Volume2 size={15} strokeWidth={1.5} />
+                )}
+              </button>
+            </div>
 
             {showTranslation && (
               <div className="mt-1">

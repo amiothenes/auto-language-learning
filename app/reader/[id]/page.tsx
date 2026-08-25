@@ -24,11 +24,15 @@ import { useUpdateWordStatus } from '@/lib/hooks/useUpdateWordStatus';
 import { useUpdateWordTranslation } from '@/lib/hooks/useUpdateWordTranslation';
 import { useAdjacentTexts } from '@/lib/hooks/useAdjacentTexts';
 import { ParagraphScrubber } from '@/components/reader/ParagraphScrubber';
-import { ReaderSettingsPanel } from '@/components/reader/ReaderSettingsPanel';
+import { ReaderSettingsPanel, type SettingsTab } from '@/components/reader/ReaderSettingsPanel';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { useReaderKeyboard } from '@/lib/hooks/useReaderKeyboard';
 import { MobileWordSheet } from '@/components/reader/MobileWordSheet';
 import { MobileSettingsSheet } from '@/components/reader/MobileSettingsSheet';
+import { useSentences } from '@/lib/hooks/useSentences';
+import { useTutorModeController } from '@/lib/hooks/useTutorModeController';
+import { MiniPlayerDesktop } from '@/components/reader/MiniPlayerDesktop';
+import { MiniPlayerMobile } from '@/components/reader/MiniPlayerMobile';
 
 // Per-paragraph heat color for the vocabulary density strip.
 // Interpolates through the status hues: red → orange → yellow-green → green.
@@ -76,6 +80,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const updateWordStatus = useUpdateWordStatus(id);
   const updateWordTranslation = useUpdateWordTranslation(id);
   const adjacentQuery = useAdjacentTexts(id, adjacentSort);
+  const sentencesQuery = useSentences(id);
 
   useEffect(() => {
     fetch(`/api/texts/${id}/view`, {
@@ -100,10 +105,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
+  // Which settings tab to open on. The mini-player's gear deep-links to
+  // 'audio'; the top-bar ⚙ always opens on 'reading'.
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('reading');
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isParaMapOpen, setIsParaMapOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
-  const { settings, toggleImmersionMode } = useReaderSettings();
+  const { settings, toggleImmersionMode, toggleTutorMode, updatePlaybackSpeed } = useReaderSettings();
 
   const [feedbackState, setFeedbackState] = useState<{
     isVisible: boolean;
@@ -115,6 +124,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const isDesktop = useMediaQuery('(min-width: 1280px)');
   const shouldShowTooltip = useMediaQuery('(min-width: 768px)');
+  // Matches the `lg:` breakpoint where the right gutter (and its player)
+  // appears — used to decide which of the two players is on duty.
+  const isLargeScreen = useMediaQuery('(min-width: 1024px)');
 
   const [tooltipWord, setTooltipWord] = useState<WordData | null>(null);
   const [tooltipAnchorRect, setTooltipAnchorRect] = useState<DOMRect | null>(null);
@@ -134,6 +146,167 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // Tracks which lemmas the user has already graded this session so we don't
   // show the "Know this word?" test mode on re-taps of the same word.
   const testedLemmasThisSession = useRef(new Set<string>());
+
+  // ── Helpers + Handlers (relocated here from below the loading/error gate) ──
+  // These were previously declared after the `if (!isLoading && !textQuery.data)`
+  // early return, which is a real rules-of-hooks violation for the useCallback/
+  // useTutorModeController/useReaderKeyboard hooks among them — hooks must run
+  // unconditionally, in the same order, on every render.
+  const checkMilestone = (knownWords: number): boolean =>
+    [100, 250, 500, 1000, 2000, 5000].includes(knownWords);
+
+  // Unique-word (deduped by lemma) known-count, for the toast's "X words seen" /
+  // milestone thresholds. IGNORE is excluded from both counts, matching
+  // calculateCompletionPercentage's rule so this can never drift from the
+  // sidebar/map percentages.
+  const uniqueWordCompletion = (instances: WordInstanceItem[] | undefined) => {
+    if (!instances) return { total: 0, known: 0 };
+    const statusByWord = new Map<string, VocabularyStatus>();
+    for (const inst of instances) statusByWord.set(inst.wordId, inst.status);
+    const gradable = Array.from(statusByWord.values()).filter((s) => s !== VocabularyStatus.IGNORE);
+    const known = gradable.filter((s) => s !== VocabularyStatus.UNKNOWN).length;
+    return { total: gradable.length, known };
+  };
+
+  const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
+    setSelectedWord(wordData);
+
+    if (shouldShowTooltip) {
+      if (tooltipWord?.id === wordData.id && !isTooltipExiting) {
+        handleTooltipClose();
+        return;
+      }
+      setIsTooltipExiting(false);
+      setTooltipWord(wordData);
+      setTooltipAnchorRect(anchorRect);
+    } else {
+      setIsRightPanelOpen(true);
+    }
+  };
+
+  const handleCloseWordDetails = () => {
+    if (selectedWord) tutorMode.handleWordDismissed(selectedWord.id);
+    setIsRightPanelOpen(false);
+    setSelectedWord(null);
+  };
+
+  // handleWordClick above is defined as a plain (non-memoized) function, so
+  // this reference is only resolved when useTutorModeController later CALLS
+  // onOpenWord — by which time it's fully initialized. Only the eager
+  // argument here (handleWordClick must already be assigned) matters.
+  const tutorMode = useTutorModeController({
+    sentences: sentencesQuery.data,
+    wordInstances: instancesQuery.data,
+    testedLemmasThisSession,
+    onOpenWord: handleWordClick,
+    textId: id,
+  });
+
+  const handleTooltipClose = useCallback(() => {
+    if (tooltipWord) tutorMode.handleWordDismissed(tooltipWord.id);
+    setIsTooltipExiting(true);
+    setTimeout(() => {
+      setTooltipWord(null);
+      setTooltipAnchorRect(null);
+      setIsTooltipExiting(false);
+      setSelectedWord(null);
+    }, 120);
+  }, [tooltipWord, tutorMode]);
+
+  const handleDismissFeedback = useCallback(() => setFeedbackState(null), []);
+
+  const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
+    if (!selectedWord) return;
+
+    const prevWord = { ...selectedWord };
+    const prevInstances = queryClient.getQueryData<WordInstanceItem[]>(['word-instances', id]);
+    const nextInstances = prevInstances?.map((inst) =>
+      inst.wordId === wordId ? { ...inst, status: newStatus } : inst
+    );
+
+    const oldUnique = uniqueWordCompletion(prevInstances);
+    const newUnique = uniqueWordCompletion(nextInstances);
+    const oldTextProgress = Math.round(calculateCompletionPercentage((prevInstances ?? []).map((i) => i.status)));
+    const newTextProgress = Math.round(calculateCompletionPercentage((nextInstances ?? []).map((i) => i.status)));
+    const knownWordsDelta = newUnique.known - oldUnique.known;
+
+    // Optimistic update — patch cache so Word components re-render immediately
+    setSelectedWord({ ...selectedWord, status: newStatus });
+    queryClient.setQueryData<WordInstanceItem[]>(['word-instances', id], nextInstances ?? prevInstances);
+
+    const isMilestone = knownWordsDelta > 0 && checkMilestone(newUnique.known);
+    const message = isMilestone
+      ? `Amazing! You've seen ${newUnique.known.toLocaleString()} words!`
+      : 'Status updated!';
+
+    if (knownWordsDelta !== 0 || oldTextProgress !== newTextProgress) {
+      setFeedbackState({
+        isVisible: true,
+        message,
+        oldStats: { knownWords: oldUnique.known, textProgress: oldTextProgress },
+        newStats: { knownWords: newUnique.known, textProgress: newTextProgress },
+        isMilestone,
+      });
+    }
+
+    // Persist to DB — rollback optimistic update on error
+    updateWordStatus.mutate(
+      { wordId, status: newStatus },
+      {
+        onError: () => {
+          setSelectedWord(prevWord);
+          queryClient.setQueryData(['word-instances', id], prevInstances);
+          setFeedbackState(null);
+        },
+      }
+    );
+  };
+
+  useReaderKeyboard({
+    currentStatus: tooltipWord?.status ?? selectedWord?.status ?? null,
+    isActive: !isRightPanelOpen,
+    onStatusChange: (newStatus) => {
+      const wordId = tooltipWord?.wordId ?? selectedWord?.wordId;
+      if (wordId) handleStatusChange(wordId, newStatus);
+    },
+    onTogglePlayback: tutorMode.playPause,
+  });
+
+  // Opens the settings surface straight on its Audio tab, anchored to the
+  // top-bar ⚙ (the popover needs a real anchor element; the gear that
+  // triggered this lives in the gutter and would place the panel oddly).
+  const openAudioSettings = () => {
+    setSettingsTab('audio');
+    setSettingsAnchorEl(settingsButtonRef.current);
+  };
+
+  // Ctrl/⌘-click a word → move the narration cursor to it.
+  const handleWordSeek = (wordData: WordData) => {
+    const inst = wordInstances?.find((i) => i.instanceId === wordData.id);
+    tutorMode.seekToWord(wordData.id, inst?.sentenceId ?? null);
+  };
+
+  // ▶ in a paragraph's margin → narrate from that paragraph's first sentence.
+  const handlePlayParagraph = (paragraphIndex: number) => {
+    const sentences = sentencesQuery.data;
+    if (!sentences) return;
+    const index = sentences.findIndex(
+      (s) => paragraphIndexBySentenceId.get(s.id) === paragraphIndex
+    );
+    if (index >= 0) tutorMode.playFromSentence(index);
+  };
+
+  const handleParagraphNavigate = (index: number) => {
+    paragraphRefs.current[index]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+      inline: 'nearest',
+    });
+    // Carry the narration along with the jump, but only when narration is
+    // actually under way — starting audio off a navigation click would be a
+    // surprising side effect for someone who just wanted to move the page.
+    if (tutorMode.playbackState !== 'idle') handlePlayParagraph(index);
+  };
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const textData = textQuery.data;
@@ -173,6 +346,48 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       };
     });
   }, [wordInstances, textData, paragraphs]);
+
+  // Which paragraph the narration is currently inside, so the ¶ map can follow
+  // the audio independently of where the reader has scrolled to. Sentences
+  // carry no offset of their own, so the position is taken from the sentence's
+  // first word instance — the same coordinate space the paragraph starts use.
+  const paragraphIndexBySentenceId = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!wordInstances || !textData) return map;
+
+    const rawParagraphs = textData.content.split('\n\n');
+    let charOffset = 0;
+    const paraStarts: number[] = [];
+    for (let i = 0; i < rawParagraphs.length; i++) {
+      if (rawParagraphs[i].trim()) paraStarts.push(charOffset);
+      charOffset += rawParagraphs[i].length + (i < rawParagraphs.length - 1 ? 2 : 0);
+    }
+
+    const firstPositionBySentence = new Map<string, number>();
+    for (const inst of wordInstances) {
+      if (!inst.sentenceId) continue;
+      const seen = firstPositionBySentence.get(inst.sentenceId);
+      if (seen === undefined || inst.position < seen) {
+        firstPositionBySentence.set(inst.sentenceId, inst.position);
+      }
+    }
+
+    for (const [sentenceId, position] of firstPositionBySentence) {
+      let index = 0;
+      for (let i = 0; i < paraStarts.length; i++) {
+        if (paraStarts[i] <= position) index = i;
+        else break;
+      }
+      map.set(sentenceId, index);
+    }
+    return map;
+  }, [wordInstances, textData]);
+
+  const playingParagraphIndex = useMemo(() => {
+    const sentence = sentencesQuery.data?.[tutorMode.currentSentenceIndex];
+    if (!sentence) return -1;
+    return paragraphIndexBySentenceId.get(sentence.id) ?? -1;
+  }, [sentencesQuery.data, tutorMode.currentSentenceIndex, paragraphIndexBySentenceId]);
 
   // Whole-text completion % for the sidebar — same query, same shared formula as
   // paragraphProgress above, so the sidebar and the ¶ map can never diverge again.
@@ -215,27 +430,42 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     }
   }, [textData?.title]);
 
-  // Track current paragraph with IntersectionObserver
+  // Track the paragraph currently being read, as "the last one that starts
+  // above a reference line a third of the way down the viewport".
+  //
+  // This replaced an IntersectionObserver using threshold 0.5 inside a root
+  // shrunk by -20%/-20%: a paragraph longer than ~60% of the viewport can
+  // never be 50% visible, so it never fired and the index stayed stuck on an
+  // earlier paragraph — the ¶ map showed ¶1 selected while you were reading
+  // ¶2. Long paragraphs are the norm here, so the observer failed exactly
+  // where it mattered. A reference line always yields exactly one answer,
+  // whatever the paragraph's height.
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = paragraphRefs.current.indexOf(
-              entry.target as HTMLParagraphElement
-            );
-            if (index !== -1) setCurrentParagraphIndex(index);
-          }
-        });
-      },
-      { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' }
-    );
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const line = window.innerHeight / 3;
+      let index = 0;
+      for (let i = 0; i < paragraphRefs.current.length; i++) {
+        const el = paragraphRefs.current[i];
+        if (!el) continue;
+        if (el.getBoundingClientRect().top <= line) index = i;
+        else break;
+      }
+      setCurrentParagraphIndex(index);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
 
-    paragraphRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => observer.disconnect();
+    measure();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
   }, [paragraphs.length]);
 
   // Auto-hide mobile header on scroll
@@ -310,121 +540,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     );
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  const checkMilestone = (knownWords: number): boolean =>
-    [100, 250, 500, 1000, 2000, 5000].includes(knownWords);
-
-  // Unique-word (deduped by lemma) known-count, for the toast's "X words seen" /
-  // milestone thresholds. IGNORE is excluded from both counts, matching
-  // calculateCompletionPercentage's rule so this can never drift from the
-  // sidebar/map percentages.
-  const uniqueWordCompletion = (instances: WordInstanceItem[] | undefined) => {
-    if (!instances) return { total: 0, known: 0 };
-    const statusByWord = new Map<string, VocabularyStatus>();
-    for (const inst of instances) statusByWord.set(inst.wordId, inst.status);
-    const gradable = Array.from(statusByWord.values()).filter((s) => s !== VocabularyStatus.IGNORE);
-    const known = gradable.filter((s) => s !== VocabularyStatus.UNKNOWN).length;
-    return { total: gradable.length, known };
-  };
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
-    setSelectedWord(wordData);
-
-    if (shouldShowTooltip) {
-      if (tooltipWord?.id === wordData.id && !isTooltipExiting) {
-        handleTooltipClose();
-        return;
-      }
-      setIsTooltipExiting(false);
-      setTooltipWord(wordData);
-      setTooltipAnchorRect(anchorRect);
-    } else {
-      setIsRightPanelOpen(true);
-    }
-  };
-
-  const handleCloseWordDetails = () => {
-    setIsRightPanelOpen(false);
-    setSelectedWord(null);
-  };
-
-  const handleTooltipClose = useCallback(() => {
-    setIsTooltipExiting(true);
-    setTimeout(() => {
-      setTooltipWord(null);
-      setTooltipAnchorRect(null);
-      setIsTooltipExiting(false);
-      setSelectedWord(null);
-    }, 120);
-  }, []);
-
-  const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
-    if (!selectedWord) return;
-
-    const prevWord = { ...selectedWord };
-    const prevInstances = queryClient.getQueryData<WordInstanceItem[]>(['word-instances', id]);
-    const nextInstances = prevInstances?.map((inst) =>
-      inst.wordId === wordId ? { ...inst, status: newStatus } : inst
-    );
-
-    const oldUnique = uniqueWordCompletion(prevInstances);
-    const newUnique = uniqueWordCompletion(nextInstances);
-    const oldTextProgress = Math.round(calculateCompletionPercentage((prevInstances ?? []).map((i) => i.status)));
-    const newTextProgress = Math.round(calculateCompletionPercentage((nextInstances ?? []).map((i) => i.status)));
-    const knownWordsDelta = newUnique.known - oldUnique.known;
-
-    // Optimistic update — patch cache so Word components re-render immediately
-    setSelectedWord({ ...selectedWord, status: newStatus });
-    queryClient.setQueryData<WordInstanceItem[]>(['word-instances', id], nextInstances ?? prevInstances);
-
-    const isMilestone = knownWordsDelta > 0 && checkMilestone(newUnique.known);
-    const message = isMilestone
-      ? `Amazing! You've seen ${newUnique.known.toLocaleString()} words!`
-      : 'Status updated!';
-
-    if (knownWordsDelta !== 0 || oldTextProgress !== newTextProgress) {
-      setFeedbackState({
-        isVisible: true,
-        message,
-        oldStats: { knownWords: oldUnique.known, textProgress: oldTextProgress },
-        newStats: { knownWords: newUnique.known, textProgress: newTextProgress },
-        isMilestone,
-      });
-    }
-
-    // Persist to DB — rollback optimistic update on error
-    updateWordStatus.mutate(
-      { wordId, status: newStatus },
-      {
-        onError: () => {
-          setSelectedWord(prevWord);
-          queryClient.setQueryData(['word-instances', id], prevInstances);
-          setFeedbackState(null);
-        },
-      }
-    );
-  };
-
-  const handleDismissFeedback = useCallback(() => setFeedbackState(null), []);
-
-  useReaderKeyboard({
-    currentStatus: tooltipWord?.status ?? selectedWord?.status ?? null,
-    isActive: !isRightPanelOpen,
-    onStatusChange: (newStatus) => {
-      const wordId = tooltipWord?.wordId ?? selectedWord?.wordId;
-      if (wordId) handleStatusChange(wordId, newStatus);
-    },
-  });
-
-  const handleParagraphNavigate = (index: number) => {
-    paragraphRefs.current[index]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-      inline: 'nearest',
-    });
-  };
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-desk">
@@ -472,10 +587,13 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           </div>
         </header>
 
-        {/* 10px vocabulary density strip — tappable to open ¶ map */}
+        {/* 10px vocabulary density strip — tappable to open the ¶ map.
+            Hidden from lg up, where the real ¶ map is already visible in the
+            gutter: the strip is a compressed stand-in for exactly that map, so
+            showing both is redundant. */}
         {!settings.isImmersionMode && (
           <div
-            className="h-2.5 cursor-pointer"
+            className="h-2.5 cursor-pointer lg:hidden"
             style={{ background: densityStripGradient }}
             onClick={() => setIsParaMapOpen(true)}
             role="button"
@@ -492,10 +610,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         />
       )}
 
-      {/* Large Desktop: 2-column | Mobile/Tablet: Stacked */}
+      {/* Tablet (lg): content + right gutter. Desktop (xl): sidebar too.
+          The gutter drops to lg because a landscape tablet has ample room for
+          the player and paragraph map — it previously fell back to the mobile
+          bottom bar and lost the map entirely. The sidebar is `fixed` below
+          xl, so it's out of grid flow and the 2-column track is correct. */}
       <div className={cn(
         'flex flex-col',
-        !settings.isImmersionMode && 'xl:grid xl:grid-cols-[280px_1fr_188px]',
+        !settings.isImmersionMode && 'lg:grid lg:grid-cols-[1fr_248px] xl:grid-cols-[280px_1fr_248px]',
       )}>
         {/* ── LEFT SIDEBAR ── */}
         <aside
@@ -534,7 +656,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
         {/* ── MAIN READER AREA ── */}
         <main
-          className="order-1 xl:order-2 flex flex-col items-center px-4 md:px-6 lg:px-8 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
+          className="order-1 lg:order-1 xl:order-2 flex flex-col items-center px-4 md:px-6 lg:px-8 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
         >
           {/* ── STATUS HINT BANNER — first visit only ── */}
           {showHint && (
@@ -617,6 +739,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               <ReaderContent
                 content={textData.content}
                 onWordClick={handleWordClick}
+                onWordSeek={handleWordSeek}
+                onPlayParagraph={handlePlayParagraph}
+                onStopParagraph={tutorMode.stop}
+                playingParagraphIndex={playingParagraphIndex}
                 selectedWordId={selectedWord?.id}
                 wordInstances={wordInstances}
                 isLoading={instancesQuery.isLoading}
@@ -648,13 +774,35 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           )}
         </main>
 
-        {/* ── PARAGRAPH SCRUBBER — reserved right-gutter column, xl+ only ── */}
-        <ParagraphScrubber
-          paragraphs={paragraphProgress}
-          currentIndex={currentParagraphIndex}
-          onNavigate={handleParagraphNavigate}
-          hidden={isRightPanelOpen || settings.isImmersionMode}
-        />
+        {/* ── RIGHT GUTTER — mini-player + paragraph scrubber share this column, xl+ only ──
+            Sized to content (self-start + capped max-height) rather than h-screen: a sticky
+            box taller than the space below its `top` offset gets pushed upward once its
+            container's bottom edge is reached, which slid this column up underneath the
+            fixed Study/Settings bar at the end of a scroll. */}
+        {!(isRightPanelOpen || settings.isImmersionMode) && (
+          <div className="hidden lg:flex lg:flex-col lg:order-2 xl:order-3 lg:sticky lg:top-15.5 xl:top-12 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-4 gap-3">
+            <MiniPlayerDesktop
+              playbackState={tutorMode.playbackState}
+              currentSentenceIndex={tutorMode.currentSentenceIndex}
+              totalSentences={sentencesQuery.data?.length ?? 0}
+              onPlayPause={tutorMode.playPause}
+              onPrevious={tutorMode.previousSentence}
+              onNext={tutorMode.nextSentence}
+        onStop={tutorMode.stop}
+              tutorModeEnabled={settings.tutorModeEnabled}
+              onToggleTutorMode={toggleTutorMode}
+              onOpenAudioSettings={openAudioSettings}
+              playbackSpeed={settings.playbackSpeed}
+              disabled={!sentencesQuery.data || sentencesQuery.data.length === 0}
+            />
+            <ParagraphScrubber
+              paragraphs={paragraphProgress}
+              currentIndex={currentParagraphIndex}
+              playingIndex={playingParagraphIndex}
+              onNavigate={handleParagraphNavigate}
+            />
+          </div>
+        )}
 
       </div>
 
@@ -677,7 +825,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onClose={handleCloseWordDetails}
           onStatusChange={handleStatusChange}
           isFirstTest={!testedLemmasThisSession.current.has(selectedWord.lemma)}
-          onGraded={(lemma) => { testedLemmasThisSession.current.add(lemma); }}
+          onGraded={(lemma) => {
+            testedLemmasThisSession.current.add(lemma);
+          }}
           onTranslationChange={(wordId, newTranslation) => {
             updateWordTranslation.mutate({ wordId, translation: newTranslation });
           }}
@@ -700,7 +850,11 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           {settings.isImmersionMode ? 'Immersion' : 'Study'}
         </button>
         <button
-          onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
+          ref={settingsButtonRef}
+          onClick={(e) => {
+            setSettingsTab('reading');
+            setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget);
+          }}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted hover:text-ink hover:bg-desk border border-transparent hover:border-border transition-all"
           aria-label="Reader settings"
           aria-expanded={!!settingsAnchorEl}
@@ -710,20 +864,32 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </button>
       </div>
 
-      {/* ── READER SETTINGS — desktop popover (xl+) / mobile bottom sheet ── */}
+      {/* ── READER SETTINGS — desktop popover (xl+) / mobile bottom sheet ──
+          Keyed by tab so a deep-link from the player's gear re-mounts on the
+          Audio tab even if the panel is somehow already open. */}
       {settingsAnchorEl && isDesktop && (
         <ReaderSettingsPanel
+          key={settingsTab}
           anchorEl={settingsAnchorEl}
+          initialTab={settingsTab}
           onClose={() => setSettingsAnchorEl(null)}
         />
       )}
       {settingsAnchorEl && !isDesktop && (
-        <MobileSettingsSheet onClose={() => setSettingsAnchorEl(null)} />
+        <MobileSettingsSheet
+          key={settingsTab}
+          initialTab={settingsTab}
+          onClose={() => setSettingsAnchorEl(null)}
+        />
       )}
 
       {/* ── DESKTOP WORD TOOLTIP ── */}
       {tooltipWord && tooltipAnchorRect && (
         <WordTooltip
+          // Keyed per word so switching words remounts rather than reusing one
+          // instance — resets the reveal/graded state, and (with the unmount
+          // cleanup inside) drops any pending auto-close from the previous word.
+          key={tooltipWord.id}
           wordData={tooltipWord}
           anchorRect={tooltipAnchorRect}
           onClose={handleTooltipClose}
@@ -732,7 +898,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             // WordTooltip manages close timing: stays open after first-test grade
           }}
           isFirstTest={!testedLemmasThisSession.current.has(tooltipWord.lemma)}
-          onGraded={(lemma) => { testedLemmasThisSession.current.add(lemma); }}
+          onGraded={(lemma) => {
+            testedLemmasThisSession.current.add(lemma);
+          }}
           onTranslationChange={(wordId, translation) => {
             updateWordTranslation.mutate({ wordId, translation });
           }}
@@ -807,6 +975,31 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           </div>
         </>
       )}
+
+      {/* ── MINI PLAYER — mobile/tablet bottom bar, hidden while any sheet is open ── */}
+      <MiniPlayerMobile
+        playbackState={tutorMode.playbackState}
+        currentSentenceIndex={tutorMode.currentSentenceIndex}
+        totalSentences={sentencesQuery.data?.length ?? 0}
+        onPlayPause={tutorMode.playPause}
+        onPrevious={tutorMode.previousSentence}
+        onNext={tutorMode.nextSentence}
+        onStop={tutorMode.stop}
+        tutorModeEnabled={settings.tutorModeEnabled}
+        onToggleTutorMode={toggleTutorMode}
+        playbackSpeed={settings.playbackSpeed}
+        onPlaybackSpeedChange={updatePlaybackSpeed}
+        disabled={!sentencesQuery.data || sentencesQuery.data.length === 0}
+        hidden={
+          isRightPanelOpen ||
+          !!settingsAnchorEl ||
+          isParaMapOpen ||
+          isTextInfoOpen ||
+          // Stand down only when the gutter player is actually on screen —
+          // which needs the width AND the gutter not being suppressed.
+          (isLargeScreen && !settings.isImmersionMode && !isRightPanelOpen)
+        }
+      />
 
       {/* ── STATUS UPDATE FEEDBACK ── */}
       {feedbackState && (

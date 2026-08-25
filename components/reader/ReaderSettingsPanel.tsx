@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
+import { AudioSettingsSection } from './AudioSettingsSection';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -18,9 +19,14 @@ import { cn } from '@/lib/utils';
 interface ReaderSettingsPanelProps {
   anchorEl: HTMLButtonElement;
   onClose: () => void;
+  /** Which tab to open on. The mini-player's gear passes 'audio' so it lands
+   * directly on the narration/Tutor controls instead of the reading ones. */
+  initialTab?: SettingsTab;
 }
 
-const PANEL_W = 272;
+export type SettingsTab = 'reading' | 'audio';
+
+const PANEL_W = 296;
 const GAP = 8;
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -65,7 +71,11 @@ function SegmentedControl({
   );
 }
 
-export function ReaderSettingsPanel({ anchorEl, onClose }: ReaderSettingsPanelProps) {
+export function ReaderSettingsPanel({
+  anchorEl,
+  onClose,
+  initialTab = 'reading',
+}: ReaderSettingsPanelProps) {
   const {
     settings,
     updateFontSize,
@@ -74,6 +84,7 @@ export function ReaderSettingsPanel({ anchorEl, onClose }: ReaderSettingsPanelPr
     updateShowWellKnownWords,
     updateColorScheme,
   } = useReaderSettings();
+  const [tab, setTab] = useState<SettingsTab>(initialTab);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // ── Position below ⚙ button ──────────────────────────────────────────────
@@ -130,6 +141,33 @@ export function ReaderSettingsPanel({ anchorEl, onClose }: ReaderSettingsPanelPr
           </button>
         </div>
 
+        {/* Tabs — keeps the panel compact as the audio/Tutor options grow */}
+        <div className="flex gap-1 mb-4 p-0.5 bg-desk rounded" role="tablist">
+          {([
+            { label: 'Reading', value: 'reading' },
+            { label: 'Audio', value: 'audio' },
+          ] as const).map((t) => (
+            <button
+              key={t.value}
+              role="tab"
+              aria-selected={tab === t.value}
+              onClick={() => setTab(t.value)}
+              className={cn(
+                'flex-1 h-7 rounded font-sans text-ui-xs transition-all cursor-pointer',
+                tab === t.value
+                  ? 'bg-paper text-ink font-semibold shadow-raised'
+                  : 'text-muted hover:text-ink',
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {tab === 'audio' ? (
+          <AudioSettingsSection />
+        ) : (
+        <>
         {/* Font Size */}
         <Row label="Font Size">
           <SegmentedControl
@@ -203,6 +241,9 @@ export function ReaderSettingsPanel({ anchorEl, onClose }: ReaderSettingsPanelPr
             onChange={(v) => updateColorScheme(v as 'light' | 'dark')}
           />
         </Row>
+
+        </>
+        )}
 
         {/* Footer links */}
         <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">

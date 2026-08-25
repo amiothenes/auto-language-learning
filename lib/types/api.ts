@@ -324,3 +324,62 @@ export interface FetchUrlResponse {
    */
   detectedLang: string;
 }
+
+// ============================================================================
+// TTS API — GET /api/texts/:id/sentences, POST /api/tts/words/:id, POST /api/tts/sentences/:id
+// ============================================================================
+
+export interface SentenceListItem {
+  id: string;
+  content: string;
+  order: number;
+}
+
+export interface SentencesListResponse {
+  textId: string;
+  sentences: SentenceListItem[];
+}
+
+export interface SynthesizeWordAudioResponse {
+  /** Null only for a `cachedOnly` probe that found nothing — meaning "not
+   * synthesized yet", not an error. A normal request always returns a URL. */
+  audioUrl: string | null;
+  durationMs: number;
+  cached: boolean;
+}
+
+export interface WordBoundaryMarkResponse {
+  /** `data-tts-target-id` values in the DOM — a wordInstance's id for a real
+   * vocabulary word, or a `tts-abs:<offset>` key for a number/off-script run
+   * that Azure speaks but isn't tracked as a wordInstance. Usually one entry,
+   * but several when Azure merges a span (e.g. a full date) into one mark.
+   * Empty when this mark covers nothing highlightable (punctuation). */
+  targetIds: string[];
+  startMs: number;
+  endMs: number;
+  text: string;
+}
+
+export interface SynthesizeSentenceAudioResponse {
+  audioUrl: string | null;
+  durationMs: number;
+  cached: boolean;
+  marks: WordBoundaryMarkResponse[];
+}
+
+/** One sentence's already-cached narration. `audioUrl: null` means "not
+ * synthesized yet" — the manifest never synthesizes, so the client falls back
+ * to POST /api/tts/sentences/[id] for those. */
+export interface TtsManifestEntry {
+  sentenceId: string;
+  order: number;
+  audioUrl: string | null;
+  durationMs: number;
+  marks: WordBoundaryMarkResponse[];
+}
+
+export interface TtsManifestResponse {
+  textId: string;
+  ratePercent: number;
+  entries: TtsManifestEntry[];
+}

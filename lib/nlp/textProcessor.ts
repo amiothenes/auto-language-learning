@@ -143,6 +143,107 @@ interface NLPPhaseResult {
   uniqueCleanForms: string[];
 }
 
+// Above this many words, a spaCy "sentence" is treated as a run-on worth
+// splitting at line breaks. Lyrics and poetry have no sentence-final
+// punctuation, so spaCy returns an entire song as one 130-word "sentence" —
+// unusable as a TTS playback unit (one stall is very audible, and pausing or
+// scrubbing lands nowhere useful). Ordinary prose sentences fall well under
+// this and are never touched, so a hard-wrapped paragraph isn't split
+// mid-clause.
+const MAX_SENTENCE_WORDS_BEFORE_SPLIT = 20;
+
+type ChunkToken = { surface: string; position: number; sentence_index: number; is_word: boolean };
+
+/**
+ * Groups tokens into playable sentence chunks, splitting over-long spaCy
+ * sentences at newline boundaries.
+ *
+ * Boundaries are derived from token positions rather than from spaCy's
+ * `sentence.start` + stripped text: slicing `content` between the first and
+ * last token of a run gives an exact substring of the stored text, with no
+ * ambiguity about how much whitespace `.strip()` removed. That exactness
+ * matters downstream — lib/tts/alignment.ts locates a sentence in the full
+ * content by `indexOf`, which only works if the stored content is a verbatim
+ * slice.
+ */
+function buildSentenceChunks(
+  content: string,
+  tokens: ChunkToken[]
+): Array<{ content: string; order: number; start: number }> {
+  const bySentence = new Map<number, ChunkToken[]>();
+  for (const t of tokens) {
+    const arr = bySentence.get(t.sentence_index);
+    if (arr) arr.push(t);
+    else bySentence.set(t.sentence_index, [t]);
+  }
+
+  const chunks: Array<{ content: string; order: number; start: number }> = [];
+
+  for (const sentenceIndex of [...bySentence.keys()].sort((a, b) => a - b)) {
+    // Whitespace-only tokens are dropped first: spaCy emits newlines as
+    // tokens in their own right, so leaving them in makes the "gap" between
+    // consecutive tokens empty and hides every line break from the split
+    // check below. Filtering them also guarantees a chunk's slice starts and
+    // ends on real content, with no leading/trailing whitespace.
+    const toks = bySentence
+      .get(sentenceIndex)!
+      .filter((t) => t.surface.trim() !== '')
+      .sort((a, b) => a.position - b.position);
+    if (toks.length === 0) continue;
+
+    const emit = (fromIdx: number, toIdx: number) => {
+      const first = toks[fromIdx];
+      const last = toks[toIdx];
+      const start = first.position;
+      const end = last.position + last.surface.length;
+      const text = content.slice(start, end);
+      if (text.trim()) chunks.push({ content: text, order: 0, start });
+    };
+
+    const wordCount = toks.filter((t) => t.is_word).length;
+    if (wordCount <= MAX_SENTENCE_WORDS_BEFORE_SPLIT) {
+      emit(0, toks.length - 1);
+      continue;
+    }
+
+    let runStart = 0;
+    for (let i = 1; i < toks.length; i++) {
+      const gapStart = toks[i - 1].position + toks[i - 1].surface.length;
+      if (content.slice(gapStart, toks[i].position).includes('\n')) {
+        emit(runStart, i - 1);
+        runStart = i;
+      }
+    }
+    emit(runStart, toks.length - 1);
+  }
+
+  chunks.sort((a, b) => a.start - b.start);
+  chunks.forEach((c, i) => {
+    c.order = i;
+  });
+  return chunks;
+}
+
+/** Index of the last chunk starting at or before `position`. */
+function chunkOrderForPosition(
+  chunks: Array<{ order: number; start: number }>,
+  position: number
+): number {
+  let lo = 0;
+  let hi = chunks.length - 1;
+  let found = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (chunks[mid].start <= position) {
+      found = chunks[mid].order;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return found;
+}
+
 async function runNLPPhase(
   content: string,
   language: Language,
@@ -163,6 +264,12 @@ async function runNLPPhase(
     );
   }
 
+  // Chunks replace spaCy's own sentence segmentation as the playback unit, so
+  // tokens are re-pointed at the chunk containing them. sentenceIndex stays an
+  // *index* (never a character offset) — important because reprocessTextContent
+  // shifts token positions afterwards but must not shift this.
+  const sentenceChunks = buildSentenceChunks(content, spacyResult.tokens);
+
   const wordTokens = spacyResult.tokens
     .filter((t) => t.is_word)
     .filter((t) => language.includeForeignScript || matchesLanguageScript(t.surface, language.code))
@@ -170,7 +277,7 @@ async function runNLPPhase(
       surfaceForm: t.surface,
       cleanForm: t.surface.toLowerCase(),
       position: t.position,
-      sentenceIndex: t.sentence_index,
+      sentenceIndex: chunkOrderForPosition(sentenceChunks, t.position),
     }));
 
   if (wordTokens.length === 0) {
@@ -219,9 +326,10 @@ async function runNLPPhase(
 
   reportProgress(progressCallback, 'romanizing', 63, 'Extracting sentences');
 
-  const sentenceData: Array<{ content: string; order: number }> = spacyResult.sentences
-    .map((s) => ({ content: s.text, order: s.index }))
-    .sort((a, b) => a.order - b.order);
+  const sentenceData: Array<{ content: string; order: number }> = sentenceChunks.map((c) => ({
+    content: c.content,
+    order: c.order,
+  }));
 
   reportProgress(progressCallback, 'romanizing', 65, `Extracted ${sentenceData.length} sentences`);
 

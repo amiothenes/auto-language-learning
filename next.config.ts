@@ -10,6 +10,10 @@ const csp = [
   `img-src 'self'`,
   `font-src 'self'`,
   `connect-src 'self' ${supabaseUrl}`,
+  // TTS audio (word/sentence pronunciation) is served from Supabase Storage,
+  // a different origin than the app itself — <audio> playback falls back to
+  // default-src ('self' only) without this, silently blocking all TTS audio.
+  `media-src 'self' ${supabaseUrl}`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,

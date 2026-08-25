@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, ExternalLink, Ban } from 'lucide-react';
+import { X, ExternalLink, Ban, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
 import { cn } from '@/lib/utils';
+import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 
 const PEEK_HEIGHT = 264;
 
@@ -100,6 +101,7 @@ export function MobileWordSheet({
   // True immediately after first-test grade — hides stepper, enlarges translation
   const [justGraded, setJustGraded] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState(false);
+  const { state: audioState, play: playAudio } = useWordAudioButton(wordData?.wordId ?? '');
 
   const touchStartY = useRef(0);
   const touchCurrentY = useRef(0);
@@ -233,9 +235,26 @@ export function MobileWordSheet({
           </div>
 
           {/* ② Lemma */}
-          <p className="font-serif text-[26px] text-ink font-bold leading-tight mb-1">
-            {wordData.lemma}
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <p className="font-serif text-[26px] text-ink font-bold leading-tight">
+              {wordData.lemma}
+            </p>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); playAudio(); }}
+              disabled={audioState === 'loading'}
+              className="text-muted hover:text-primary transition-colors p-1 shrink-0 disabled:opacity-50"
+              aria-label={`Hear pronunciation of ${wordData.lemma}`}
+            >
+              {audioState === 'loading' ? (
+                <LoaderCircle size={18} strokeWidth={1.5} className="animate-spin" />
+              ) : audioState === 'error' ? (
+                <VolumeX size={18} strokeWidth={1.5} />
+              ) : (
+                <Volume2 size={18} strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
 
           {/* ③ Translation — hidden in test mode; enlarged post-grade; editable in instant mode */}
           {showTranslation && (

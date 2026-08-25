@@ -6,7 +6,11 @@ import {
   ColorScheme,
   ReaderSettings,
   ReaderSettingsContextType,
+  TutorModeTiming,
+  TutorModeThreshold,
+  TutorModeResume,
 } from '@/lib/types';
+import { quantizeRate } from '@/lib/tts/rate';
 
 // ============================================================================
 // Default Settings
@@ -19,6 +23,14 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   colorScheme: 'light',
   highlightMode: 'highlight',
   isImmersionMode: false,
+  playbackSpeed: 0.9,
+  preferredVoices: {},
+  tutorModeEnabled: false,
+  tutorModeTiming: 'atWord',
+  tutorModeThreshold: 'FAMILIAR',
+  tutorModeMaxPerSentence: 2,
+  tutorModeMaxInterrupts: 8,
+  tutorModeResume: 'onDismiss',
 };
 
 const STORAGE_KEY = 'reader-settings';
@@ -42,8 +54,12 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     try {
       const storedSettings = localStorage.getItem(STORAGE_KEY);
       if (storedSettings) {
-        const parsed = JSON.parse(storedSettings) as ReaderSettings;
-        setSettings(parsed);
+        const parsed = JSON.parse(storedSettings) as Partial<ReaderSettings>;
+        // Merged over the defaults rather than replacing them: a settings
+        // object saved before a new key existed would otherwise load that key
+        // as undefined for every returning user (which is what happened to
+        // playbackSpeed/tutorMode* when TTS was added).
+        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       }
     } catch (error) {
       console.error('Failed to load reader settings from localStorage:', error);
@@ -90,6 +106,41 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, isImmersionMode: !prev.isImmersionMode }));
   };
 
+  const updatePlaybackSpeed = (rate: number) => {
+    setSettings((prev) => ({ ...prev, playbackSpeed: quantizeRate(rate) }));
+  };
+
+  const updatePreferredVoice = (languageCode: string, voiceId: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      preferredVoices: { ...prev.preferredVoices, [languageCode]: voiceId },
+    }));
+  };
+
+  const toggleTutorMode = () => {
+    setSettings((prev) => ({ ...prev, tutorModeEnabled: !prev.tutorModeEnabled }));
+  };
+
+  const updateTutorModeMaxInterrupts = (max: number) => {
+    setSettings((prev) => ({ ...prev, tutorModeMaxInterrupts: Math.max(0, Math.round(max)) }));
+  };
+
+  const updateTutorModeTiming = (timing: TutorModeTiming) => {
+    setSettings((prev) => ({ ...prev, tutorModeTiming: timing }));
+  };
+
+  const updateTutorModeThreshold = (threshold: TutorModeThreshold) => {
+    setSettings((prev) => ({ ...prev, tutorModeThreshold: threshold }));
+  };
+
+  const updateTutorModeMaxPerSentence = (max: number) => {
+    setSettings((prev) => ({ ...prev, tutorModeMaxPerSentence: Math.max(0, Math.round(max)) }));
+  };
+
+  const updateTutorModeResume = (resume: TutorModeResume) => {
+    setSettings((prev) => ({ ...prev, tutorModeResume: resume }));
+  };
+
   const resetToDefaults = () => {
     setSettings(DEFAULT_SETTINGS);
   };
@@ -102,6 +153,14 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     updateColorScheme,
     updateHighlightMode,
     toggleImmersionMode,
+    updatePlaybackSpeed,
+    updatePreferredVoice,
+    toggleTutorMode,
+    updateTutorModeMaxInterrupts,
+    updateTutorModeTiming,
+    updateTutorModeThreshold,
+    updateTutorModeMaxPerSentence,
+    updateTutorModeResume,
     resetToDefaults,
   };
 

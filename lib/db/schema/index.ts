@@ -14,6 +14,8 @@ export * from './textTags';
 export * from './users';
 export * from './settings';
 export * from './wordTranslations';
+export * from './wordAudio';
+export * from './sentenceAudio';
 
 // Relations
 export * from './relations';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { Muted } from '@/components/ui/Typography';
@@ -12,6 +12,7 @@ import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
+import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -50,6 +51,7 @@ export function WordDetailsPanel({
   const [isExiting, setIsExiting] = useState(false);
   const [translation, setTranslation] = useState(wordData?.translation ?? '');
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const { state: audioState, play: playAudio } = useWordAudioButton(wordData?.wordId ?? '');
 
   // SSR guard for portal
   useEffect(() => { setMounted(true); }, []);
@@ -115,9 +117,26 @@ export function WordDetailsPanel({
           {/* ── Header ── */}
           <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-border shrink-0">
             <div className="flex-1 min-w-0 pr-3">
-              <p className="font-serif text-[22px] font-bold text-ink leading-tight truncate">
-                {wordData.lemma}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-serif text-[22px] font-bold text-ink leading-tight truncate">
+                  {wordData.lemma}
+                </p>
+                <button
+                  type="button"
+                  onClick={playAudio}
+                  disabled={audioState === 'loading'}
+                  className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 disabled:opacity-50"
+                  aria-label={`Hear pronunciation of ${wordData.lemma}`}
+                >
+                  {audioState === 'loading' ? (
+                    <LoaderCircle size={16} strokeWidth={1.5} className="animate-spin" />
+                  ) : audioState === 'error' ? (
+                    <VolumeX size={16} strokeWidth={1.5} />
+                  ) : (
+                    <Volume2 size={16} strokeWidth={1.5} />
+                  )}
+                </button>
+              </div>
               <p className="font-sans text-sm text-muted mt-0.5">
                 {cleanSurface !== wordData.lemma ? `${cleanSurface} · ` : ''}{wordData.pos}
               </p>

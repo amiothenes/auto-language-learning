@@ -17,6 +17,10 @@ export type { WordData };
 interface WordProps {
   data: WordData;
   onClick: (data: WordData, anchorRect: DOMRect) => void;
+  /** Ctrl/⌘-click — moves the narration cursor to this word instead of
+   * opening it. A modifier rather than a plain click because plain click is
+   * already the app's core interaction (open the word). */
+  onSeekTo?: (data: WordData) => void;
   isSelected?: boolean;
   highlightIntensity?: number; // 0-100, default 100
   showWellKnownWords?: boolean; // default true
@@ -25,6 +29,7 @@ interface WordProps {
 export function Word({
   data,
   onClick,
+  onSeekTo,
   isSelected = false,
   highlightIntensity = 100,
   showWellKnownWords = true,
@@ -70,8 +75,17 @@ export function Word({
   return (
     <button
       type="button"
-      onClick={(e) => onClick(data, e.currentTarget.getBoundingClientRect())}
+      onClick={(e) => {
+        if ((e.ctrlKey || e.metaKey) && onSeekTo) {
+          e.preventDefault();
+          onSeekTo(data);
+          return;
+        }
+        onClick(data, e.currentTarget.getBoundingClientRect());
+      }}
       title={titleText}
+      data-word-instance-id={data.id}
+      data-tts-target-id={data.id}
       className={cn(
         // Reset button styles to inline appearance
         "inline appearance-none border-0 bg-transparent p-0 text-inherit align-baseline",
