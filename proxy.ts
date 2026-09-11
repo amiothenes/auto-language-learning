@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Prefix-matched public paths (startsWith check)
-const PUBLIC_PATH_PREFIXES = ['/login', '/signup', '/og', '/auth/callback', '/share', '/api/public'];
+const PUBLIC_PATH_PREFIXES = ['/login', '/signup', '/og', '/auth/callback', '/share', '/api/public', '/manifest.json'];
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
