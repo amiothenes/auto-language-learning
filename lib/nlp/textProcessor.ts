@@ -183,7 +183,7 @@ function buildSentenceChunks(
     // Whitespace-only tokens are dropped first: spaCy emits newlines as
     // tokens in their own right, so leaving them in makes the "gap" between
     // consecutive tokens empty and hides every line break from the split
-    // check below. Filtering them also guarantees a chunk's slice starts and
+    // checks below. Filtering them also guarantees a chunk's slice starts and
     // ends on real content, with no leading/trailing whitespace.
     const toks = bySentence
       .get(sentenceIndex)!
@@ -200,21 +200,44 @@ function buildSentenceChunks(
       if (text.trim()) chunks.push({ content: text, order: 0, start });
     };
 
-    const wordCount = toks.filter((t) => t.is_word).length;
-    if (wordCount <= MAX_SENTENCE_WORDS_BEFORE_SPLIT) {
-      emit(0, toks.length - 1);
-      continue;
-    }
-
-    let runStart = 0;
+    // spaCy segments sentences with no awareness of paragraph breaks, so a
+    // run without terminal punctuation before a blank line (a heading, a
+    // line of dialogue, lyrics) gets fused into one "sentence" spanning two
+    // paragraphs. A chunk must never cross a paragraph boundary — otherwise
+    // the paragraph that the fused sentence's *earliest* word belongs to
+    // claims the whole thing, silently swallowing the next paragraph's
+    // first sentence. So a blank-line gap forces a split here regardless of
+    // word count, ahead of the run-on check below.
+    const paragraphRuns: Array<[number, number]> = [];
+    let paraRunStart = 0;
     for (let i = 1; i < toks.length; i++) {
       const gapStart = toks[i - 1].position + toks[i - 1].surface.length;
-      if (content.slice(gapStart, toks[i].position).includes('\n')) {
-        emit(runStart, i - 1);
-        runStart = i;
+      if (/\n[ \t]*\n/.test(content.slice(gapStart, toks[i].position))) {
+        paragraphRuns.push([paraRunStart, i - 1]);
+        paraRunStart = i;
       }
     }
-    emit(runStart, toks.length - 1);
+    paragraphRuns.push([paraRunStart, toks.length - 1]);
+
+    for (const [runFrom, runTo] of paragraphRuns) {
+      const wordCount = toks
+        .slice(runFrom, runTo + 1)
+        .filter((t) => t.is_word).length;
+      if (wordCount <= MAX_SENTENCE_WORDS_BEFORE_SPLIT) {
+        emit(runFrom, runTo);
+        continue;
+      }
+
+      let runStart = runFrom;
+      for (let i = runFrom + 1; i <= runTo; i++) {
+        const gapStart = toks[i - 1].position + toks[i - 1].surface.length;
+        if (content.slice(gapStart, toks[i].position).includes('\n')) {
+          emit(runStart, i - 1);
+          runStart = i;
+        }
+      }
+      emit(runStart, runTo);
+    }
   }
 
   chunks.sort((a, b) => a.start - b.start);

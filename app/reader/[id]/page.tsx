@@ -283,6 +283,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       if (wordId) handleStatusChange(wordId, newStatus);
     },
     onTogglePlayback: tutorMode.playPause,
+    isPlaybackActive: tutorMode.playbackState === 'playing' || tutorMode.playbackState === 'paused',
+    onStop: tutorMode.stop,
   });
 
   // Opens the settings surface straight on its Audio tab, anchored to the
@@ -322,10 +324,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     // Carry the narration along with the jump, but only when narration is
     // actually under way — starting audio off a navigation click would be a
     // surprising side effect for someone who just wanted to move the page.
-    // Driven by the same signal the ¶ map's highlight uses (playingParagraphIndex),
-    // not raw playbackState, so "is narration active" never disagrees between
-    // what's highlighted and what a click does.
-    if (playingParagraphIndex !== -1) handlePlayParagraph(index);
+    // Gated on playbackState directly (not the derived playingParagraphIndex)
+    // because that derivation can miss a currently-playing sentence that has
+    // no tokenized word instances, which would wrongly block the restart.
+    if (tutorMode.playbackState !== 'idle') handlePlayParagraph(index);
   };
 
   // ── Derived data ──────────────────────────────────────────────────────────

@@ -53,7 +53,7 @@ export function ParagraphScrubber({
       aria-label="Paragraph navigation"
     >
       {/* Header */}
-      <p className="font-sans text-[9px] uppercase tracking-[0.07em] text-muted px-3 pt-2.5 pb-1.5">
+      <p className="font-sans text-[10.5px] uppercase tracking-wide text-muted px-3 pt-2.5 pb-1.5">
         ¶ Map
       </p>
 

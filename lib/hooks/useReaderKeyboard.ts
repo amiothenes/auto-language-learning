@@ -15,6 +15,10 @@ interface UseReaderKeyboardOptions {
   isActive: boolean;
   /** Space toggles narration play/pause. */
   onTogglePlayback?: () => void;
+  /** Whether narration is currently playing or paused — gates Escape-to-stop. */
+  isPlaybackActive?: boolean;
+  /** Escape stops narration, same as the Stop button. */
+  onStop?: () => void;
 }
 
 export function useReaderKeyboard({
@@ -22,6 +26,8 @@ export function useReaderKeyboard({
   onStatusChange,
   isActive,
   onTogglePlayback,
+  isPlaybackActive,
+  onStop,
 }: UseReaderKeyboardOptions) {
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
@@ -40,6 +46,17 @@ export function useReaderKeyboard({
         if (!onTogglePlayback) return;
         e.preventDefault();
         onTogglePlayback();
+        return;
+      }
+
+      // Escape stops narration wherever it's playing or paused — same reach
+      // as Space above, independent of panel/selection state. Left alone
+      // (falls through to the browser/global default) when narration isn't
+      // actually running, so it doesn't swallow other Escape behavior.
+      if (e.key === 'Escape') {
+        if (!onStop || !isPlaybackActive) return;
+        e.preventDefault();
+        onStop();
         return;
       }
 
@@ -84,7 +101,7 @@ export function useReaderKeyboard({
           break;
       }
     },
-    [isActive, currentStatus, onStatusChange, onTogglePlayback]
+    [isActive, currentStatus, onStatusChange, onTogglePlayback, isPlaybackActive, onStop]
   );
 
   useEffect(() => {
