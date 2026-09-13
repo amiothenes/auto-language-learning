@@ -1,6 +1,6 @@
 'use client';
 
-import { GraduationCap, LoaderCircle, Pause, Play, Settings2, SkipBack, SkipForward, Square } from 'lucide-react';
+import { GraduationCap, LoaderCircle, Pause, Play, RefreshCw, Settings2, SkipBack, SkipForward, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SentencePlaybackState } from '@/lib/hooks/useSentencePlayer';
 
@@ -40,6 +40,7 @@ export function MiniPlayerDesktop({
 }: MiniPlayerProps) {
   const isLoading = playbackState === 'loading';
   const isPlaying = playbackState === 'playing';
+  const isError = playbackState === 'error';
   const started = currentSentenceIndex >= 0 && totalSentences > 0;
   const progress = started ? ((currentSentenceIndex + 1) / totalSentences) * 100 : 0;
 
@@ -78,11 +79,17 @@ export function MiniPlayerDesktop({
           type="button"
           onClick={onPlayPause}
           disabled={disabled || isLoading}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-paper hover:bg-primary/90 transition-colors disabled:opacity-40 shrink-0 cursor-pointer"
-          aria-label={isPlaying ? 'Pause narration' : 'Play narration'}
+          className={cn(
+            'flex items-center justify-center w-9 h-9 rounded-full text-paper transition-colors disabled:opacity-40 shrink-0 cursor-pointer',
+            isError ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary/90',
+          )}
+          aria-label={isError ? 'Narration unavailable — tap to retry' : isPlaying ? 'Pause narration' : 'Play narration'}
+          title={isError ? 'Narration unavailable — tap to retry' : undefined}
         >
           {isLoading ? (
             <LoaderCircle size={16} strokeWidth={2} className="animate-spin" />
+          ) : isError ? (
+            <RefreshCw size={16} strokeWidth={2} />
           ) : isPlaying ? (
             <Pause size={14} strokeWidth={2} fill="currentColor" />
           ) : (
@@ -121,8 +128,12 @@ export function MiniPlayerDesktop({
           />
         </div>
         <div className="flex items-center justify-between font-sans text-[10px] text-muted">
-          <span>
-            {started ? `${currentSentenceIndex + 1} / ${totalSentences}` : `${totalSentences} sentences`}
+          <span className={cn(isError && 'text-danger font-medium')}>
+            {isError
+              ? 'Audio unavailable'
+              : started
+                ? `${currentSentenceIndex + 1} / ${totalSentences}`
+                : `${totalSentences} sentences`}
           </span>
           <span>{playbackSpeed.toFixed(2)}×</span>
         </div>

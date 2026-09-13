@@ -8,6 +8,7 @@ import {
   LoaderCircle,
   Pause,
   Play,
+  RefreshCw,
   SkipBack,
   SkipForward,
   Square,
@@ -64,6 +65,7 @@ export function MiniPlayerMobile({
 
   const isLoading = playbackState === 'loading';
   const isPlaying = playbackState === 'playing';
+  const isError = playbackState === 'error';
   const started = currentSentenceIndex >= 0;
   const progress = started ? ((currentSentenceIndex + 1) / totalSentences) * 100 : 0;
 
@@ -98,11 +100,16 @@ export function MiniPlayerMobile({
           type="button"
           onClick={onPlayPause}
           disabled={disabled || isLoading}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-paper hover:bg-primary/90 transition-colors disabled:opacity-40 shrink-0"
-          aria-label={isPlaying ? 'Pause narration' : 'Play narration'}
+          className={cn(
+            'flex items-center justify-center w-9 h-9 rounded-full text-paper transition-colors disabled:opacity-40 shrink-0',
+            isError ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary/90',
+          )}
+          aria-label={isError ? 'Narration unavailable — tap to retry' : isPlaying ? 'Pause narration' : 'Play narration'}
         >
           {isLoading ? (
             <LoaderCircle size={16} strokeWidth={2} className="animate-spin" />
+          ) : isError ? (
+            <RefreshCw size={16} strokeWidth={2} />
           ) : isPlaying ? (
             <Pause size={15} strokeWidth={2} fill="currentColor" />
           ) : (
@@ -110,8 +117,12 @@ export function MiniPlayerMobile({
           )}
         </button>
 
-        <span className="font-sans text-ui-xs text-muted flex-1 tabular-nums">
-          {started ? `${currentSentenceIndex + 1} / ${totalSentences}` : `${totalSentences} sentences`}
+        <span className={cn('font-sans text-ui-xs flex-1 tabular-nums', isError ? 'text-danger font-medium' : 'text-muted')}>
+          {isError
+            ? 'Audio unavailable'
+            : started
+              ? `${currentSentenceIndex + 1} / ${totalSentences}`
+              : `${totalSentences} sentences`}
         </span>
 
         <button

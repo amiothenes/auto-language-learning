@@ -33,6 +33,7 @@ import { useSentences } from '@/lib/hooks/useSentences';
 import { useTutorModeController } from '@/lib/hooks/useTutorModeController';
 import { MiniPlayerDesktop } from '@/components/reader/MiniPlayerDesktop';
 import { MiniPlayerMobile } from '@/components/reader/MiniPlayerMobile';
+import { Toast, useToast } from '@/components/ui/Toast';
 
 // Per-paragraph heat color for the vocabulary density strip.
 // Interpolates through the status hues: red → orange → yellow-green → green.
@@ -122,6 +123,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     isMilestone: boolean;
   } | null>(null);
 
+  const { toast: ttsErrorToast, showToast: showTtsErrorToast, hideToast: hideTtsErrorToast } = useToast();
+
   const isDesktop = useMediaQuery('(min-width: 1280px)');
   const shouldShowTooltip = useMediaQuery('(min-width: 768px)');
   // Matches the `lg:` breakpoint where the right gutter (and its player)
@@ -200,6 +203,17 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     onOpenWord: handleWordClick,
     textId: id,
   });
+
+  // The mini-player's own icon already turns into a persistent error face
+  // (see MiniPlayerDesktop/Mobile), but that's silent if the player is
+  // collapsed or off-screen — this catches that case. Depending on the
+  // playbackState value (not a ref) means this only re-fires on an actual
+  // transition into 'error', not on every render while it stays there.
+  useEffect(() => {
+    if (tutorMode.playbackState === 'error') {
+      showTtsErrorToast("Couldn't play narration — try again.", 'error');
+    }
+  }, [tutorMode.playbackState, showTtsErrorToast]);
 
   const handleTooltipClose = useCallback(() => {
     if (tooltipWord) tutorMode.handleWordDismissed(tooltipWord.id);
@@ -980,6 +994,14 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onDismiss={handleDismissFeedback}
         />
       )}
+
+      {/* ── TTS ERROR TOAST ── */}
+      <Toast
+        message={ttsErrorToast.message}
+        isOpen={ttsErrorToast.isOpen}
+        onClose={hideTtsErrorToast}
+        type={ttsErrorToast.type}
+      />
     </div>
   );
 }
