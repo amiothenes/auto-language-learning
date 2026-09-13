@@ -75,6 +75,9 @@ interface ReaderContentProps {
   onStopParagraph?: () => void;
   /** Paragraph the narration is currently in — decides ▶ vs ■. */
   playingParagraphIndex?: number;
+  /** Receives each paragraph's DOM node so the page can scrollIntoView() it
+   * when the ¶ map (desktop scrubber or mobile sheet) navigates to it. */
+  registerParagraphRef?: (index: number, el: HTMLParagraphElement | null) => void;
   selectedWordId?: string | null;
   wordInstances?: WordInstanceItem[] | null;
   isLoading?: boolean;
@@ -89,6 +92,7 @@ export function ReaderContent({
   onPlayParagraph,
   onStopParagraph,
   playingParagraphIndex = -1,
+  registerParagraphRef,
   selectedWordId,
   wordInstances,
   isLoading,
@@ -193,7 +197,12 @@ export function ReaderContent({
       {parsedContent.map((paragraph, paraIndex) => (
         <p
           key={paragraph.id}
-          className="font-serif text-ink leading-relaxed whitespace-pre-line relative group"
+          ref={(el) => registerParagraphRef?.(paraIndex, el)}
+          // Matches <main>'s own pt-21/xl:pt-12 top padding (page.tsx) — without
+          // this, scrollIntoView({ block: 'start' }) parks a paragraph flush
+          // against the viewport's top edge, right underneath the fixed mobile
+          // header/density strip (or the xl top bar), hiding its first lines.
+          className="font-serif text-ink leading-relaxed whitespace-pre-line relative group scroll-mt-21 xl:scroll-mt-12"
         >
           {/* Play-from-here / stop, in the left margin so it never reflows the
               prose. Hover-only in every state — a permanently visible control

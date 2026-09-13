@@ -14,11 +14,12 @@ import { cn } from '@/lib/utils';
 
 interface ParagraphScrubberProps {
   paragraphs: Array<{ id: string; progress: number }>;
-  currentIndex: number;
   onNavigate: (index: number) => void;
-  /** Paragraph the narration is currently in, or -1. Marked distinctly from
-   * `currentIndex` (which follows the SCROLL position) so the two can disagree
-   * — reading ahead of the audio is normal and shouldn't look like an error. */
+  /** Paragraph the narration is currently in, or -1 while stopped. The map has
+   * exactly one highlight state, and this is it — when narration is stopped
+   * every row is plain and just clickable (scrolls there, nothing more); once
+   * narration is running the row it's in lights up and stays in sync as it
+   * advances. There is no separate "scrolled-to" highlight. */
   playingIndex?: number;
   /** Hide when the WordDetailsPanel is open so they don't overlap */
   hidden?: boolean;
@@ -36,7 +37,6 @@ const progressColor = (p: number): string =>
 // page.tsx, since MiniPlayerDesktop shares that same column.
 export function ParagraphScrubber({
   paragraphs,
-  currentIndex,
   onNavigate,
   playingIndex = -1,
   hidden = false,
@@ -60,7 +60,6 @@ export function ParagraphScrubber({
       {/* Paragraph rows */}
       <div className="px-1.5 pb-2 space-y-0.5">
         {paragraphs.map((para, i) => {
-          const isActive = i === currentIndex;
           const isPlaying = i === playingIndex;
           return (
             <button
@@ -69,13 +68,12 @@ export function ParagraphScrubber({
               aria-label={`Paragraph ${i + 1}, ${para.progress}% complete${isPlaying ? ', now playing' : ''}`}
               aria-current={isPlaying ? 'true' : undefined}
               className={cn(
-                'w-full flex items-center gap-2 px-1.5 py-1 rounded text-left transition-colors hover:bg-desk relative',
-                isActive && 'bg-primary/5 ring-1 ring-primary/25',
+                'w-full flex items-center gap-2 px-1.5 py-1 rounded text-left transition-colors hover:bg-desk relative cursor-pointer',
                 isPlaying && 'bg-primary/10',
               )}
             >
               {/* Narration position marker — a left rule rather than another
-                  fill, so it reads clearly even on the scrolled-to row. */}
+                  fill, so it reads clearly at a glance. */}
               {isPlaying && (
                 <span
                   className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-primary"
@@ -85,7 +83,7 @@ export function ParagraphScrubber({
               <span
                 className={cn(
                   'font-sans text-[10.5px] w-5.5 shrink-0',
-                  isPlaying || isActive ? 'text-primary font-semibold' : 'text-muted',
+                  isPlaying ? 'text-primary font-semibold' : 'text-muted',
                 )}
               >
                 ¶{i + 1}
@@ -104,7 +102,7 @@ export function ParagraphScrubber({
               <span
                 className={cn(
                   'font-sans text-[10px] w-6.5 text-right shrink-0',
-                  isActive ? 'text-ink font-medium' : 'text-muted',
+                  isPlaying ? 'text-ink font-medium' : 'text-muted',
                 )}
               >
                 {para.progress}%

@@ -135,7 +135,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const [showMobileHeader, setShowMobileHeader] = useState(true);
   const lastScrollY = useRef(0);
 
-  const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
   const paragraphRefs = useRef<(HTMLParagraphElement | null)[]>([]);
 
   const touchStartX = useRef(0);
@@ -296,6 +295,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     if (index >= 0) tutorMode.playFromSentence(index);
   };
 
+  const registerParagraphRef = (index: number, el: HTMLParagraphElement | null) => {
+    paragraphRefs.current[index] = el;
+  };
+
   const handleParagraphNavigate = (index: number) => {
     paragraphRefs.current[index]?.scrollIntoView({
       behavior: 'smooth',
@@ -305,7 +308,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     // Carry the narration along with the jump, but only when narration is
     // actually under way — starting audio off a navigation click would be a
     // surprising side effect for someone who just wanted to move the page.
-    if (tutorMode.playbackState !== 'idle') handlePlayParagraph(index);
+    // Driven by the same signal the ¶ map's highlight uses (playingParagraphIndex),
+    // not raw playbackState, so "is narration active" never disagrees between
+    // what's highlighted and what a click does.
+    if (playingParagraphIndex !== -1) handlePlayParagraph(index);
   };
 
   // ── Derived data ──────────────────────────────────────────────────────────
@@ -429,44 +435,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       return () => { document.title = 'Verbista'; };
     }
   }, [textData?.title]);
-
-  // Track the paragraph currently being read, as "the last one that starts
-  // above a reference line a third of the way down the viewport".
-  //
-  // This replaced an IntersectionObserver using threshold 0.5 inside a root
-  // shrunk by -20%/-20%: a paragraph longer than ~60% of the viewport can
-  // never be 50% visible, so it never fired and the index stayed stuck on an
-  // earlier paragraph — the ¶ map showed ¶1 selected while you were reading
-  // ¶2. Long paragraphs are the norm here, so the observer failed exactly
-  // where it mattered. A reference line always yields exactly one answer,
-  // whatever the paragraph's height.
-  useEffect(() => {
-    let frame = 0;
-    const measure = () => {
-      frame = 0;
-      const line = window.innerHeight / 3;
-      let index = 0;
-      for (let i = 0; i < paragraphRefs.current.length; i++) {
-        const el = paragraphRefs.current[i];
-        if (!el) continue;
-        if (el.getBoundingClientRect().top <= line) index = i;
-        else break;
-      }
-      setCurrentParagraphIndex(index);
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
-    };
-
-    measure();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [paragraphs.length]);
 
   // Auto-hide mobile header on scroll
   useEffect(() => {
@@ -743,6 +711,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 onPlayParagraph={handlePlayParagraph}
                 onStopParagraph={tutorMode.stop}
                 playingParagraphIndex={playingParagraphIndex}
+                registerParagraphRef={registerParagraphRef}
                 selectedWordId={selectedWord?.id}
                 wordInstances={wordInstances}
                 isLoading={instancesQuery.isLoading}
@@ -797,7 +766,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             />
             <ParagraphScrubber
               paragraphs={paragraphProgress}
-              currentIndex={currentParagraphIndex}
               playingIndex={playingParagraphIndex}
               onNavigate={handleParagraphNavigate}
             />
@@ -949,8 +917,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                     key={i}
                     onClick={() => { handleParagraphNavigate(i); setIsParaMapOpen(false); }}
                     className={cn(
-                      'w-full text-left p-3 rounded-card border transition-colors',
-                      currentParagraphIndex === i
+                      'w-full text-left p-3 rounded-card border transition-colors cursor-pointer',
+                      playingParagraphIndex === i
                         ? 'border-primary/30 bg-primary-05'
                         : 'border-border hover:bg-desk',
                     )}
