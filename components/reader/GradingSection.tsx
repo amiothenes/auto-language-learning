@@ -4,6 +4,7 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StatusChipRow } from './StatusChipRow';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
+import { STATUS_PROGRESSION } from '@/lib/vocabulary/statusProgression';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -14,13 +15,7 @@ import { cn } from '@/lib/utils';
 // action buttons visually echo the reader highlighting the user already knows.
 // ============================================================================
 
-const PROGRESSION = [
-  VocabularyStatus.UNKNOWN,
-  VocabularyStatus.NEWLY_SEEN,
-  VocabularyStatus.FAMILIAR,
-  VocabularyStatus.KNOWN,
-  VocabularyStatus.WELL_KNOWN,
-] as const;
+const PROGRESSION = STATUS_PROGRESSION;
 
 const STEP_LABELS: Record<VocabularyStatus, string> = {
   [VocabularyStatus.UNKNOWN]:    'Unknown',

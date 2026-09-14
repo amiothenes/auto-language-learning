@@ -10,6 +10,7 @@ import { tags } from './tags';
 import { posTags } from './posTags';
 import { textTags } from './textTags';
 import { users } from './users';
+import { wordReviews } from './wordReviews';
 
 // Language Relations
 export const languagesRelations = relations(languages, ({ many }) => ({
@@ -28,6 +29,18 @@ export const wordsRelations = relations(words, ({ one, many }) => ({
   instances: many(wordInstances),
   tags: many(posTags),
   translations: many(wordTranslations),
+  review: one(wordReviews, {
+    fields: [words.id],
+    references: [wordReviews.wordId],
+  }),
+}));
+
+// Word Review (SRS) Relations
+export const wordReviewsRelations = relations(wordReviews, ({ one }) => ({
+  word: one(words, {
+    fields: [wordReviews.wordId],
+    references: [words.id],
+  }),
 }));
 
 // Word Translation Relations

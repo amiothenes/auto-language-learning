@@ -10,6 +10,7 @@ const tabs = [
   { id: 'account', label: 'Account', href: '/settings/account' },
   { id: 'display', label: 'Display', href: '/settings/display' },
   { id: 'languages', label: 'Languages', href: '/settings/languages' },
+  { id: 'review', label: 'Review', href: '/settings/review' },
   { id: 'data', label: 'Data', href: '/settings/data' },
   { id: 'about', label: 'About', href: '/settings/about' },
 ];

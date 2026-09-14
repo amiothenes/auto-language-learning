@@ -16,6 +16,9 @@ export * from './settings';
 export * from './wordTranslations';
 export * from './wordAudio';
 export * from './sentenceAudio';
+export * from './wordReviews';
+export * from './srsDailyStats';
+export * from './srsSettings';
 
 // Relations
 export * from './relations';
