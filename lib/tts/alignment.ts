@@ -12,7 +12,7 @@ export type AlignedMark = {
   text: string;
 };
 
-type InstanceRow = { id: string; surfaceForm: string; position: number };
+export type InstanceRow = { id: string; surfaceForm: string; position: number };
 type TargetUnit = { id: string; start: number; end: number };
 
 function toUnaligned(marks: WordBoundaryMark[]): AlignedMark[] {
@@ -35,7 +35,7 @@ function toUnaligned(marks: WordBoundaryMark[]): AlignedMark[] {
  * the caller to degrade rather than emit offsets that would highlight the
  * wrong words.
  */
-function findSentenceStart(content: string, sortedInstances: InstanceRow[]): number | null {
+export function findSentenceStart(content: string, sortedInstances: InstanceRow[]): number | null {
   for (const inst of sortedInstances) {
     const idx = content.indexOf(inst.surfaceForm);
     if (idx !== -1) return inst.position - idx;

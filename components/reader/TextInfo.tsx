@@ -7,6 +7,8 @@ import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { EditTextModal } from '@/components/texts/EditTextModal';
+import { Toast, useToast } from '@/components/ui/Toast';
+import { cn } from '@/lib/utils';
 import {
   ChevronLeft,
   BookOpen,
@@ -14,7 +16,8 @@ import {
   Download,
   Pencil
 } from 'lucide-react';
-import type { WordInstanceItem } from '@/lib/types/api';
+import type { WordInstanceItem, SentenceListItem } from '@/lib/types/api';
+import { hasZeroUnknownWords, buildOneTCards, buildOneTCsv } from '@/lib/utils/oneTSentences';
 
 // ============================================================================
 // TextInfo Component
@@ -32,6 +35,11 @@ interface TextInfoProps {
   seriesId: string;
   seriesName: string;
   tags: string[];
+  wordInstances: WordInstanceItem[] | undefined;
+  sentences: SentenceListItem[] | undefined;
+  /** True for ~1s right after the text's last UNKNOWN word cleared — plays a
+   * one-off pop on the (now-enabled) 1T export button. */
+  justBecameExportable: boolean;
 }
 
 export function TextInfo({
@@ -44,12 +52,16 @@ export function TextInfo({
   seriesId,
   seriesName,
   tags,
+  wordInstances,
+  sentences,
+  justBecameExportable,
 }: TextInfoProps) {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const { toast, showToast, hideToast } = useToast();
 
   useEffect(() => {
     if (!showExportMenu) return;
@@ -127,6 +139,20 @@ export function TextInfo({
       setIsExporting(false);
     }
   }, [textId, title]);
+
+  const canExportOneT = wordInstances ? hasZeroUnknownWords(wordInstances) : false;
+
+  const handleExportOneT = useCallback(() => {
+    setShowExportMenu(false);
+    if (!wordInstances || !sentences) return;
+    const cards = buildOneTCards(sentences, wordInstances);
+    if (cards.length === 0) {
+      showToast('No 1T sentences found', 'info');
+      return;
+    }
+    const safeTitle = title.replace(/[^\w\s-]/g, '').trim();
+    triggerDownload(buildOneTCsv(cards), `${safeTitle}-1t-sentences.csv`, 'text/csv;charset=utf-8');
+  }, [wordInstances, sentences, title, showToast]);
 
   const handleEditText = () => {
     setIsEditOpen(true);
@@ -256,6 +282,19 @@ export function TextInfo({
               >
                 Export as CSV
               </button>
+              <button
+                type="button"
+                onClick={handleExportOneT}
+                disabled={!canExportOneT}
+                title={canExportOneT ? undefined : 'Clear all unreviewed words in this text to unlock'}
+                className={cn(
+                  'w-full text-left px-3 py-2 font-sans text-ui-sm transition-colors',
+                  canExportOneT ? 'text-ink hover:bg-desk' : 'text-muted/50 cursor-not-allowed',
+                  justBecameExportable && 'animate-export-pop',
+                )}
+              >
+                Export 1T Sentences (Anki)
+              </button>
             </div>
           )}
         </div>
@@ -279,6 +318,13 @@ export function TextInfo({
           queryClient.invalidateQueries({ queryKey: ['word-instances', textId] });
           setIsEditOpen(false);
         }}
+      />
+
+      <Toast
+        message={toast.message}
+        isOpen={toast.isOpen}
+        onClose={hideToast}
+        type={toast.type}
       />
     </div>
   );

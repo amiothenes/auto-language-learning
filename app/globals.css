@@ -230,6 +230,17 @@
     animation: sparkle 1200ms ease-out forwards; /* 1200ms: intentional multi-phase sparkle */
   }
 
+  @keyframes export-pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    70%  { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+
+  .animate-export-pop {
+    animation: export-pop 800ms ease-out; /* 800ms: one-off "just became available" pop */
+  }
+
   /* Shimmer Loading Animation */
   @keyframes shimmer {
     0% {
