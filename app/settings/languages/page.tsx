@@ -166,16 +166,16 @@ export default function LanguagesSettingsPage() {
                 {/* Language Card Header */}
                 <div
                   onClick={() => handleToggleExpand(language.id)}
-                  className="relative p-4 bg-paper flex items-center justify-between cursor-pointer hover:bg-desk/50 transition-colors"
+                  className="relative p-4 bg-paper flex flex-wrap items-center justify-between gap-y-2 cursor-pointer hover:bg-desk/50 transition-colors"
                 >
-                  <div className="flex-1 flex items-center gap-3">
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
                     <ChevronDown
                       className={`w-5 h-5 text-muted transition-transform duration-300 shrink-0 ${
                         isExpanded ? 'rotate-180' : ''
                       }`}
                       strokeWidth={2}
                     />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-sans text-ui-base font-medium text-ink">
                           {language.name}
@@ -192,7 +192,7 @@ export default function LanguagesSettingsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-2 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="secondary"
                       size="sm"

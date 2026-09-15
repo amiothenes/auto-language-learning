@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { TextListItem } from './TextListItem';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -11,6 +12,7 @@ import { useTexts } from '@/lib/hooks/useTexts';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { useLastPosition } from '@/lib/hooks/useLastPosition';
 import { NewTextModal } from '@/components/texts/NewTextModal';
+import type { ImportTextResponse } from '@/lib/types/api';
 
 interface RecentTextsListProps {
   isLoading?: boolean;
@@ -37,6 +39,7 @@ function TextListItemSkeleton() {
 
 export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentTextsListProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showNewTextModal, setShowNewTextModal] = useState(false);
   const { data: texts, isLoading: isLoadingTexts } = useTexts(3, {
     sortBy: 'lastViewedAt',
@@ -159,6 +162,11 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
       <NewTextModal
         isOpen={showNewTextModal}
         onClose={() => setShowNewTextModal(false)}
+        onAdd={(result: ImportTextResponse) => {
+          queryClient.invalidateQueries({ queryKey: ['texts'] });
+          queryClient.invalidateQueries({ queryKey: ['series-list'] });
+          router.push(`/series/${result.seriesId}`);
+        }}
         availableSeries={seriesList ?? []}
       />
     </section>
