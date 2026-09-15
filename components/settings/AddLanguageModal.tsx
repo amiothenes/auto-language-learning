@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Toggle } from '@/components/settings/Toggle';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // AddLanguageModal Component
@@ -62,15 +63,7 @@ export function AddLanguageModal({
     }
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Auto-focus on name input when opened
   useEffect(() => {

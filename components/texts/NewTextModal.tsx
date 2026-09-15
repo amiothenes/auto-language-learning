@@ -8,6 +8,7 @@ import { useImportText } from '@/lib/hooks/useImportText';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { NewTextData } from '@/lib/types/forms';
 import type { ImportTextResponse } from '@/lib/types/api';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // NewTextModal Component
@@ -86,15 +87,7 @@ export function NewTextModal({
     }
   }, [isOpen, prefilledSeriesId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Auto-focus on title input when opened
   useEffect(() => {

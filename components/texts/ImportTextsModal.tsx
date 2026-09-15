@@ -8,6 +8,7 @@ import { Upload, FileText, Trash2, AlertCircle, Link, Pencil, X } from 'lucide-r
 import { cn } from '@/lib/utils';
 import type { ImportedTextData } from '@/lib/types/forms';
 import { useFetchUrl } from '@/lib/hooks/useFetchUrl';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // ImportTextsModal Component
@@ -101,15 +102,7 @@ export function ImportTextsModal({
     }
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Restore focus on close
   useEffect(() => {

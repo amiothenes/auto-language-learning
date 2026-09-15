@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { NewVocabularyData } from '@/lib/types/forms';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // AddVocabularyModal Component
@@ -58,15 +59,7 @@ export function AddVocabularyModal({
     }
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Auto-focus on lemma input when opened
   useEffect(() => {

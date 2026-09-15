@@ -13,6 +13,7 @@ import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -62,12 +63,7 @@ export function WordDetailsPanel({
     setIsExiting(false);
   }, [wordData?.wordId]);
 
-  // Body scroll lock — save and restore previous value for safe stacking
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
+  useBodyScrollLock(true);
 
   const handleClose = useCallback(() => {
     setIsExiting(true);
