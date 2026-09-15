@@ -12,7 +12,6 @@ import { TextInfoSkeleton, ReaderContentSkeleton } from '@/components/reader/Rea
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData, TextData } from '@/lib/types';
 import { calculateCompletionPercentage } from '@/lib/utils/textStats';
-import { hasZeroUnknownWords } from '@/lib/utils/oneTSentences';
 import type { WordInstanceItem } from '@/lib/types/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
@@ -419,26 +418,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     return calculateCompletionPercentage(wordInstances.map((inst) => inst.status));
   }, [wordInstances]);
 
-  // 1T Anki export gate: unlocks once every word in the text has been
-  // reviewed at least once. Tracked here (not inside TextInfo) so the same
-  // transition can drive both the in-panel pop AND the ⓘ icon's badge dot —
-  // the icon needs to know even while the panel is closed (mobile/tablet).
-  const canExportOneT = wordInstances ? hasZeroUnknownWords(wordInstances) : false;
-  const prevCanExportOneTRef = useRef(canExportOneT);
-  const [showExportBadge, setShowExportBadge] = useState(false);
-  const [justBecameExportable, setJustBecameExportable] = useState(false);
-
-  useEffect(() => {
-    if (canExportOneT && !prevCanExportOneTRef.current) {
-      setShowExportBadge(true);
-      setJustBecameExportable(true);
-      const timer = setTimeout(() => setJustBecameExportable(false), 1200);
-      prevCanExportOneTRef.current = canExportOneT;
-      return () => clearTimeout(timer);
-    }
-    prevCanExportOneTRef.current = canExportOneT;
-  }, [canExportOneT]);
-
   // Hard-stop gradient for the 4px vocabulary density strip (mobile only)
   const densityStripGradient = useMemo(() => {
     if (!paragraphProgress.length) return 'transparent';
@@ -581,17 +560,11 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               </button>
               {!settings.isImmersionMode && (
                 <button
-                  onClick={() => { setIsTextInfoOpen(true); setShowExportBadge(false); }}
-                  className="relative text-muted hover:text-ink transition-colors p-1"
+                  onClick={() => setIsTextInfoOpen(true)}
+                  className="text-muted hover:text-ink transition-colors p-1"
                   aria-label="Text information"
                 >
                   <Info size={20} strokeWidth={1.5} />
-                  {showExportBadge && (
-                    <span
-                      className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-primary"
-                      aria-hidden="true"
-                    />
-                  )}
                 </button>
               )}
             </div>
@@ -662,7 +635,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 tags={textData.tags}
                 wordInstances={wordInstances}
                 sentences={sentencesQuery.data}
-                justBecameExportable={justBecameExportable}
               />
             )
           )}

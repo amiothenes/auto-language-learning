@@ -22,16 +22,12 @@ export interface OneTCard {
   translation: string;
 }
 
-/** Gate condition: the whole-text export only unlocks once nothing is left
- * unreviewed — this also guarantees every sentence below is UNKNOWN-free. */
-export function hasZeroUnknownWords(instances: WordInstanceItem[]): boolean {
-  return !instances.some((i) => i.status === VocabularyStatus.UNKNOWN);
-}
-
 /**
- * One card per sentence that has exactly one non-IGNORE word instance still
- * NEWLY_SEEN. Sentences failing to resolve an offset (see findSentenceStart)
- * are skipped rather than shipped with the wrong word marked.
+ * One card per sentence that (a) has no UNKNOWN word left — a sentence isn't
+ * ready to mine until everything in it has at least been triaged — and (b)
+ * has exactly one non-IGNORE word instance still NEWLY_SEEN. Sentences
+ * failing to resolve an offset (see findSentenceStart) are skipped rather
+ * than shipped with the wrong word marked.
  */
 export function buildOneTCards(
   sentences: SentenceListItem[],
@@ -51,6 +47,9 @@ export function buildOneTCards(
     const sentInstances = (bySentence.get(sentence.id) ?? [])
       .slice()
       .sort((a, b) => a.position - b.position);
+
+    const hasUnknown = sentInstances.some((i) => i.status === VocabularyStatus.UNKNOWN);
+    if (hasUnknown) continue;
 
     const gradable = sentInstances.filter((i) => i.status !== VocabularyStatus.IGNORE);
     const newlySeen = gradable.filter((i) => i.status === VocabularyStatus.NEWLY_SEEN);
