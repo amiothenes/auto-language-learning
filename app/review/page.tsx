@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, PartyPopper } from 'lucide-react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
@@ -11,7 +11,9 @@ import { useSrsSettings } from '@/lib/hooks/useSrsSettings';
 import { prefetchWordAudio } from '@/lib/tts/wordAudioCache';
 import { prefetchSentenceAudio } from '@/lib/tts/sentenceAudioCache';
 import { FlashcardView } from '@/components/review/FlashcardView';
+import { FlashcardSkeleton } from '@/components/review/FlashcardSkeleton';
 import { Card } from '@/components/ui/Card';
+import { SkeletonText } from '@/components/ui/Skeleton';
 import { Heading, Muted } from '@/components/ui/Typography';
 import type { SrsCard, SrsGrade } from '@/lib/types/api';
 
@@ -64,23 +66,53 @@ export default function ReviewPage() {
     }
   }, [currentCard, nextCard, srsSettings, readerSettings.playbackSpeed, voiceId]);
 
-  function handleGrade(grade: SrsGrade) {
-    if (!currentCard) return;
-    reviewMutation.mutate(
-      { wordId: currentCard.wordId, grade },
-      {
-        onSuccess: () => {
-          setQueue((q) => q.slice(1));
-          setRevealed(false);
-        },
+  const handleGrade = useCallback(
+    (grade: SrsGrade) => {
+      if (!currentCard) return;
+      reviewMutation.mutate(
+        { wordId: currentCard.wordId, grade },
+        {
+          onSuccess: () => {
+            setQueue((q) => q.slice(1));
+            setRevealed(false);
+          },
+        }
+      );
+    },
+    [currentCard, reviewMutation]
+  );
+
+  // Keyboard shortcuts: Space reveals the answer, 1/2 grade it once revealed.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!currentCard || reviewMutation.isPending) return;
+      if (!revealed) {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          setRevealed(true);
+        }
+        return;
       }
-    );
-  }
+      if (e.key === '1') {
+        e.preventDefault();
+        handleGrade('DIDNT_KNOW');
+      } else if (e.key === '2') {
+        e.preventDefault();
+        handleGrade('KNEW');
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentCard, revealed, reviewMutation.isPending, handleGrade]);
 
   if (!languageId || isLoading) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-12">
-        <Muted>Loading review session…</Muted>
+      <div className="max-w-xl mx-auto px-4 py-8 md:py-12 space-y-6">
+        <header className="space-y-1">
+          <Heading size="2xl" as="h1">Review</Heading>
+          <SkeletonText width="w-48" />
+        </header>
+        <FlashcardSkeleton />
       </div>
     );
   }

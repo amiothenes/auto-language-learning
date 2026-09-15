@@ -27,6 +27,14 @@ function boldTarget(content: string, targetSurface: string) {
   );
 }
 
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex items-center justify-center min-w-[1.375rem] h-5 px-1 rounded border border-border bg-desk font-mono text-[10px] text-muted">
+      {children}
+    </kbd>
+  );
+}
+
 function SpeakerButton({ state, onPlay, label }: { state: string; onPlay: () => void; label: string }) {
   return (
     <button
@@ -98,9 +106,14 @@ export function FlashcardView({
       </div>
 
       {!revealed ? (
-        <Button variant="primary" className="w-full" onClick={onReveal}>
-          Show Answer
-        </Button>
+        <div className="space-y-2">
+          <Button variant="primary" className="w-full" onClick={onReveal}>
+            Show Answer
+          </Button>
+          <p className="flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
+            Press <Kbd>Space</Kbd> to reveal
+          </p>
+        </div>
       ) : (
         <div className="space-y-4 border-t border-border pt-4">
           {/* Root word + audio */}
@@ -171,23 +184,33 @@ export function FlashcardView({
           )}
 
           {/* Grading */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              disabled={grading}
-              onClick={() => onGrade('DIDNT_KNOW')}
-            >
-              Didn&apos;t Know
-            </Button>
-            <Button
-              variant="primary"
-              className="flex-1"
-              disabled={grading}
-              onClick={() => onGrade('KNEW')}
-            >
-              Did Know
-            </Button>
+          <div className="space-y-2 pt-2">
+            <div className="flex gap-3">
+              <Button
+                variant="primary"
+                className="flex-1 !bg-danger"
+                disabled={grading}
+                onClick={() => onGrade('DIDNT_KNOW')}
+              >
+                Didn&apos;t Know
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                disabled={grading}
+                onClick={() => onGrade('KNEW')}
+              >
+                Did Know
+              </Button>
+            </div>
+            <div className="flex gap-3 text-center">
+              <p className="flex-1 flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
+                <Kbd>1</Kbd> Didn&apos;t Know
+              </p>
+              <p className="flex-1 flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
+                <Kbd>2</Kbd> Did Know
+              </p>
+            </div>
           </div>
         </div>
       )}

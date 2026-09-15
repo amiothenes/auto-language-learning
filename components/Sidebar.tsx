@@ -28,8 +28,8 @@ import {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { id: 'series', label: 'Series', href: '/series', icon: 'series' },
-  { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary' },
   { id: 'review', label: 'Review', href: '/review', icon: 'review' },
+  { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings' },
 ] as const;
 
