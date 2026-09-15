@@ -13,5 +13,9 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-const client = postgres(process.env.DATABASE_URL, { max: 10 });
+// max: 1 — each warm serverless instance holds its own module-scoped client,
+// so this caps connections per instance, not per request (Supabase guidance).
+// prepare: false — required for the transaction-mode pooler (Supavisor), which
+// hands out a different underlying connection per query.
+const client = postgres(process.env.DATABASE_URL, { max: 1, prepare: false });
 export const db = drizzle({ client, schema });
