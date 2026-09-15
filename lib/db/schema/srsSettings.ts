@@ -2,6 +2,7 @@ import { pgTable, text, integer, boolean, timestamp, unique } from 'drizzle-orm/
 import { createId } from '@paralleldrive/cuid2';
 import { languages } from './languages';
 import { vocabularyStatusEnum } from './enums';
+import type { SrsNewCardsPosition } from '@/lib/types/api';
 
 // Per user+language SRS configuration. Separate from the global `settings`
 // key/value table, which has no userId column and doesn't fit per-user,
@@ -32,6 +33,9 @@ export const srsSettings = pgTable(
 
     sentenceAudioEnabled: boolean('sentence_audio_enabled').default(true).notNull(),
     wordAudioEnabled: boolean('word_audio_enabled').default(true).notNull(),
+
+    // Where new cards fall relative to due reviews in the session queue.
+    newCardsPosition: text('new_cards_position').$type<SrsNewCardsPosition>().default('end').notNull(),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

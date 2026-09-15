@@ -2,7 +2,8 @@ import { db } from '@/lib/db';
 import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats } from '@/lib/db/schema';
 import { eq, and, lte, inArray, isNull, notInArray, asc, count, sql } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
-import { STATUS_PROGRESSION } from '@/lib/vocabulary/statusProgression';
+import { STATUS_PROGRESSION, stepStatusDown, stepStatusUp } from '@/lib/vocabulary/statusProgression';
+import { applySm2 } from '@/lib/srs/sm2';
 import type { SrsCard, SrsCardSentence, SrsCardSource, SrsSettingsPayload } from '@/lib/types/api';
 
 export const DEFAULT_SRS_SETTINGS: SrsSettingsPayload = {
@@ -13,6 +14,7 @@ export const DEFAULT_SRS_SETTINGS: SrsSettingsPayload = {
   typeSwitchStatus: VocabularyStatus.FAMILIAR,
   sentenceAudioEnabled: true,
   wordAudioEnabled: true,
+  newCardsPosition: 'end',
 };
 
 const NON_MASTERED = [VocabularyStatus.WELL_KNOWN, VocabularyStatus.IGNORE];
@@ -34,6 +36,7 @@ export async function getSrsSettings(userId: string, languageId: string): Promis
     typeSwitchStatus: row.typeSwitchStatus as VocabularyStatus,
     sentenceAudioEnabled: row.sentenceAudioEnabled,
     wordAudioEnabled: row.wordAudioEnabled,
+    newCardsPosition: row.newCardsPosition,
   };
 }
 
@@ -218,6 +221,17 @@ async function buildCardForWord(wordId: string, userId: string, typeSwitchStatus
 
   const review = await db.query.wordReviews.findFirst({ where: eq(wordReviews.wordId, wordId) });
 
+  // Same SM-2/status-step logic POST /api/srs/review applies on an actual
+  // grade — computed here purely as a preview so the button captions can
+  // never drift from what grading will really do.
+  const currentSm2 = {
+    easeFactor: review?.easeFactor ?? 2.5,
+    intervalDays: review?.intervalDays ?? 0,
+    repetitions: review?.repetitions ?? 0,
+  };
+  const knewSm2 = applySm2(currentSm2, 'KNEW');
+  const didntKnowSm2 = applySm2(currentSm2, 'DIDNT_KNOW');
+
   return {
     wordId: word.id,
     cardType,
@@ -230,7 +244,25 @@ async function buildCardForWord(wordId: string, userId: string, typeSwitchStatus
     sentence,
     source,
     isNew: !review,
+    status,
+    preview: {
+      knew: { status: stepStatusUp(status), intervalDays: knewSm2.intervalDays },
+      didntKnow: { status: stepStatusDown(status), intervalDays: didntKnowSm2.intervalDays },
+    },
   };
+}
+
+/** Inserts each `extra` item into `base` at evenly-spaced positions, preserving both orders. */
+function interleaveEvenly<T>(base: T[], extra: T[]): T[] {
+  if (extra.length === 0) return [...base];
+  if (base.length === 0) return [...extra];
+
+  const result = [...base];
+  extra.forEach((item, j) => {
+    const position = Math.round(((j + 1) * result.length) / (extra.length + 1)) + j;
+    result.splice(Math.min(position, result.length), 0, item);
+  });
+  return result;
 }
 
 export async function buildSession(userId: string, languageId: string) {
@@ -241,7 +273,8 @@ export async function buildSession(userId: string, languageId: string) {
   ]);
 
   const settings = await getSrsSettings(userId, languageId);
-  const orderedIds = [...dueIds, ...newIds];
+  const orderedIds =
+    settings.newCardsPosition === 'interleaved' ? interleaveEvenly(dueIds, newIds) : [...dueIds, ...newIds];
   const cards = (
     await Promise.all(orderedIds.map((id) => buildCardForWord(id, userId, settings.typeSwitchStatus)))
   ).filter((c): c is SrsCard => c !== null);

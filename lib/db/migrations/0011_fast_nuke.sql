@@ -1,0 +1,1 @@
+ALTER TABLE "srs_settings" ADD COLUMN "new_cards_position" text DEFAULT 'end' NOT NULL;

@@ -21,6 +21,11 @@ const REVIEWS_OPTIONS: SelectOption[] = [
   { value: 'unlimited', label: 'Unlimited' },
 ];
 
+const NEW_CARDS_POSITION_OPTIONS: SelectOption[] = [
+  { value: 'end', label: 'After all reviews' },
+  { value: 'interleaved', label: 'Interleaved with reviews' },
+];
+
 const STATUS_LABELS: Record<VocabularyStatus, string> = {
   [VocabularyStatus.UNKNOWN]: 'Unknown',
   [VocabularyStatus.NEWLY_SEEN]: 'Newly Seen',
@@ -74,6 +79,14 @@ export default function ReviewSettingsPage() {
             options={REVIEWS_OPTIONS}
             value={settings.reviewsPerDay === null ? 'unlimited' : String(settings.reviewsPerDay)}
             onChange={(v) => patch({ reviewsPerDay: v === 'unlimited' ? null : Number(v) })}
+          />
+        </SettingRow>
+
+        <SettingRow label="Session Order" description="Where new cards fall relative to due reviews in the queue">
+          <Select
+            options={NEW_CARDS_POSITION_OPTIONS}
+            value={settings.newCardsPosition}
+            onChange={(v) => patch({ newCardsPosition: v as SrsSettingsPayload['newCardsPosition'] })}
           />
         </SettingRow>
       </SettingSection>

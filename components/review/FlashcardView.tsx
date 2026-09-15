@@ -4,15 +4,26 @@ import { ExternalLink, LoaderCircle, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Content, Heading, Muted } from '@/components/ui/Typography';
+import { Content, Heading } from '@/components/ui/Typography';
+import { StatusDots } from '@/components/reader/StatusDots';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { useSentenceAudioButton } from '@/lib/hooks/useSentenceAudioButton';
+import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { SrsCard, SrsGrade } from '@/lib/types/api';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
   tense: 'Tense', mood: 'Mood', person: 'Person', number: 'Number',
   gender: 'Gender', case: 'Case', voice: 'Voice', aspect: 'Aspect',
+};
+
+const STATUS_LABELS: Record<VocabularyStatus, string> = {
+  [VocabularyStatus.UNKNOWN]: 'Unknown',
+  [VocabularyStatus.NEWLY_SEEN]: 'Newly Seen',
+  [VocabularyStatus.FAMILIAR]: 'Familiar',
+  [VocabularyStatus.KNOWN]: 'Known',
+  [VocabularyStatus.WELL_KNOWN]: 'Well Known',
+  [VocabularyStatus.IGNORE]: 'Ignore',
 };
 
 function boldTarget(content: string, targetSurface: string) {
@@ -98,6 +109,7 @@ export function FlashcardView({
             <Heading size="2xl" as="h2" className="font-serif">
               {card.lemma}
             </Heading>
+            <StatusDots status={card.status} />
             {wordAudioEnabled && (
               <SpeakerButton state={wordAudio.state} onPlay={wordAudio.play} label={`Hear pronunciation of ${card.lemma}`} />
             )}
@@ -116,11 +128,12 @@ export function FlashcardView({
         </div>
       ) : (
         <div className="space-y-4 border-t border-border pt-4">
-          {/* Root word + audio */}
+          {/* Root word + status + audio */}
           <div className="flex items-center gap-2">
             <Heading size="xl" as="h3" className="font-serif">
               {card.lemma}
             </Heading>
+            <StatusDots status={card.status} />
             {wordAudioEnabled && (
               <SpeakerButton state={wordAudio.state} onPlay={wordAudio.play} label={`Hear pronunciation of ${card.lemma}`} />
             )}
@@ -205,18 +218,14 @@ export function FlashcardView({
             </div>
             <div className="flex gap-3 text-center">
               <p className="flex-1 flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
-                <Kbd>1</Kbd> Didn&apos;t Know
+                <Kbd>1</Kbd> → {STATUS_LABELS[card.preview.didntKnow.status]} · {card.preview.didntKnow.intervalDays}d
               </p>
               <p className="flex-1 flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
-                <Kbd>2</Kbd> Did Know
+                <Kbd>2</Kbd> → {STATUS_LABELS[card.preview.knew.status]} · {card.preview.knew.intervalDays}d
               </p>
             </div>
           </div>
         </div>
-      )}
-
-      {!card.sentence && card.cardType === 'SENTENCE' && !revealed && (
-        <Muted size="xs">No example sentence available — reviewing word only.</Muted>
       )}
     </Card>
   );

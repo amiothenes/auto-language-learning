@@ -48,6 +48,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json<ApiErrorResponse>({ error: `Invalid ${key}: ${value}` }, { status: 400 });
     }
   }
+  if (body.newCardsPosition !== undefined && body.newCardsPosition !== 'end' && body.newCardsPosition !== 'interleaved') {
+    return NextResponse.json<ApiErrorResponse>(
+      { error: `Invalid newCardsPosition: ${body.newCardsPosition}` },
+      { status: 400 }
+    );
+  }
 
   const current = await getSrsSettings(user.id, languageId);
   const merged: SrsSettingsPayload = { ...current, ...body };
@@ -64,6 +70,7 @@ export async function PUT(request: NextRequest) {
       typeSwitchStatus: merged.typeSwitchStatus,
       sentenceAudioEnabled: merged.sentenceAudioEnabled,
       wordAudioEnabled: merged.wordAudioEnabled,
+      newCardsPosition: merged.newCardsPosition,
     })
     .onConflictDoUpdate({
       target: [srsSettings.userId, srsSettings.languageId],
@@ -75,6 +82,7 @@ export async function PUT(request: NextRequest) {
         typeSwitchStatus: merged.typeSwitchStatus,
         sentenceAudioEnabled: merged.sentenceAudioEnabled,
         wordAudioEnabled: merged.wordAudioEnabled,
+        newCardsPosition: merged.newCardsPosition,
         updatedAt: new Date(),
       },
     });

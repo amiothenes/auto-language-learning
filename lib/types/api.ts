@@ -408,6 +408,16 @@ export interface SrsCardSource {
   seriesName: string | null;
 }
 
+export interface SrsCardGradeOutcome {
+  status: VocabularyStatus;
+  intervalDays: number;
+}
+
+export interface SrsCardPreview {
+  knew: SrsCardGradeOutcome;
+  didntKnow: SrsCardGradeOutcome;
+}
+
 export interface SrsCard {
   wordId: string;
   cardType: SrsCardType;
@@ -422,6 +432,10 @@ export interface SrsCard {
   source: SrsCardSource | null;
   /** True when this word has no wordReviews row yet (first-ever review). */
   isNew: boolean;
+  /** Current learning status, for the on-card status badge. */
+  status: VocabularyStatus;
+  /** What grading this card as "Didn't Know" / "Did Know" will actually do — computed with the same SM-2/status-step logic POST /api/srs/review uses, so it can never drift from the real outcome. */
+  preview: SrsCardPreview;
 }
 
 export interface SrsSessionResponse {
@@ -447,6 +461,8 @@ export interface SrsReviewResponse {
   isNew: boolean;
 }
 
+export type SrsNewCardsPosition = 'end' | 'interleaved';
+
 export interface SrsSettingsPayload {
   newCardsPerDay: number;
   /** null = unlimited */
@@ -456,8 +472,35 @@ export interface SrsSettingsPayload {
   typeSwitchStatus: VocabularyStatus;
   sentenceAudioEnabled: boolean;
   wordAudioEnabled: boolean;
+  /** Where new cards fall in the session queue relative to due reviews. */
+  newCardsPosition: SrsNewCardsPosition;
 }
 
 export interface SrsSettingsResponse {
   settings: SrsSettingsPayload;
+}
+
+// ============================================================================
+// SRS Insights — GET /api/srs/forecast, GET /api/srs/activity
+// ============================================================================
+
+export interface SrsForecastBucket {
+  /** ISO date (YYYY-MM-DD) */
+  date: string;
+  count: number;
+}
+
+export interface SrsForecastResponse {
+  buckets: SrsForecastBucket[];
+}
+
+export interface SrsActivityBucket {
+  /** ISO date (YYYY-MM-DD) */
+  date: string;
+  reviews: number;
+  newCards: number;
+}
+
+export interface SrsActivityResponse {
+  buckets: SrsActivityBucket[];
 }
