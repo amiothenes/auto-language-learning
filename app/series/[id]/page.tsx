@@ -585,6 +585,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                     wordCount={text.wordCount}
                     knownPercentage={text.knownPercentage}
                     lastRead={text.lastRead}
+                    hasBeenRead={text.hasBeenRead}
                     preview={text.preview}
                     onDelete={setDeleteTextTarget}
                     onEdit={setEditTextTarget}

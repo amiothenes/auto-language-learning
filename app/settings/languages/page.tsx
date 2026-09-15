@@ -348,6 +348,7 @@ export default function LanguagesSettingsPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddLanguage}
+        existingCodes={languages.map((l) => l.code)}
       />
 
       {ToastComponent}

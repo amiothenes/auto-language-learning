@@ -8,6 +8,7 @@ interface TextListItemProps {
   wordCount: number;
   knownPercentage: number;
   lastViewed: string;
+  hasBeenRead: boolean;
   onClick?: () => void;
   isResume?: boolean;
   paragraphIndex?: number;
@@ -20,6 +21,7 @@ export function TextListItem({
   wordCount,
   knownPercentage,
   lastViewed,
+  hasBeenRead,
   onClick,
   isResume = false,
   paragraphIndex,
@@ -79,10 +81,18 @@ export function TextListItem({
         </div>
       </div>
       <div className="text-left md:text-right shrink-0">
-        <Muted size="xs">Last read</Muted>
-        <Body size="sm" weight="medium">
-          {lastViewed}
-        </Body>
+        {hasBeenRead ? (
+          <>
+            <Muted size="xs">Last read</Muted>
+            <Body size="sm" weight="medium">
+              {lastViewed}
+            </Body>
+          </>
+        ) : (
+          <Body size="sm" weight="medium">
+            Never opened
+          </Body>
+        )}
       </div>
     </div>
   );

@@ -369,6 +369,7 @@ function SeriesPageContent() {
                       wordCount={text.wordCount}
                       knownPercentage={text.knownPercentage}
                       lastRead={text.lastRead}
+                      hasBeenRead={text.hasBeenRead}
                       preview={text.preview}
                       seriesName={text.seriesName ?? undefined}
                       dateAdded={formatRelativeTime(text.createdAt)}

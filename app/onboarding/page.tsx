@@ -5,15 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { PRESET_LANGUAGES } from '@/lib/languages/presets';
 
-const AVAILABLE_LANGUAGES = [
-  { code: 'es', name: 'Spanish', flag: '🇪🇸', googleTTSCode: 'es-ES', includeForeignScript: false },
-  { code: 'fr', name: 'French', flag: '🇫🇷', googleTTSCode: 'fr-FR', includeForeignScript: false },
-  { code: 'ru', name: 'Russian', flag: '🇷🇺', googleTTSCode: 'ru-RU', includeForeignScript: true },
-  { code: 'en', name: 'English', flag: '🇬🇧', googleTTSCode: 'en-US', includeForeignScript: false },
-] as const;
-
-type LangCode = (typeof AVAILABLE_LANGUAGES)[number]['code'];
+type LangCode = (typeof PRESET_LANGUAGES)[number]['code'];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -29,7 +23,7 @@ export default function OnboardingPage() {
     setError('');
     setLoading(true);
 
-    const lang = AVAILABLE_LANGUAGES.find((l) => l.code === selected)!;
+    const lang = PRESET_LANGUAGES.find((l) => l.code === selected)!;
 
     try {
       const res = await fetch('/api/languages', {
@@ -38,8 +32,8 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           code: lang.code,
           name: lang.name,
-          isRTL: false,
-          googleTTSCode: lang.googleTTSCode,
+          isRTL: lang.rtl,
+          googleTTSCode: lang.ttsCode,
           includeForeignScript: lang.includeForeignScript,
           defaultTranslationLangCode: 'en',
         }),
@@ -77,7 +71,7 @@ export default function OnboardingPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {AVAILABLE_LANGUAGES.map((lang) => (
+          {PRESET_LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               type="button"

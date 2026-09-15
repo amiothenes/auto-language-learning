@@ -129,6 +129,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
                 wordCount={text.wordCount}
                 knownPercentage={text.knownPercentage}
                 lastViewed={text.lastRead}
+                hasBeenRead={text.hasBeenRead}
                 onClick={() => router.push(`/reader/${text.id}`)}
                 isResume={isResume}
                 paragraphIndex={isResume ? lastPosition!.paragraphIndex : undefined}
