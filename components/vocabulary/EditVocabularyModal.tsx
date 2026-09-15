@@ -154,7 +154,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
                     type="button"
                     onClick={() => setStatus(opt.value)}
                     className={cn(
-                      'px-3 py-2 rounded font-sans text-ui-xs font-medium transition-all text-center',
+                      'px-3 py-2 rounded font-sans text-ui-xs font-medium transition-all text-center cursor-pointer',
                       status === opt.value
                         ? 'ring-2 ring-primary ring-offset-1 scale-[1.03]'
                         : 'opacity-60 hover:opacity-90'

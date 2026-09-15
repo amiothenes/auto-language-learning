@@ -114,7 +114,7 @@ export function Toast({
 
         <button
           onClick={handleClose}
-          className="shrink-0 text-muted hover:text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
+          className="shrink-0 text-muted hover:text-ink transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded cursor-pointer"
           aria-label="Dismiss notification"
         >
           <X size={16} strokeWidth={2} />

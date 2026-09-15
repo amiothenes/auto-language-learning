@@ -83,7 +83,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => setSelected(lang.code)}
               className={`
-                relative flex flex-col items-center gap-2 p-5 rounded-card border transition-all
+                relative flex flex-col items-center gap-2 p-5 rounded-card border transition-all cursor-pointer
                 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                 ${
                   selected === lang.code

@@ -227,7 +227,7 @@ export function MobileWordSheet({
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); dismiss(); }}
-              className="p-1 text-muted hover:text-ink transition-colors"
+              className="p-1 text-muted hover:text-ink transition-colors cursor-pointer"
               aria-label="Close word details"
             >
               <X size={18} strokeWidth={1.5} />
@@ -243,7 +243,7 @@ export function MobileWordSheet({
               type="button"
               onClick={(e) => { e.stopPropagation(); playAudio(); }}
               disabled={audioState === 'loading'}
-              className="text-muted hover:text-primary transition-colors p-1 shrink-0 disabled:opacity-50"
+              className="text-muted hover:text-primary transition-colors p-1 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label={`Hear pronunciation of ${wordData.lemma}`}
             >
               {audioState === 'loading' ? (
@@ -276,7 +276,7 @@ export function MobileWordSheet({
                 <button
                   disabled={isFirstTest}
                   onClick={() => { if (!isFirstTest) setEditingTranslation(true); }}
-                  className={cn('w-full text-left group', isFirstTest && 'cursor-default')}
+                  className="w-full text-left group cursor-pointer disabled:cursor-not-allowed"
                 >
                   <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
                     {translation || (
@@ -332,7 +332,7 @@ export function MobileWordSheet({
             <div className="flex justify-center mt-3 mb-2">
               <button
                 onClick={() => handleGrade(VocabularyStatus.IGNORE)}
-                className="flex items-center gap-1.5 font-sans text-ui-xs text-muted hover:text-ink transition-colors py-1 px-2"
+                className="flex items-center gap-1.5 font-sans text-ui-xs text-muted hover:text-ink transition-colors py-1 px-2 cursor-pointer"
               >
                 <Ban size={11} strokeWidth={1.5} />
                 Ignore word
@@ -363,7 +363,7 @@ export function MobileWordSheet({
                           color: isActive ? 'var(--ink)' : 'var(--muted)',
                         }}
                         className={cn(
-                          'flex-1 h-8 rounded-sm font-sans text-[10px] font-medium transition-all active:scale-95 flex items-center justify-center gap-1',
+                          'flex-1 h-8 rounded-sm font-sans text-[10px] font-medium transition-all active:scale-95 flex items-center justify-center gap-1 cursor-pointer',
                           isActive ? 'border-2 font-semibold' : 'border',
                         )}
                       >

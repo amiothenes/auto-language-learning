@@ -204,7 +204,7 @@ export function AddLanguageModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-muted hover:text-ink transition-colors"
+                className="text-muted hover:text-ink transition-colors cursor-pointer"
                 aria-label="Close dialog"
               >
                 <X size={20} strokeWidth={1.5} />

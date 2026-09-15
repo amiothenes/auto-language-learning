@@ -61,7 +61,7 @@ const STATUS_LABEL: Record<VocabularyStatus, string> = {
 
 // Shared base for all action buttons
 const BTN_BASE =
-  'flex items-center justify-center gap-1.5 h-[34px] px-3 rounded font-sans text-ui-xs font-medium transition-all active:scale-95 whitespace-nowrap select-none';
+  'flex items-center justify-center gap-1.5 h-[34px] px-3 rounded font-sans text-ui-xs font-medium transition-all active:scale-95 whitespace-nowrap select-none cursor-pointer';
 
 const BTN_PRIMARY = cn(BTN_BASE, 'bg-primary text-white border border-primary shadow-raised hover:brightness-90');
 const BTN_SECONDARY = cn(BTN_BASE, 'border border-border-strong bg-paper hover:bg-desk text-ink');

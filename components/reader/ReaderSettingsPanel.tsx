@@ -56,7 +56,7 @@ function SegmentedControl({
           key={opt.value}
           onClick={() => onChange(opt.value)}
           className={cn(
-            'flex-1 h-8 rounded font-sans text-ui-xs transition-all active:scale-95',
+            'flex-1 h-8 rounded font-sans text-ui-xs transition-all active:scale-95 cursor-pointer',
             value === opt.value
               ? 'bg-primary/10 border-2 border-primary/40 text-primary font-semibold'
               : 'border border-border text-muted hover:bg-desk',
@@ -136,7 +136,7 @@ export function ReaderSettingsPanel({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <p className="font-sans text-ui-sm font-semibold text-ink">Reader Settings</p>
-          <button onClick={onClose} className="text-muted hover:text-ink transition-colors -mr-1 p-0.5">
+          <button onClick={onClose} className="text-muted hover:text-ink transition-colors -mr-1 p-0.5 cursor-pointer">
             <X size={14} strokeWidth={1.5} />
           </button>
         </div>
@@ -217,7 +217,7 @@ export function ReaderSettingsPanel({
             aria-label="Show well-known words"
             onClick={() => updateShowWellKnownWords(!settings.showWellKnownWords)}
             className={cn(
-              'relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0',
+              'relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 cursor-pointer',
               settings.showWellKnownWords ? 'bg-primary' : 'bg-border',
             )}
           >
@@ -247,10 +247,10 @@ export function ReaderSettingsPanel({
 
         {/* Footer links */}
         <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">
-          <button className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors">
+          <button className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors cursor-pointer">
             Reader Guide
           </button>
-          <button className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors">
+          <button className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors cursor-pointer">
             Keyboard Shortcuts
           </button>
         </div>

@@ -160,7 +160,7 @@ export default function ReviewPage() {
           type="button"
           onClick={toggleInsights}
           aria-expanded={insightsOpen}
-          className="inline-flex items-center gap-1 font-sans text-ui-xs text-muted hover:text-ink transition-colors"
+          className="inline-flex items-center gap-1 font-sans text-ui-xs text-muted hover:text-ink transition-colors cursor-pointer"
         >
           {insightsOpen ? <ChevronDown size={12} strokeWidth={2} /> : <ChevronRight size={12} strokeWidth={2} />}
           Insights

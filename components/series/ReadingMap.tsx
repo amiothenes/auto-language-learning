@@ -89,7 +89,7 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
         <div ref={infoRef} className="relative">
           <button
             onClick={() => setShowInfo((v) => !v)}
-            className="text-muted hover:text-ink transition-colors p-0.5 rounded"
+            className="text-muted hover:text-ink transition-colors p-0.5 rounded cursor-pointer"
             aria-label="Reading map guide"
           >
             <HelpCircle size={13} strokeWidth={1.5} />
@@ -101,7 +101,7 @@ export function ReadingMap({ texts, onTextClick, defaultCollapsed = true }: Read
               </p>
               <button
                 onClick={() => setShowInfo(false)}
-                className="mt-2 font-sans text-ui-xs text-primary hover:underline"
+                className="mt-2 font-sans text-ui-xs text-primary hover:underline cursor-pointer"
               >
                 Got it
               </button>

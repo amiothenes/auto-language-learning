@@ -125,7 +125,7 @@ export function WordDetailsPanel({
                   type="button"
                   onClick={playAudio}
                   disabled={audioState === 'loading'}
-                  className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 disabled:opacity-50"
+                  className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Hear pronunciation of ${wordData.lemma}`}
                 >
                   {audioState === 'loading' ? (

@@ -115,7 +115,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setMode('password')}
-                className={`flex-1 py-1.5 font-sans text-ui-sm transition-colors ${
+                className={`flex-1 py-1.5 font-sans text-ui-sm transition-colors cursor-pointer ${
                   mode === 'password' ? 'bg-primary text-white' : 'bg-transparent text-muted hover:bg-desk'
                 }`}
               >
@@ -124,7 +124,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setMode('magic')}
-                className={`flex-1 py-1.5 font-sans text-ui-sm transition-colors ${
+                className={`flex-1 py-1.5 font-sans text-ui-sm transition-colors cursor-pointer ${
                   mode === 'magic' ? 'bg-primary text-white' : 'bg-transparent text-muted hover:bg-desk'
                 }`}
               >

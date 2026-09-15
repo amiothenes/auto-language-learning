@@ -245,14 +245,14 @@ export function TextInfo({
               <button
                 type="button"
                 onClick={handleExportTxt}
-                className="w-full text-left px-3 py-2 font-sans text-ui-sm text-ink hover:bg-desk transition-colors"
+                className="w-full text-left px-3 py-2 font-sans text-ui-sm text-ink hover:bg-desk transition-colors cursor-pointer"
               >
                 Export as TXT
               </button>
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="w-full text-left px-3 py-2 font-sans text-ui-sm text-ink hover:bg-desk transition-colors"
+                className="w-full text-left px-3 py-2 font-sans text-ui-sm text-ink hover:bg-desk transition-colors cursor-pointer"
               >
                 Export as CSV
               </button>

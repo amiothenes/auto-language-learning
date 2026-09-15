@@ -61,7 +61,7 @@ export function TextsFilterBar({
             key={tag}
             onClick={() => toggleTag(tag)}
             className={cn(
-              'px-3 py-1.5 font-sans text-ui-xs rounded transition-all',
+              'px-3 py-1.5 font-sans text-ui-xs rounded transition-all cursor-pointer',
               active
                 ? 'bg-primary text-white'
                 : 'bg-paper border border-border text-ink hover:bg-desk'
@@ -79,7 +79,7 @@ export function TextsFilterBar({
       <div ref={sortRef} className="relative shrink-0">
         <button
           onClick={() => setIsSortOpen((v) => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 font-sans text-ui-xs text-ink bg-paper border border-border rounded hover:bg-desk transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 font-sans text-ui-xs text-ink bg-paper border border-border rounded hover:bg-desk transition-all cursor-pointer"
           aria-label="Sort texts"
         >
           <SlidersHorizontal size={13} className="text-muted" strokeWidth={1.5} />
@@ -101,7 +101,7 @@ export function TextsFilterBar({
                   setIsSortOpen(false);
                 }}
                 className={cn(
-                  'w-full flex items-center justify-between px-4 py-2.5 font-sans text-ui-sm text-left hover:bg-desk transition-colors',
+                  'w-full flex items-center justify-between px-4 py-2.5 font-sans text-ui-sm text-left hover:bg-desk transition-colors cursor-pointer',
                   sortBy === option ? 'text-primary font-medium' : 'text-ink'
                 )}
               >

@@ -134,7 +134,7 @@ export function Sidebar() {
                         router.push('/dashboard');
                       }}
                       className={cn(
-                        'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
+                        'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer',
                         lang.code === selectedLanguage
                           ? 'bg-primary text-white font-medium'
                           : highlightedIndex === index

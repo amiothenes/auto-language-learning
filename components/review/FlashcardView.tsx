@@ -52,7 +52,7 @@ function SpeakerButton({ state, onPlay, label }: { state: string; onPlay: () => 
       type="button"
       onClick={onPlay}
       disabled={state === 'loading'}
-      className="text-muted hover:text-primary transition-colors p-1 shrink-0 disabled:opacity-50"
+      className="text-muted hover:text-primary transition-colors p-1 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       aria-label={label}
     >
       {state === 'loading' ? (

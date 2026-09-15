@@ -69,7 +69,7 @@ interface ContextualActionsProps {
 
 function statusBtn(target: VocabularyStatus, extra: string): string {
   return cn(
-    'flex-1 rounded font-sans text-ui-xs font-medium transition-all active:scale-95',
+    'flex-1 rounded font-sans text-ui-xs font-medium transition-all active:scale-95 cursor-pointer',
     STATUS_BTN[target],
     extra,
   );

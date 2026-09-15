@@ -89,7 +89,7 @@ export function MiniMap({
                   onBarClick(index);
                 }}
                 className={cn(
-                  "transition-all hover:brightness-110",
+                  "transition-all hover:brightness-110 cursor-pointer",
                   isActive && "ring-2 ring-primary ring-inset"
                 )}
                 style={{ 
@@ -122,7 +122,7 @@ export function MiniMap({
                       setShowDetails(false);
                     }}
                     className={cn(
-                      "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-desk transition-colors text-left",
+                      "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-desk transition-colors text-left cursor-pointer",
                       isActive && "bg-desk ring-1 ring-primary"
                     )}
                   >

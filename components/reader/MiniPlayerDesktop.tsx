@@ -69,7 +69,7 @@ export function MiniPlayerDesktop({
           type="button"
           onClick={onPrevious}
           disabled={disabled || !started}
-          className="flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30 shrink-0 cursor-pointer"
+          className="flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 cursor-pointer"
           aria-label="Previous sentence"
         >
           <SkipBack size={13} strokeWidth={2} fill="currentColor" />
@@ -80,7 +80,7 @@ export function MiniPlayerDesktop({
           onClick={onPlayPause}
           disabled={disabled || isLoading}
           className={cn(
-            'flex items-center justify-center w-9 h-9 rounded-full text-paper transition-colors disabled:opacity-40 shrink-0 cursor-pointer',
+            'flex items-center justify-center w-9 h-9 rounded-full text-paper transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer',
             isError ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary/90',
           )}
           aria-label={isError ? 'Narration unavailable — tap to retry' : isPlaying ? 'Pause narration' : 'Play narration'}
@@ -101,7 +101,7 @@ export function MiniPlayerDesktop({
           type="button"
           onClick={onNext}
           disabled={disabled || totalSentences === 0}
-          className="flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30 shrink-0 cursor-pointer"
+          className="flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 cursor-pointer"
           aria-label="Next sentence"
         >
           <SkipForward size={13} strokeWidth={2} fill="currentColor" />
@@ -111,7 +111,7 @@ export function MiniPlayerDesktop({
           type="button"
           onClick={onStop}
           disabled={disabled || !started}
-          className="flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30 shrink-0 cursor-pointer"
+          className="flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0 cursor-pointer"
           aria-label="Stop narration and clear highlight"
           title="Stop"
         >
@@ -144,7 +144,7 @@ export function MiniPlayerDesktop({
         onClick={onToggleTutorMode}
         disabled={disabled}
         className={cn(
-          'w-full flex items-center justify-center gap-1.5 h-7 rounded font-sans text-[10.5px] transition-colors disabled:opacity-40 cursor-pointer',
+          'w-full flex items-center justify-center gap-1.5 h-7 rounded font-sans text-[10.5px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer',
           tutorModeEnabled
             ? 'bg-primary/10 border border-primary/30 text-primary font-medium'
             : 'border border-border text-muted hover:bg-desk',

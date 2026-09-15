@@ -40,7 +40,7 @@ function SegmentedControl({
           key={opt.value}
           onClick={() => onChange(opt.value)}
           className={cn(
-            'flex-1 h-11 rounded font-sans text-ui-xs transition-all active:scale-95',
+            'flex-1 h-11 rounded font-sans text-ui-xs transition-all active:scale-95 cursor-pointer',
             value === opt.value
               ? 'bg-primary-10 border-2 border-primary/40 text-primary font-semibold'
               : 'border border-border text-muted hover:bg-desk',
@@ -98,7 +98,7 @@ export function MobileSettingsSheet({ onClose, initialTab = 'reading' }: MobileS
           <p className="font-sans text-ui-sm font-semibold text-ink">Reader Settings</p>
           <button
             onClick={onClose}
-            className="text-muted hover:text-ink transition-colors p-1 -mr-1"
+            className="text-muted hover:text-ink transition-colors p-1 -mr-1 cursor-pointer"
             aria-label="Close settings"
           >
             <X size={18} strokeWidth={1.5} />
@@ -119,7 +119,7 @@ export function MobileSettingsSheet({ onClose, initialTab = 'reading' }: MobileS
                 aria-selected={tab === t.value}
                 onClick={() => setTab(t.value)}
                 className={cn(
-                  'flex-1 h-8 rounded font-sans text-ui-xs transition-all',
+                  'flex-1 h-8 rounded font-sans text-ui-xs transition-all cursor-pointer',
                   tab === t.value ? 'bg-paper text-ink font-semibold shadow-raised' : 'text-muted',
                 )}
               >
@@ -186,7 +186,7 @@ export function MobileSettingsSheet({ onClose, initialTab = 'reading' }: MobileS
               aria-label="Show well-known words"
               onClick={() => updateShowWellKnownWords(!settings.showWellKnownWords)}
               className={cn(
-                'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
+                'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 cursor-pointer',
                 settings.showWellKnownWords ? 'bg-primary' : 'bg-border',
               )}
             >
