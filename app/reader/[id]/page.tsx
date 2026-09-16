@@ -71,10 +71,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     const cachedText = queryClient.getQueryData<TextData>(['text', id]);
     if (cachedText?.seriesId) {
       const saved = localStorage.getItem(`series-sort-${cachedText.seriesId}`);
-      const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+      const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent', 'custom'];
       if (saved && valid.includes(saved)) return saved;
     }
-    return 'title-asc';
+    return 'recent';
   });
   const textQuery = useText(id);
   const instancesQuery = useWordInstances(id);
@@ -440,7 +440,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   useEffect(() => {
     if (textData?.seriesId) {
       const saved = localStorage.getItem(`series-sort-${textData.seriesId}`);
-      const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+      const valid = ['title-asc', 'progress-desc', 'progress-asc', 'recent', 'custom'];
       if (saved && valid.includes(saved)) setAdjacentSort(saved);
     }
   }, [textData?.seriesId, id]);

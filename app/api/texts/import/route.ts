@@ -10,7 +10,7 @@ import {
   type NewTag,
   type NewTextTag,
 } from '@/lib/db/schema';
-import { eq, inArray, and } from 'drizzle-orm';
+import { eq, inArray, and, sql } from 'drizzle-orm';
 import {
   processTextForImport,
   TextProcessingError,
@@ -139,6 +139,14 @@ export async function POST(request: NextRequest) {
       console.log(`[Text Import] Series auto-created: ${newSeries.id} ("${newSeries.name}")`);
     }
 
+    // New texts are appended after whatever's already in the series (so a
+    // manually-arranged Custom Order isn't disturbed by an import), rather
+    // than always starting back at 1.
+    const [{ maxOrder }] = await db
+      .select({ maxOrder: sql<number>`COALESCE(MAX(${texts.order}), 0)` })
+      .from(texts)
+      .where(eq(texts.seriesId, resolvedSeriesId));
+
     // ========================================================================
     // 4. Split Content into Chunks + Process Each
     // ========================================================================
@@ -161,7 +169,7 @@ export async function POST(request: NextRequest) {
           chunks[i],
           language.id,
           resolvedSeriesId,
-          i + 1,
+          maxOrder + i + 1,
           undefined,
           user.id
         );

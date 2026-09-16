@@ -18,12 +18,14 @@ import type { ImportTextResponse } from '@/lib/types/api';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { TextCard } from '@/components/series/TextCard';
+import { TextListRow } from '@/components/series/TextListRow';
+import { TextListRowSkeleton } from '@/components/series/TextListRowSkeleton';
 import { TextsFilterBar } from '@/components/series/TextsFilterBar';
 import type { TextSortOption } from '@/lib/types/ui';
 import { compareByRecentlyRead } from '@/lib/utils/textSort';
 import { Search, Plus, ChevronDown, ArrowLeft } from 'lucide-react';
 import type { SeriesSortOption } from '@/lib/types';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatRelativeTime, cn } from '@/lib/utils';
 import type { NewSeriesData } from '@/lib/types/forms';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
@@ -84,7 +86,13 @@ function SeriesPageContent() {
   const [isNewSeriesModalOpen, setIsNewSeriesModalOpen] = useState(false);
   const [textsSortBy, setTextsSortBy] = useState<TextSortOption>('date-added');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [textsViewMode, setTextsViewMode] = useState<'list' | 'cards'>('cards');
   const sortRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('all-texts-view');
+    if (saved === 'list' || saved === 'cards') setTextsViewMode(saved);
+  }, []);
 
   useEffect(() => {
     document.title = 'Series | Verbista';
@@ -318,21 +326,29 @@ function SeriesPageContent() {
           </header>
 
           {textsQuery.isPending ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-paper border border-border rounded-card p-5 space-y-3">
-                  <SkeletonText width="w-3/4" className="h-5" />
-                  <SkeletonText width="w-1/3" className="h-3" />
-                  <SkeletonText width="w-full" className="h-3 mt-2" />
-                  <SkeletonText width="w-4/5" className="h-3" />
-                  <div className="flex items-center gap-3 pt-1">
-                    <SkeletonText width="w-20" className="h-3" />
-                    <SkeletonText width="w-16" className="h-3" />
+            textsViewMode === 'list' ? (
+              <div>
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <TextListRowSkeleton key={i} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-paper border border-border rounded-card p-5 space-y-3">
+                    <SkeletonText width="w-3/4" className="h-5" />
+                    <SkeletonText width="w-1/3" className="h-3" />
+                    <SkeletonText width="w-full" className="h-3 mt-2" />
+                    <SkeletonText width="w-4/5" className="h-3" />
+                    <div className="flex items-center gap-3 pt-1">
+                      <SkeletonText width="w-20" className="h-3" />
+                      <SkeletonText width="w-16" className="h-3" />
+                    </div>
+                    <SkeletonText width="w-full" className="h-1.5 rounded-full" />
                   </div>
-                  <SkeletonText width="w-full" className="h-1.5 rounded-full" />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )
           ) : !textsQuery.data?.length ? (
             <EmptyState
               illustration="pages"
@@ -345,13 +361,36 @@ function SeriesPageContent() {
             />
           ) : (
             <div className="space-y-4">
-              <TextsFilterBar
-                sortBy={textsSortBy}
-                onSortChange={setTextsSortBy}
-                selectedTags={selectedTags}
-                availableTags={availableTags}
-                onTagsChange={setSelectedTags}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <TextsFilterBar
+                    sortBy={textsSortBy}
+                    onSortChange={setTextsSortBy}
+                    selectedTags={selectedTags}
+                    availableTags={availableTags}
+                    onTagsChange={setSelectedTags}
+                  />
+                </div>
+
+                {/* List / Cards toggle */}
+                <div className="flex border border-border rounded overflow-hidden shrink-0">
+                  {(['list', 'cards'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      className={cn(
+                        'px-3 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
+                        textsViewMode === mode ? 'bg-primary text-white' : 'text-muted hover:text-ink'
+                      )}
+                      onClick={() => {
+                        setTextsViewMode(mode);
+                        localStorage.setItem('all-texts-view', mode);
+                      }}
+                    >
+                      {mode === 'list' ? 'List' : 'Cards'}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {filteredSortedTexts.length === 0 ? (
                 <EmptyState
@@ -359,6 +398,22 @@ function SeriesPageContent() {
                   title="No matching texts"
                   description="Try removing some filters"
                 />
+              ) : textsViewMode === 'list' ? (
+                <div>
+                  {filteredSortedTexts.map((text, index) => (
+                    <TextListRow
+                      key={text.id}
+                      id={text.id}
+                      position={index + 1}
+                      title={text.title}
+                      seriesName={text.seriesName ?? undefined}
+                      wordCount={text.wordCount}
+                      knownPercentage={text.knownPercentage}
+                      isCurrentlyReading={false}
+                      onRead={() => router.push(`/reader/${text.id}`)}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredSortedTexts.map((text) => (

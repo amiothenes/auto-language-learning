@@ -51,7 +51,10 @@ export function EmptyStateIllustration({
         height={size}
         style={{ width: size, height: size, objectFit: 'contain' }}
       />
-      {/* Risograph grain overlay — subtle analog texture on empty-state line art */}
+      {/* Risograph grain overlay — subtle analog texture on empty-state line art.
+          Clipped to the same disc (cx/cy = center, r = 52/128 of size) every
+          illustration svg draws its own backdrop circle with, so the grain
+          doesn't bleed past the circle into a visible square. */}
       <svg
         className="absolute inset-0 pointer-events-none"
         width={size}
@@ -71,6 +74,9 @@ export function EmptyStateIllustration({
             <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blended" />
             <feComposite in="blended" in2="SourceGraphic" operator="in" />
           </filter>
+          <clipPath id={`${filterId}-disc`}>
+            <circle cx={size / 2} cy={size / 2} r={(size * 52) / 128} />
+          </clipPath>
         </defs>
         <rect
           width={size}
@@ -79,6 +85,7 @@ export function EmptyStateIllustration({
           filter={`url(#${filterId})`}
           opacity="0.06"
           className="text-ink"
+          clipPath={`url(#${filterId}-disc)`}
         />
       </svg>
     </div>

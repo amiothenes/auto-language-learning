@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { PublicStatsResponse } from '@/app/api/public/stats/route';
+import { EmptyStateIllustration } from '@/components/ui/EmptyStateIllustration';
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ??
@@ -47,8 +48,8 @@ export async function generateMetadata({
   const stats = lang ? await fetchPublicStats(userId, lang) : null;
 
   const title = stats
-    ? `${stats.totalKnown.toLocaleString('en-US')} words known in ${stats.languageName} — Verbista`
-    : 'My progress — Verbista';
+    ? `${stats.totalKnown.toLocaleString('en-US')} words known in ${stats.languageName}`
+    : 'My progress';
   const ogImage = lang
     ? `${APP_URL}/og?userId=${encodeURIComponent(userId)}&lang=${encodeURIComponent(lang)}`
     : `${APP_URL}/og`;
@@ -134,9 +135,15 @@ export default async function SharePage({
             </div>
           </>
         ) : (
-          <div className="py-8">
-            <span className="block font-sans text-ui-md text-muted">
-              Vocabulary progress not available.
+          <div className="py-4">
+            <div className="mb-4 flex justify-center">
+              <EmptyStateIllustration type="cloudoff" size={96} />
+            </div>
+            <span className="block font-sans text-ui-base font-semibold text-ink mb-1.5">
+              No progress to show
+            </span>
+            <span className="block font-sans text-ui-sm text-muted mb-6">
+              This link doesn&rsquo;t have any vocabulary progress to display.
             </span>
           </div>
         )}

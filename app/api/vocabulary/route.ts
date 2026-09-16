@@ -16,7 +16,7 @@ import { requireUser } from '@/lib/auth/requireUser';
  *   languageCode  string  required
  *   status        string  optional — one of VocabularyStatus enum values
  *   search        string  optional — ilike match on lemma
- *   sort          string  optional — 'name-asc' | 'dict-freq-desc' | 'user-freq-desc' | 'status'
+ *   sort          string  optional — 'recent' | 'name-asc' | 'dict-freq-desc' | 'user-freq-desc' | 'status'
  *   page          number  optional — default 1
  *   limit         number  optional — default 50, max 100
  */
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const languageCode = searchParams.get('languageCode');
     const statusParam = searchParams.get('status');
     const searchParam = searchParams.get('search');
-    const sortParam = searchParams.get('sort') ?? 'name-asc';
+    const sortParam = searchParams.get('sort') ?? 'recent';
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)));
 
@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(words.status, statusParam as VocabularyStatus));
     } else {
       conditions.push(ne(words.status, VocabularyStatus.IGNORE));
+      conditions.push(ne(words.status, VocabularyStatus.UNKNOWN));
     }
 
     if (searchParam?.trim()) {
@@ -75,6 +76,9 @@ export async function GET(request: NextRequest) {
 
     let orderByClause;
     switch (sortParam) {
+      case 'recent':
+        orderByClause = desc(words.updatedAt);
+        break;
       case 'dict-freq-desc':
         orderByClause = desc(words.dictionaryFrequency);
         break;

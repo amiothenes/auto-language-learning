@@ -193,6 +193,14 @@ export type TextSortOption =
   | 'date-added';
 
 /**
+ * Extends TextSortOption with the manual drag-reorder order. Valid only on
+ * the series detail page (and the Reader's prev/next nav for that series) —
+ * a per-series concept, not meaningful across series, so intentionally
+ * excluded from TextSortOption/TextsFilterBar.
+ */
+export type SeriesDetailSortOption = TextSortOption | 'custom';
+
+/**
  * Sort options for vocabulary list.
  *
  * Determines the order in which vocabulary items are displayed.

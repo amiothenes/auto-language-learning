@@ -6,7 +6,8 @@ import { Content, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { MoreVertical, FileText, Edit, Trash2, Download } from 'lucide-react';
+import { MoreVertical, FileText, Edit, Trash2, Download, GripVertical } from 'lucide-react';
+import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 
 // ============================================================================
 // TextCard Component
@@ -26,6 +27,10 @@ interface TextCardProps {
   onDelete?: (text: { id: string; title: string }) => void;
   onEdit?: (text: { id: string; title: string }) => void;
   onExportOneT?: (text: { id: string; title: string }) => void;
+  /** Passed from useSortable().listeners — attached to the drag handle */
+  dragListeners?: DraggableSyntheticListeners;
+  /** Passed from useSortable().attributes — ARIA props for a11y */
+  dragAttributes?: DraggableAttributes;
 }
 
 export function TextCard({
@@ -41,6 +46,8 @@ export function TextCard({
   onDelete,
   onEdit,
   onExportOneT,
+  dragListeners,
+  dragAttributes,
 }: TextCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -91,17 +98,33 @@ export function TextCard({
       onClick={handleCardClick}
       className="relative"
     >
-      {/* Header: Text Title + Menu Button */}
+      {/* Header: Drag Handle + Text Title + Menu Button */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <Content size="lg" weight="semibold" className="line-clamp-1">
-            {title}
-          </Content>
+          <div className="flex items-center gap-1">
+            {/* Drag handle — shown whenever a parent wires up dnd-kit listeners
+                (i.e. dragging is supported in this context) */}
+            {dragListeners && (
+              <span
+                {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
+                {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
+                onClick={(e) => e.stopPropagation()}
+                className="p-1 -ml-1 shrink-0 rounded hover:bg-desk transition-all cursor-grab touch-none"
+                aria-label="Drag to reorder"
+              >
+                <GripVertical size={16} className="text-muted" strokeWidth={2} />
+              </span>
+            )}
+
+            <Content size="lg" weight="semibold" className="line-clamp-1 flex-1 min-w-0">
+              {title}
+            </Content>
+          </div>
           {seriesName && (
             <Muted size="xs" className="mt-0.5 line-clamp-1">{seriesName}</Muted>
           )}
         </div>
-        
+
         {/* Menu Button - Always visible on mobile, hover-only on desktop */}
         <div ref={menuRef} className="relative">
           <button

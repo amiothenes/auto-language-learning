@@ -11,7 +11,7 @@ import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
 // Types
 // ============================================================================
 
-export type SortOption = 'name-asc' | 'dict-freq-desc' | 'user-freq-desc' | 'status';
+export type SortOption = 'recent' | 'name-asc' | 'dict-freq-desc' | 'user-freq-desc' | 'status';
 
 interface VocabFilterBarProps {
   searchQuery: string;
@@ -78,6 +78,7 @@ export function VocabFilterBar({
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
   const sortOptions: { value: SortOption; label: string }[] = [
+    { value: 'recent', label: 'Recently Updated' },
     { value: 'name-asc', label: 'Name (A-Z)' },
     { value: 'dict-freq-desc', label: 'Dictionary Frequency (High-Low)' },
     { value: 'user-freq-desc', label: 'User Frequency (High-Low)' },

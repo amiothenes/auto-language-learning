@@ -10,14 +10,14 @@ interface TextListRowProps {
   id: string;
   position: number;
   title: string;
+  seriesName?: string;
   wordCount: number;
   knownPercentage: number;
   isCurrentlyReading: boolean;
-  reorderMode: boolean;
   onRead: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onExportOneT: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onExportOneT?: () => void;
   /** Passed from useSortable().listeners — attached to the drag handle */
   dragListeners?: DraggableSyntheticListeners;
   /** Passed from useSortable().attributes — ARIA props for a11y */
@@ -35,10 +35,10 @@ export function TextListRow({
   id,
   position,
   title,
+  seriesName,
   wordCount,
   knownPercentage,
   isCurrentlyReading,
-  reorderMode,
   onRead,
   onEdit,
   onDelete,
@@ -69,32 +69,37 @@ export function TextListRow({
         isCurrentlyReading && 'border-primary/30 bg-primary/3'
       )}
     >
-      {/* Drag handle — listeners from useSortable allow DnD when reorderMode is active */}
-      <span
-        {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
-        {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
-        className={cn(
-          'shrink-0 cursor-grab touch-none',
-          reorderMode ? 'block' : 'hidden'
-        )}
-        aria-label="Drag to reorder"
-      >
-        <GripVertical size={14} className="text-border-strong" strokeWidth={2} />
-      </span>
+      {/* Drag handle — listeners from useSortable; shown whenever a parent wires them up
+          (i.e. dragging is supported in this context), no separate "reorder mode" needed */}
+      {dragListeners && (
+        <span
+          {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
+          {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
+          className="shrink-0 cursor-grab touch-none p-1 -m-1"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical size={14} className="text-border-strong" strokeWidth={2} />
+        </span>
+      )}
 
       {/* Sequence number */}
       <span className="text-ui-xs text-muted w-7 text-right shrink-0 font-sans">
         #{position}
       </span>
 
-      {/* Title — min-w-0 lets truncate actually fire in a flex container */}
-      <span
-        className={cn(
-          'flex-1 min-w-0 text-ui-sm font-sans truncate',
-          isCurrentlyReading ? 'font-semibold' : 'font-medium'
+      {/* Title (+ series name, when shown across multiple series) — min-w-0 lets truncate actually fire in a flex container */}
+      <span className="flex-1 min-w-0 flex flex-col">
+        <span
+          className={cn(
+            'text-ui-sm font-sans truncate',
+            isCurrentlyReading ? 'font-semibold' : 'font-medium'
+          )}
+        >
+          {title}
+        </span>
+        {seriesName && (
+          <span className="text-ui-xs text-muted truncate">{seriesName}</span>
         )}
-      >
-        {title}
       </span>
 
       {/* Word count */}
@@ -130,21 +135,21 @@ export function TextListRow({
         {isMenuOpen && (
           <div className="absolute top-full right-0 mt-1 w-36 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
             <button
-              onClick={() => { setIsMenuOpen(false); onEdit(); }}
+              onClick={() => { setIsMenuOpen(false); onEdit?.(); }}
               className="w-full px-3 py-2 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Edit size={13} className="text-muted" strokeWidth={1.5} />
               Edit
             </button>
             <button
-              onClick={() => { setIsMenuOpen(false); onExportOneT(); }}
+              onClick={() => { setIsMenuOpen(false); onExportOneT?.(); }}
               className="w-full px-3 py-2 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Download size={13} className="text-muted" strokeWidth={1.5} />
               Export 1T Sentences
             </button>
             <button
-              onClick={() => { setIsMenuOpen(false); onDelete(); }}
+              onClick={() => { setIsMenuOpen(false); onDelete?.(); }}
               className="w-full px-3 py-2 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Trash2 size={13} className="text-muted" strokeWidth={1.5} />

@@ -43,7 +43,7 @@ export default function VocabularyPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const [activeStatuses, setActiveStatuses] = useState<Set<VocabularyStatus>>(new Set());
-  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

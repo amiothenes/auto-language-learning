@@ -15,12 +15,13 @@ interface AdjacentTextsResponse {
   next: AdjacentText | null;
 }
 
-type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent';
+type SortOption = 'title-asc' | 'progress-desc' | 'progress-asc' | 'recent' | 'custom';
 
 // ============================================================================
 // GET /api/texts/[id]/adjacent?sort=<option>
 // Returns prev/next text in the same series ordered by the requested sort,
-// matching the client-side sort used in series/[id]. Defaults to title-asc.
+// matching the client-side sort used in series/[id]. Defaults to recent,
+// matching that page's own default.
 // ============================================================================
 
 export async function GET(
@@ -31,7 +32,7 @@ export async function GET(
   if (authError) return authError;
 
   const { id } = await params;
-  const sort = (request.nextUrl.searchParams.get('sort') ?? 'title-asc') as SortOption;
+  const sort = (request.nextUrl.searchParams.get('sort') ?? 'recent') as SortOption;
 
   const current = await db.query.texts.findFirst({
     where: and(eq(texts.id, id), eq(texts.userId, user.id)),
@@ -47,7 +48,7 @@ export async function GET(
 
   const allTexts = await db.query.texts.findMany({
     where: and(eq(texts.seriesId, current.seriesId), eq(texts.userId, user.id)),
-    columns: { id: true, title: true, knownPercentage: true, lastViewedAt: true },
+    columns: { id: true, title: true, knownPercentage: true, lastViewedAt: true, order: true },
   });
 
   const sorted = [...allTexts];
@@ -64,6 +65,9 @@ export async function GET(
         const bTime = b.lastViewedAt?.getTime() ?? 0;
         return bTime - aTime;
       });
+      break;
+    case 'custom':
+      sorted.sort((a, b) => a.order - b.order);
       break;
     default:
       sorted.sort((a, b) => a.title.localeCompare(b.title));

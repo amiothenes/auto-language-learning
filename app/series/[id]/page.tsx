@@ -8,6 +8,7 @@ import {
   DndContext,
   closestCenter,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -17,6 +18,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
 import { KeyboardSensor } from '@dnd-kit/core';
@@ -37,12 +39,12 @@ import { EditTextModal } from '@/components/texts/EditTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
-import { Plus, Upload, ChevronDown, ArrowUpDown, Download } from 'lucide-react';
+import { Plus, Upload, ChevronDown, Download } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
 import type { ImportTextRequest, ImportTextResponse, WordInstanceItem, SentenceListItem } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import type { TextSortOption } from '@/lib/types/ui';
+import type { SeriesDetailSortOption } from '@/lib/types/ui';
 import { compareByRecentlyRead } from '@/lib/utils/textSort';
 import { buildOneTCards, buildOneTCsv, buildOneTCsvWithSource, type OneTCardWithSource } from '@/lib/utils/oneTSentences';
 
@@ -81,7 +83,6 @@ interface SortableTextListRowProps {
   wordCount: number;
   knownPercentage: number;
   isCurrentlyReading: boolean;
-  reorderMode: boolean;
   onRead: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -102,6 +103,45 @@ function SortableTextListRow(props: SortableTextListRowProps) {
   return (
     <div ref={setNodeRef} style={style}>
       <TextListRow
+        {...props}
+        dragListeners={listeners}
+        dragAttributes={attributes}
+      />
+    </div>
+  );
+}
+
+// ============================================================================
+// SortableTextCard — thin DnD wrapper around TextCard
+// ============================================================================
+
+interface SortableTextCardProps {
+  id: string;
+  title: string;
+  wordCount: number;
+  knownPercentage: number;
+  lastRead: string;
+  hasBeenRead: boolean;
+  preview: string;
+  onDelete?: (text: { id: string; title: string }) => void;
+  onEdit?: (text: { id: string; title: string }) => void;
+  onExportOneT?: (text: { id: string; title: string }) => void;
+}
+
+function SortableTextCard(props: SortableTextCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: props.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <TextCard
         {...props}
         dragListeners={listeners}
         dragAttributes={attributes}
@@ -135,23 +175,36 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const { toast, showToast, hideToast } = useToast();
   const [seriesName, setSeriesName] = useState('');
   const seriesNameInitialized = useRef(false);
-  const [sortBy, setSortBy] = useState<TextSortOption>('recent');
+  const [sortBy, setSortBy] = useState<SeriesDetailSortOption>('recent');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
-  const [reorderMode, setReorderMode] = useState(false);
-  // Holds the locally-reordered ID sequence while reorder mode is active.
-  // null means "not overriding — use sort order from sortedTexts".
+  // Holds the locally-reordered ID sequence while a drag is in flight / being
+  // persisted. null means "not overriding — use sort order from sortedTexts".
   const [reorderIds, setReorderIds] = useState<string[] | null>(null);
+  // A sort the user picked while sortBy === 'custom' — held until they
+  // confirm they want to leave their custom arrangement (see ConfirmDialog
+  // near the sort dropdown below).
+  const [pendingSort, setPendingSort] = useState<SeriesDetailSortOption | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // Small movement threshold so a plain click (Read button, options menu,
+    // navigating into the reader) doesn't get mistaken for a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    // Touch: press-and-hold before a drag starts, so a quick tap still reads
+    // the text instead of picking it up.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   useEffect(() => {
-    const saved = localStorage.getItem(`series-sort-${id}`) as TextSortOption | null;
-    const valid: TextSortOption[] = ['title-asc', 'progress-desc', 'progress-asc', 'recent'];
+    const saved = localStorage.getItem(`series-sort-${id}`) as SeriesDetailSortOption | null;
+    const valid: SeriesDetailSortOption[] = ['title-asc', 'progress-desc', 'progress-asc', 'recent', 'custom'];
     if (saved && valid.includes(saved)) setSortBy(saved);
+  }, [id]);
+
+  const commitSort = useCallback((value: SeriesDetailSortOption) => {
+    setSortBy(value);
+    localStorage.setItem(`series-sort-${id}`, value);
   }, [id]);
 
   useEffect(() => {
@@ -212,6 +265,9 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       case 'recent':
         texts.sort(compareByRecentlyRead);
         break;
+      case 'custom':
+        texts.sort((a, b) => a.order - b.order);
+        break;
     }
 
     return texts;
@@ -235,28 +291,28 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       const newIds = arrayMove(currentIds, oldIndex, newIndex);
       setReorderIds(newIds);
 
-      // Persist to server — fire-and-forget; optimistic update already applied
+      // Surface the reorder immediately as "Custom Order" so it isn't
+      // clobbered by whatever sort was active when the drag happened.
+      if (sortBy !== 'custom') commitSort('custom');
+
       try {
         await fetch(`/api/series/${id}/reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ textIds: newIds }),
         });
-        queryClient.invalidateQueries({ queryKey: ['series', id] });
+        await queryClient.invalidateQueries({ queryKey: ['series', id] });
       } catch {
         // Silent — positions are cosmetic until next full refetch
+      } finally {
+        // Once the server data is refetched, the 'custom' sort case reads
+        // the same order straight from it — drop the optimistic override so
+        // a concurrently added/removed text isn't hidden by a stale list.
+        setReorderIds(null);
       }
     },
-    [id, reorderIds, sortedTexts, queryClient]
+    [id, reorderIds, sortedTexts, sortBy, commitSort, queryClient]
   );
-
-  const handleToggleReorder = useCallback(() => {
-    setReorderMode((r) => {
-      const next = !r;
-      if (!next) setReorderIds(null); // clear override when leaving reorder mode
-      return next;
-    });
-  }, []);
 
   const [isExportingSeriesOneT, setIsExportingSeriesOneT] = useState(false);
 
@@ -414,6 +470,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     { value: 'progress-desc', label: 'Progress (High-Low)' },
     { value: 'progress-asc', label: 'Progress (Low-High)' },
     { value: 'recent', label: 'Recently Read' },
+    { value: 'custom', label: 'Custom Order' },
   ] as const;
 
   const currentSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label;
@@ -550,9 +607,12 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                       <button
                         key={option.value}
                         onClick={() => {
-                          setSortBy(option.value);
-                          localStorage.setItem(`series-sort-${id}`, option.value);
                           setIsSortOpen(false);
+                          if (sortBy === 'custom' && option.value !== 'custom') {
+                            setPendingSort(option.value);
+                          } else {
+                            commitSort(option.value);
+                          }
                         }}
                         className={cn(
                           'w-full px-4 py-2.5 text-left font-sans text-ui-sm transition-colors cursor-pointer',
@@ -565,17 +625,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                   </div>
                 )}
               </div>
-
-              {/* Reorder toggle */}
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<ArrowUpDown size={14} strokeWidth={2} />}
-                onClick={handleToggleReorder}
-                className={reorderMode ? 'border-primary text-primary' : ''}
-              >
-                {reorderMode ? 'Done' : 'Reorder'}
-              </Button>
 
               <Button
                 variant="primary"
@@ -642,7 +691,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                         wordCount={text.wordCount}
                         knownPercentage={text.knownPercentage}
                         isCurrentlyReading={text.id === seriesData?.lastReadTextId}
-                        reorderMode={reorderMode}
                         onRead={() => router.push(`/reader/${text.id}`)}
                         onEdit={() => setEditTextTarget({ id: text.id, title: text.title })}
                         onDelete={() => setDeleteTextTarget({ id: text.id, title: text.title })}
@@ -653,23 +701,34 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                 </SortableContext>
               </DndContext>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {displayTexts.map((text) => (
-                  <TextCard
-                    key={text.id}
-                    id={text.id}
-                    title={text.title}
-                    wordCount={text.wordCount}
-                    knownPercentage={text.knownPercentage}
-                    lastRead={text.lastRead}
-                    hasBeenRead={text.hasBeenRead}
-                    preview={text.preview}
-                    onDelete={setDeleteTextTarget}
-                    onEdit={setEditTextTarget}
-                    onExportOneT={handleExportOneTForText}
-                  />
-                ))}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={displayTexts.map((t) => t.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {displayTexts.map((text) => (
+                      <SortableTextCard
+                        key={text.id}
+                        id={text.id}
+                        title={text.title}
+                        wordCount={text.wordCount}
+                        knownPercentage={text.knownPercentage}
+                        lastRead={text.lastRead}
+                        hasBeenRead={text.hasBeenRead}
+                        preview={text.preview}
+                        onDelete={setDeleteTextTarget}
+                        onEdit={setEditTextTarget}
+                        onExportOneT={handleExportOneTForText}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         )}
@@ -695,6 +754,19 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         message={`Are you sure you want to delete "${deleteTextTarget?.title}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
+      />
+
+      {/* Leaving Custom Order confirmation dialog */}
+      <ConfirmDialog
+        isOpen={pendingSort !== null}
+        onClose={() => setPendingSort(null)}
+        onConfirm={() => {
+          if (pendingSort) commitSort(pendingSort);
+          setPendingSort(null);
+        }}
+        title="Switch Sort Order?"
+        message="This will change the display order away from your custom arrangement. Your custom order is saved and you can come back to it anytime by selecting Custom Order again."
+        confirmLabel="Switch"
       />
 
       {/* New Text Modal */}

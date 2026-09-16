@@ -1,14 +1,18 @@
 import Link from 'next/link';
-import { Home, Search, Library } from 'lucide-react';
+import { Home, Search, Library, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { EmptyStateIllustration } from '@/components/ui/EmptyStateIllustration';
+import { createClient } from '@/lib/supabase/server';
 
 // ============================================================================
 // 404 Not Found Page
 // Displayed when user navigates to non-existent route
 // ============================================================================
 
-export default function NotFound() {
+export default async function NotFound() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-desk">
       <div className="bg-paper border border-border rounded-card shadow-raised p-12 max-w-md text-center">
@@ -17,55 +21,98 @@ export default function NotFound() {
           <EmptyStateIllustration type="telescope" />
         </div>
 
-        {/* 404 Badge */}
-        <div className="inline-block px-3 py-1 bg-primary/10 rounded-full mb-4">
-          <span className="font-sans text-ui-sm font-semibold text-primary">404</span>
-        </div>
+        {user ? (
+          <>
+            {/* 404 Badge */}
+            <div className="inline-block px-3 py-1 bg-primary/10 rounded-full mb-4">
+              <span className="font-sans text-ui-sm font-semibold text-primary">404</span>
+            </div>
 
-        {/* Heading */}
-        <h1 className="font-sans text-ui-2xl font-semibold text-ink mb-3">
-          Page Not Found
-        </h1>
+            {/* Heading */}
+            <h1 className="font-sans text-ui-2xl font-semibold text-ink mb-3">
+              Page Not Found
+            </h1>
 
-        {/* Description */}
-        <p className="font-sans text-ui-base text-muted mb-8">
-          {`The page you're looking for doesn't exist or has been moved.`}
-        </p>
+            {/* Description */}
+            <p className="font-sans text-ui-base text-muted mb-8">
+              {`The page you're looking for doesn't exist or has been moved.`}
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Heading */}
+            <h1 className="font-sans text-ui-2xl font-semibold text-ink mb-3">
+              Let&rsquo;s Get You Started
+            </h1>
+
+            {/* Description */}
+            <p className="font-sans text-ui-base text-muted mb-8">
+              Log in or create an account to continue your language learning journey.
+            </p>
+          </>
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3">
-          <Link href="/dashboard">
-            <Button
-              variant="primary"
-              size="lg"
-              leftIcon={<Home size={18} strokeWidth={2} />}
-              className="w-full"
-            >
-              Return to Dashboard
-            </Button>
-          </Link>
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/series">
-              <Button
-                variant="secondary"
-                size="md"
-                leftIcon={<Library size={16} strokeWidth={2} />}
-                className="w-full"
-              >
-                Series
-              </Button>
-            </Link>
-            <Link href="/vocabulary">
-              <Button
-                variant="secondary"
-                size="md"
-                leftIcon={<Search size={16} strokeWidth={2} />}
-                className="w-full"
-              >
-                Vocabulary
-              </Button>
-            </Link>
-          </div>
+          {user ? (
+            <>
+              <Link href="/dashboard">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  leftIcon={<Home size={18} strokeWidth={2} />}
+                  className="w-full"
+                >
+                  Return to Dashboard
+                </Button>
+              </Link>
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/series">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    leftIcon={<Library size={16} strokeWidth={2} />}
+                    className="w-full"
+                  >
+                    Series
+                  </Button>
+                </Link>
+                <Link href="/vocabulary">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    leftIcon={<Search size={16} strokeWidth={2} />}
+                    className="w-full"
+                  >
+                    Vocabulary
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  leftIcon={<LogIn size={18} strokeWidth={2} />}
+                  className="w-full"
+                >
+                  Log In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  leftIcon={<UserPlus size={18} strokeWidth={2} />}
+                  className="w-full"
+                >
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
