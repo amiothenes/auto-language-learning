@@ -27,8 +27,15 @@ export function ImportVocabularyModal({
   const [importedItems, setImportedItems] = useState<ImportedVocabularyData[]>([]);
   const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('skip');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // .txt files are ambiguous — could be comma or tab delimited — so we keep
+  // the raw content around to re-parse instantly when the user overrides our
+  // guessed delimiter, instead of asking them to re-upload.
+  const [txtFileContent, setTxtFileContent] = useState<string | null>(null);
+  const [txtDelimiter, setTxtDelimiter] = useState<',' | '\t'>('\t');
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -46,6 +53,9 @@ export function ImportVocabularyModal({
       setMergeStrategy('skip');
       setError(null);
       setIsProcessing(false);
+      setIsDragging(false);
+      setTxtFileContent(null);
+      setTxtDelimiter('\t');
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
   }, [isOpen]);
@@ -120,31 +130,91 @@ export function ImportVocabularyModal({
     return undefined;
   };
 
+  // A lemma ending in one or more "?" marks a word LWT-style tools couldn't
+  // resolve (the lemmatizer gave up). During import, strip the marker and
+  // force IGNORE — regardless of any status column value — rather than
+  // importing a garbled lemma or dropping the row outright.
+  const TRAILING_QUESTION_MARKS = /\?+$/;
+
+  const applyIgnoreMarker = (
+    lemma: string,
+    status: VocabularyStatus | undefined
+  ): { lemma: string; status: VocabularyStatus | undefined } | null => {
+    if (!TRAILING_QUESTION_MARKS.test(lemma)) return { lemma, status };
+    const stripped = lemma.replace(TRAILING_QUESTION_MARKS, '').trim();
+    if (!stripped) return null; // lemma was nothing but "?" marks
+    return { lemma: stripped, status: VocabularyStatus.IGNORE };
+  };
+
+  // Header aliases — real-world exports label these columns all sorts of
+  // ways ("Word", "Meaning", "Def"), so we try a small synonym list before
+  // ever falling back to guessing by position.
+  const HEADER_ALIASES = {
+    lemma: ['lemma', 'word', 'term'],
+    translation: ['translation', 'meaning', 'definition', 'translate'],
+    status: ['status', 'learningstatus'],
+    frequency: ['dictionaryfrequency', 'frequency', 'freq'],
+    tags: ['tags', 'tag'],
+  };
+
+  const findColumn = (header: string[], aliases: string[]): number => {
+    for (const alias of aliases) {
+      const idx = header.indexOf(alias);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
   // Parse CSV or TSV content — same header-named column layout either way,
   // just a different field delimiter (comma vs. tab). Note this is NOT the
   // LWT positional .tsv format used by the /settings/data importer.
+  //
+  // If no column names match any known alias, we don't give up: we assume
+  // the file has no header at all and fall back to a fixed column order
+  // (lemma, translation, status, dictionaryFrequency, tags) — matching the
+  // order this app's own TSV export uses — so the first row is treated as
+  // data instead of being silently discarded as an unrecognized header.
   const parseDelimited = (content: string, delimiter: ',' | '\t'): ImportedVocabularyData[] => {
     const lines = content.split('\n').filter((line) => line.trim() !== '');
-    if (lines.length < 2) return []; // Need at least header + 1 row
+    if (lines.length === 0) return [];
 
     const header = lines[0].split(delimiter).map((h) => h.trim().toLowerCase());
-    const lemmaIndex = header.indexOf('lemma');
-    const translationIndex = header.indexOf('translation');
-    const statusIndex = header.indexOf('status');
-    const frequencyIndex = header.indexOf('dictionaryfrequency') !== -1
-      ? header.indexOf('dictionaryfrequency')
-      : header.indexOf('frequency');
-    const tagsIndex = header.indexOf('tags');
+    let lemmaIndex = findColumn(header, HEADER_ALIASES.lemma);
+    let translationIndex = findColumn(header, HEADER_ALIASES.translation);
+    let statusIndex = findColumn(header, HEADER_ALIASES.status);
+    let frequencyIndex = findColumn(header, HEADER_ALIASES.frequency);
+    let tagsIndex = findColumn(header, HEADER_ALIASES.tags);
 
-    if (lemmaIndex === -1 || translationIndex === -1) {
-      throw new Error(
-        `File must have "lemma" and "translation" columns, delimited by ${delimiter === '\t' ? 'tabs' : 'commas'}`
-      );
+    const hasRecognizedHeader =
+      lemmaIndex !== -1 || translationIndex !== -1 || statusIndex !== -1 || frequencyIndex !== -1 || tagsIndex !== -1;
+
+    let dataStartRow = 1;
+    if (!hasRecognizedHeader) {
+      // Nothing recognized at all — guess by position instead of erroring
+      // out, and treat row 0 as data too, since there's no header to skip.
+      lemmaIndex = 0;
+      translationIndex = 1;
+      statusIndex = 2;
+      frequencyIndex = 3;
+      tagsIndex = 4;
+      dataStartRow = 0;
+    } else {
+      // A header row clearly exists (something matched), but one of the two
+      // required columns used a name we don't recognize — fill it in from
+      // the first column position the header row isn't already using.
+      const used = new Set([lemmaIndex, translationIndex, statusIndex, frequencyIndex, tagsIndex]);
+      const nextFreeColumn = () => {
+        let col = 0;
+        while (used.has(col)) col++;
+        used.add(col);
+        return col;
+      };
+      if (lemmaIndex === -1) lemmaIndex = nextFreeColumn();
+      if (translationIndex === -1) translationIndex = nextFreeColumn();
     }
 
     const items: ImportedVocabularyData[] = [];
-    for (let i = 1; i < lines.length && i < 10001; i++) {
-      // Max 10,000 items
+    for (let i = dataStartRow; i < lines.length && items.length < 10000; i++) {
       const cols = lines[i].split(delimiter);
       if (cols.length < Math.max(lemmaIndex, translationIndex) + 1) continue;
 
@@ -164,10 +234,13 @@ export function ImportVocabularyModal({
           ? cols[tagsIndex].split(';').map((t) => t.trim()).filter(Boolean)
           : undefined;
 
+      const resolved = applyIgnoreMarker(lemma, status);
+      if (!resolved) continue;
+
       items.push({
-        lemma,
+        lemma: resolved.lemma,
         translation,
-        status,
+        status: resolved.status,
         dictionaryFrequency:
           frequency !== undefined && !isNaN(frequency) && frequency >= 0 && frequency <= 100
             ? frequency
@@ -194,10 +267,13 @@ export function ImportVocabularyModal({
       const status = item.status ? parseStatus(item.status) : undefined;
       const frequency = item.dictionaryFrequency || item.frequency;
 
+      const resolved = applyIgnoreMarker(item.lemma.trim(), status);
+      if (!resolved) continue;
+
       items.push({
-        lemma: item.lemma.trim(),
+        lemma: resolved.lemma,
         translation: item.translation.trim(),
-        status,
+        status: resolved.status,
         dictionaryFrequency:
           frequency !== undefined &&
           typeof frequency === 'number' &&
@@ -212,23 +288,49 @@ export function ImportVocabularyModal({
     return items;
   };
 
-  // Handle file upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // .txt could be either delimiter — count occurrences on the first
+  // non-empty line and go with whichever is more common. Ties favor tab
+  // since that's this app's own export convention and the LWT convention.
+  const detectDelimiter = (content: string): ',' | '\t' => {
+    const firstLine = content.split('\n').find((l) => l.trim() !== '') ?? '';
+    const tabCount = (firstLine.match(/\t/g) ?? []).length;
+    const commaCount = (firstLine.match(/,/g) ?? []).length;
+    return commaCount > tabCount ? ',' : '\t';
+  };
 
+  // Applies importedItems/error state from a parse result, shared by the
+  // initial parse and by re-parsing a .txt file under a different delimiter.
+  const applyParsedItems = (items: ImportedVocabularyData[], emptyMessage: string) => {
+    if (items.length === 0) {
+      setError(emptyMessage);
+      setImportedItems([]);
+      return;
+    }
+    if (items.length > 10000) {
+      setError('Maximum 10,000 items per import. Only first 10,000 will be imported.');
+      setImportedItems(items.slice(0, 10000));
+    } else {
+      setError(null);
+      setImportedItems(items);
+    }
+  };
+
+  // Shared by both the click-to-browse file input and drag-and-drop —
+  // drag-and-drop is the primary path per the Verbista design system's file
+  // upload law (.claude/design-system.md), click-to-browse stays as a fallback.
+  const processFile = async (file: File) => {
     setIsProcessing(true);
     setError(null);
+    setTxtFileContent(null);
 
     try {
-      const file = files[0]; // Only process first file
       if (file.size > 25 * 1024 * 1024) {
         throw new Error('File exceeds 25MB limit');
       }
 
       const ext = file.name.split('.').pop()?.toLowerCase();
-      if (ext !== 'csv' && ext !== 'tsv' && ext !== 'json') {
-        throw new Error('Only .csv, .tsv, and .json files are supported');
+      if (ext !== 'csv' && ext !== 'tsv' && ext !== 'txt' && ext !== 'json') {
+        throw new Error('Only .csv, .tsv, .txt, and .json files are supported');
       }
 
       const reader = new FileReader();
@@ -245,25 +347,27 @@ export function ImportVocabularyModal({
         reader.readAsText(file);
       });
 
-      let items: ImportedVocabularyData[];
+      if (ext === 'json') {
+        applyParsedItems(parseJSON(content), 'No valid vocabulary items found in file');
+        return;
+      }
+
       if (ext === 'csv') {
-        items = parseDelimited(content, ',');
-      } else if (ext === 'tsv') {
-        items = parseDelimited(content, '\t');
-      } else {
-        items = parseJSON(content);
+        applyParsedItems(parseDelimited(content, ','), 'No valid vocabulary items found in file');
+        return;
       }
 
-      if (items.length === 0) {
-        throw new Error('No valid vocabulary items found in file');
+      if (ext === 'tsv') {
+        applyParsedItems(parseDelimited(content, '\t'), 'No valid vocabulary items found in file');
+        return;
       }
 
-      if (items.length > 10000) {
-        setError('Maximum 10,000 items per import. Only first 10,000 will be imported.');
-        setImportedItems(items.slice(0, 10000));
-      } else {
-        setImportedItems(items);
-      }
+      // .txt — ambiguous delimiter. Guess, parse, and keep the raw content
+      // around so the delimiter toggle below can re-parse without a re-upload.
+      const detected = detectDelimiter(content);
+      setTxtFileContent(content);
+      setTxtDelimiter(detected);
+      applyParsedItems(parseDelimited(content, detected), 'No valid vocabulary items found in file');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process file');
       setImportedItems([]);
@@ -273,6 +377,44 @@ export function ImportVocabularyModal({
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  // Re-parses the already-read .txt content under the delimiter the user
+  // picked, without touching the file input or re-reading anything.
+  const handleTxtDelimiterChange = (delimiter: ',' | '\t') => {
+    if (!txtFileContent) return;
+    setTxtDelimiter(delimiter);
+    applyParsedItems(
+      parseDelimited(txtFileContent, delimiter),
+      `No valid vocabulary items found with ${delimiter === '\t' ? 'tab' : 'comma'} delimiting`
+    );
+  };
+
+  // Click-to-browse handler
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  // Drag-and-drop handlers — plain functions, not useCallback: they're only
+  // ever attached to this one div, not passed down to a memoized child, so
+  // memoizing them buys nothing.
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!isProcessing) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (isProcessing) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   };
 
   // Final submission
@@ -311,7 +453,7 @@ export function ImportVocabularyModal({
           </h2>
 
           <p className="mt-2 font-sans text-ui-sm text-muted">
-            Import vocabulary items from CSV, TSV, or JSON files
+            Drag and drop a CSV, TSV, TXT, or JSON file, or click to browse
           </p>
 
           {/* Error Message */}
@@ -330,37 +472,96 @@ export function ImportVocabularyModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.tsv,.json"
+              accept=".csv,.tsv,.txt,.json"
               onChange={handleFileUpload}
               disabled={isProcessing}
               className="hidden"
               id="import-vocab-file-input"
             />
-            <label htmlFor="import-vocab-file-input">
-              <div
-                className={`flex items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded cursor-pointer hover:border-primary transition-colors ${
-                  isProcessing ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <Upload size={20} strokeWidth={1.5} className="text-muted" />
-                <div className="text-center">
-                  <p className="font-sans text-ui-sm text-ink font-medium">
-                    {isProcessing ? 'Processing file...' : 'Choose CSV, TSV, or JSON file'}
-                  </p>
-                  <p className="font-sans text-ui-xs text-muted mt-1">
-                    Max 25MB, 10,000 items max
-                  </p>
-                </div>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              aria-label="Drop or choose a CSV, TSV, TXT, or JSON file to import"
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && !isProcessing) {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              className={`flex items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                isDragging
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary'
+              } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Upload size={20} strokeWidth={1.5} className="text-muted" />
+              <div className="text-center">
+                <p className="font-sans text-ui-sm text-ink font-medium">
+                  {isProcessing
+                    ? 'Processing file...'
+                    : isDragging
+                      ? 'Drop file to import'
+                      : 'Drop file here, or click to browse'}
+                </p>
+                <p className="font-sans text-ui-xs text-muted mt-1">
+                  CSV, TSV, TXT, or JSON &middot; Max 25MB, 10,000 items max
+                </p>
               </div>
-            </label>
+            </div>
           </div>
+
+          {/* TXT delimiter picker — shown once a .txt file has been read, since
+              its delimiter is ambiguous and we've only guessed at it */}
+          {txtFileContent && (
+            <div className="mt-3 flex items-center gap-3 px-3 py-2 bg-desk border border-border rounded">
+              <span className="font-sans text-ui-xs text-ink font-medium">
+                .txt delimiter:
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleTxtDelimiterChange('\t')}
+                  className={`px-2 py-1 rounded font-sans text-ui-xs transition-colors ${
+                    txtDelimiter === '\t'
+                      ? 'bg-primary text-white'
+                      : 'bg-paper border border-border text-ink hover:border-primary'
+                  }`}
+                >
+                  Tab
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTxtDelimiterChange(',')}
+                  className={`px-2 py-1 rounded font-sans text-ui-xs transition-colors ${
+                    txtDelimiter === ','
+                      ? 'bg-primary text-white'
+                      : 'bg-paper border border-border text-ink hover:border-primary'
+                  }`}
+                >
+                  Comma
+                </button>
+              </div>
+              <span className="font-sans text-ui-xs text-muted">
+                Detected automatically, switch it if the preview below looks wrong
+              </span>
+            </div>
+          )}
 
           {/* Format Guide */}
           <div className="mt-4 p-3 bg-desk border border-border rounded">
             <p className="font-sans text-ui-xs text-muted mb-2">
-              CSV files are comma-delimited, TSV files are tab-delimited — both need
-              a header row with column names below (case-insensitive). This is a
-              different format from the LWT-export importer in Settings → Data.
+              CSV files are comma-delimited, TSV files are tab-delimited, and
+              TXT files can be either (we guess, then let you switch it below
+              if we guessed wrong). A header row naming the columns below
+              works best, matched case-insensitively; other common names like
+              &ldquo;Word&rdquo; or &ldquo;Meaning&rdquo; are recognized too,
+              and if none of that matches, the first two columns are assumed
+              to be lemma and translation. This is a different format from
+              the LWT-export importer in Settings &rarr; Data.
             </p>
             <p className="font-sans text-ui-xs font-medium text-ink mb-1">
               Required Fields:
@@ -385,6 +586,10 @@ export function ImportVocabularyModal({
               </li>
               <li>
                 <strong>tags</strong> - Semicolon-separated tags
+              </li>
+              <li>
+                A lemma ending in <strong>?</strong> (one or more) is imported
+                with the <strong>?</strong> removed and status forced to IGNORE
               </li>
             </ul>
           </div>
@@ -530,7 +735,7 @@ export function ImportVocabularyModal({
               onClick={handleSubmit}
               disabled={importedItems.length === 0 || isProcessing}
             >
-              Import {importedItems.length > 0 && `${importedItems.length.toLocaleString()} Item${importedItems.length > 1 ? 's' : ''}`}
+              Import {importedItems.length > 0 && `${importedItems.length.toLocaleString('en-US')} Item${importedItems.length > 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>

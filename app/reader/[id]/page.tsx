@@ -249,7 +249,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
     const isMilestone = knownWordsDelta > 0 && checkMilestone(newUnique.known);
     const message = isMilestone
-      ? `Amazing! You've seen ${newUnique.known.toLocaleString()} words!`
+      ? `Amazing! You've seen ${newUnique.known.toLocaleString('en-US')} words!`
       : 'Status updated!';
 
     if (knownWordsDelta !== 0 || oldTextProgress !== newTextProgress) {

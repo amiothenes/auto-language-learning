@@ -46,7 +46,7 @@ export function VocabDistribution({ unknown, newlySeen, familiar, known, wellKno
           {SEGMENTS.map(seg => (
             <div key={seg.key} className="text-center">
               <div className="font-bold text-ui-lg font-sans" style={{ color: seg.textColor }}>
-                {counts[seg.key].toLocaleString()}
+                {counts[seg.key].toLocaleString('en-US')}
               </div>
               <div className="text-ui-xs text-muted font-sans leading-tight">{seg.label}</div>
             </div>

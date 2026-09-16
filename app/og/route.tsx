@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
               letterSpacing: -2,
             }}
           >
-            {stats.totalKnown.toLocaleString()}
+            {stats.totalKnown.toLocaleString('en-US')}
           </span>
           <span style={{ color: 'rgba(240,239,234,0.75)', fontSize: 36, marginTop: 8 }}>
             words known

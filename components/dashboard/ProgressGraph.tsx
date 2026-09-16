@@ -59,7 +59,7 @@ export function ProgressGraph({ history }: ProgressGraphProps) {
         tooltip: {
           callbacks: {
             label: (ctx: TooltipItem<'line'>) =>
-              `${(ctx.parsed.y ?? 0).toLocaleString()} known words`,
+              `${(ctx.parsed.y ?? 0).toLocaleString('en-US')} known words`,
           },
         },
       },

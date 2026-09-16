@@ -99,7 +99,7 @@ export function TextListRow({
 
       {/* Word count */}
       <span className="text-ui-xs text-muted whitespace-nowrap font-sans hidden sm:block shrink-0">
-        {wordCount.toLocaleString()} words
+        {wordCount.toLocaleString('en-US')} words
       </span>
 
       {/* Tier icon */}

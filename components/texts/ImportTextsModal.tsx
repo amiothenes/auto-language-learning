@@ -704,7 +704,7 @@ export function ImportTextsModal({
                   Imported Texts ({enrichedTexts.length})
                 </label>
                 <p className="font-sans text-ui-xs text-muted">
-                  ~{totalWordCount.toLocaleString()} total words
+                  ~{totalWordCount.toLocaleString('en-US')} total words
                 </p>
               </div>
               <div className="space-y-2 max-h-80 overflow-y-auto border border-border rounded p-3">
@@ -735,7 +735,7 @@ export function ImportTextsModal({
                         const parts = wc > 750 ? Math.ceil(wc / 750) : 1;
                         return (
                           <p className="font-sans text-ui-xs text-muted mt-1">
-                            {wc.toLocaleString()} words
+                            {wc.toLocaleString('en-US')} words
                             {parts > 1 && (
                               <span className="ml-1 text-amber-600 font-medium">· ~{parts} parts after split</span>
                             )}
@@ -869,7 +869,7 @@ function ContentEditOverlay({ draft, onChange, onSave, onCancel }: ContentEditOv
             <div className="flex items-center justify-between mb-1">
               <label className="font-sans text-ui-sm font-medium text-ink">Content</label>
               <span className="font-sans text-ui-xs text-muted">
-                {wordCount.toLocaleString()} words
+                {wordCount.toLocaleString('en-US')} words
                 {wordCount > 750 && (
                   <span className="ml-1 text-amber-600 font-medium">
                     · ~{Math.ceil(wordCount / 750)} parts after split

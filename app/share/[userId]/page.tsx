@@ -47,7 +47,7 @@ export async function generateMetadata({
   const stats = lang ? await fetchPublicStats(userId, lang) : null;
 
   const title = stats
-    ? `${stats.totalKnown.toLocaleString()} words known in ${stats.languageName} — Verbista`
+    ? `${stats.totalKnown.toLocaleString('en-US')} words known in ${stats.languageName} — Verbista`
     : 'My progress — Verbista';
   const ogImage = lang
     ? `${APP_URL}/og?userId=${encodeURIComponent(userId)}&lang=${encodeURIComponent(lang)}`
@@ -115,7 +115,7 @@ export default async function SharePage({
                 lineHeight: 1,
               }}
             >
-              {stats.totalKnown.toLocaleString()}
+              {stats.totalKnown.toLocaleString('en-US')}
             </span>
             <span className="block font-sans text-ui-md text-muted mt-2 mb-6">
               words known in {stats.languageName}

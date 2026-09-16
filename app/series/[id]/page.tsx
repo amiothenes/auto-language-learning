@@ -320,8 +320,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     const partCount = result.texts.length;
     const totalWords = result.texts.reduce((s, t) => s + t.wordCount, 0);
     const msg = partCount > 1
-      ? `Imported as ${partCount} parts · ${totalWords.toLocaleString()} words total`
-      : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString()} words`;
+      ? `Imported as ${partCount} parts · ${totalWords.toLocaleString('en-US')} words total`
+      : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString('en-US')} words`;
     showToast(msg);
     queryClient.invalidateQueries({ queryKey: ['series', id] });
     queryClient.invalidateQueries({ queryKey: ['series-list'] });
