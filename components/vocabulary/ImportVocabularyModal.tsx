@@ -298,7 +298,9 @@ export function ImportVocabularyModal({
       const items: ImportedVocabularyData[] = [];
       for (let i = 0; i < records.length && items.length < 10000; i++) {
         const record = records[i];
-        const lemma = toText(record[lemmaKey]);
+        // Trailing "?" (or "??") marks an unresolved/unlemmatized form in
+        // LWT-style exports — strip it so the stored lemma is clean.
+        const lemma = toText(record[lemmaKey]).replace(/\?+$/, '');
         const translation = toText(record[translationKey]);
         if (!lemma || !translation) continue;
 
