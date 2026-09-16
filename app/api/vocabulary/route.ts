@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { words, wordInstances, languages } from '@/lib/db/schema';
+import { words, wordInstances, languages, wordTranslations } from '@/lib/db/schema';
 import { eq, ne, and, ilike, asc, desc, count, countDistinct, inArray, SQL } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { VocabularyItem } from '@/lib/types/vocabulary';
+import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 
@@ -57,8 +58,15 @@ export async function GET(request: NextRequest) {
 
     const conditions: SQL[] = [eq(words.languageId, language.id), eq(words.userId, user.id)];
 
-    if (statusParam && Object.values(VocabularyStatus).includes(statusParam as VocabularyStatus)) {
-      conditions.push(eq(words.status, statusParam as VocabularyStatus));
+    // status may be a single value or a comma-separated list (multiselect filter chips)
+    const requestedStatuses = (statusParam?.split(',') ?? [])
+      .map((s) => s.trim())
+      .filter((s): s is VocabularyStatus =>
+        Object.values(VocabularyStatus).includes(s as VocabularyStatus)
+      );
+
+    if (requestedStatuses.length > 0) {
+      conditions.push(inArray(words.status, requestedStatuses));
     } else {
       conditions.push(ne(words.status, VocabularyStatus.IGNORE));
       conditions.push(ne(words.status, VocabularyStatus.UNKNOWN));
@@ -134,13 +142,33 @@ export async function GET(request: NextRequest) {
       textCountMap = Object.fromEntries(counts.map((c) => [c.wordId, Number(c.textCount)]));
     }
 
+    // Prefer word_translations (populated by auto-translation/user edits) over
+    // the legacy words.translation column — same precedence as the Reader's
+    // /api/texts/[id]/word-instances route.
+    const wordTranslationMap = new Map<string, WordTranslation>();
+    if (language.defaultTranslationLangCode && rows.length > 0) {
+      const wordIds = rows.map((r) => r.id);
+      const translations = await db
+        .select()
+        .from(wordTranslations)
+        .where(
+          and(
+            inArray(wordTranslations.wordId, wordIds),
+            eq(wordTranslations.targetLangCode, language.defaultTranslationLangCode)
+          )
+        );
+      for (const t of translations) {
+        wordTranslationMap.set(t.wordId, t);
+      }
+    }
+
     const vocabItems: VocabularyItem[] = rows.map((r) => ({
       id: r.id,
       lemma: r.lemma,
       status: r.status as VocabularyStatus,
       dictionaryFrequency: r.dictionaryFrequency,
       userFrequency: r.userFrequency,
-      translation: r.translation ?? '',
+      translation: wordTranslationMap.get(r.id)?.translation ?? r.translation ?? '',
       tags: [],
       textCount: textCountMap[r.id] ?? 0,
     }));

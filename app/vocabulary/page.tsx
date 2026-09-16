@@ -64,13 +64,12 @@ export default function VocabularyPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
 
-  // Only pass a status filter when exactly one status is active
-  const activeStatus = activeStatuses.size === 1 ? [...activeStatuses][0] : undefined;
+  const activeStatusList = activeStatuses.size > 0 ? Array.from(activeStatuses) : undefined;
 
   // Real data
   const vocabularyQuery = useVocabulary({
     search: debouncedSearchQuery || undefined,
-    status: activeStatus,
+    status: activeStatusList,
     sort: sortBy,
     page: currentPage,
     limit: itemsPerPage,
@@ -352,7 +351,7 @@ export default function VocabularyPage() {
     try {
       const params = new URLSearchParams({ languageCode: selectedLanguage, limit: '100' });
       if (debouncedSearchQuery) params.set('search', debouncedSearchQuery);
-      if (activeStatus) params.set('status', activeStatus);
+      if (activeStatusList) params.set('status', activeStatusList.join(','));
       if (sortBy) params.set('sort', sortBy);
 
       const escapeTsv = (val: string | number | null | undefined) => {

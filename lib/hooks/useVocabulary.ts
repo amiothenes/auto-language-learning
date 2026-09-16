@@ -4,7 +4,7 @@ import type { VocabularyItem, VocabularyStatus } from '@/lib/types/vocabulary';
 
 interface VocabularyFilters {
   search?: string;
-  status?: VocabularyStatus;
+  status?: VocabularyStatus[];
   sort?: string;
   page?: number;
   limit?: number;
@@ -26,7 +26,7 @@ export function useVocabulary(filters: VocabularyFilters = {}) {
     queryFn: async () => {
       const params = new URLSearchParams({ languageCode: selectedLanguage });
       if (filters.search) params.set('search', filters.search);
-      if (filters.status) params.set('status', filters.status);
+      if (filters.status && filters.status.length > 0) params.set('status', filters.status.join(','));
       if (filters.sort) params.set('sort', filters.sort);
       if (filters.page) params.set('page', String(filters.page));
       if (filters.limit) params.set('limit', String(filters.limit));
