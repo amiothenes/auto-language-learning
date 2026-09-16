@@ -36,7 +36,7 @@ export default function VocabularyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast, showToast, hideToast } = useToast();
-  const { selectedLanguage } = useLanguage();
+  const { selectedLanguage, languages } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
 
   // Filter state (passed to API as query params)
@@ -246,14 +246,22 @@ export default function VocabularyPage() {
 
   // Shared with the Import modal — both go through /api/vocabulary/import,
   // just with a one-item array and an 'update' upsert for the single-add case.
+  // languageCodeOverride is set only for an LWT-shaped file the user has
+  // confirmed a target language for, which may differ from the currently
+  // selected app language.
   const postVocabularyImport = async (
     items: ImportedVocabularyData[],
-    mergeStrategy: MergeStrategy
+    mergeStrategy: MergeStrategy,
+    languageCodeOverride?: string
   ) => {
     const res = await fetch('/api/vocabulary/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ languageCode: selectedLanguage, mergeStrategy, items }),
+      body: JSON.stringify({
+        languageCode: languageCodeOverride ?? selectedLanguage,
+        mergeStrategy,
+        items,
+      }),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
@@ -291,17 +299,36 @@ export default function VocabularyPage() {
   };
 
   // Bulk import mutation — persists items parsed client-side by
-  // ImportVocabularyModal (CSV/TSV/JSON).
+  // ImportVocabularyModal (CSV/TSV/TXT/JSON, including auto-detected LWT files).
   const importMutation = useMutation({
-    mutationFn: ({ items, mergeStrategy }: { items: ImportedVocabularyData[]; mergeStrategy: MergeStrategy }) =>
-      postVocabularyImport(items, mergeStrategy),
-    onSuccess: (data) => {
+    mutationFn: ({
+      items,
+      mergeStrategy,
+      languageCodeOverride,
+    }: {
+      items: ImportedVocabularyData[];
+      mergeStrategy: MergeStrategy;
+      languageCodeOverride?: string;
+    }) => postVocabularyImport(items, mergeStrategy, languageCodeOverride),
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       setIsImportVocabModalOpen(false);
+
+      // Imported into a different language than the one currently shown on
+      // screen (an LWT file's own language, confirmed via the picker) — the
+      // list on screen won't include these until the user switches to it,
+      // so say so rather than leaving a "where did my words go?" moment.
+      const targetedOtherLanguage =
+        variables.languageCodeOverride && variables.languageCodeOverride !== selectedLanguage;
+      const targetLanguageName = targetedOtherLanguage
+        ? languages.find((l) => l.code === variables.languageCodeOverride)?.name
+        : undefined;
+
       showToast(
         `Imported ${data.imported} word${data.imported === 1 ? '' : 's'}` +
-          (data.skipped > 0 ? ` (${data.skipped} skipped as duplicates)` : '')
+          (data.skipped > 0 ? ` (${data.skipped} skipped as duplicates)` : '') +
+          (targetLanguageName ? ` into ${targetLanguageName}. Switch languages to see them.` : '')
       );
     },
     onError: (error) => {
@@ -309,8 +336,12 @@ export default function VocabularyPage() {
     },
   });
 
-  const handleImportVocabulary = (items: ImportedVocabularyData[], strategy: MergeStrategy) => {
-    importMutation.mutate({ items, mergeStrategy: strategy });
+  const handleImportVocabulary = (
+    items: ImportedVocabularyData[],
+    strategy: MergeStrategy,
+    languageCodeOverride?: string
+  ) => {
+    importMutation.mutate({ items, mergeStrategy: strategy, languageCodeOverride });
   };
 
   // TSV export — pages through the filtered vocabulary (search/status/sort

@@ -17,8 +17,8 @@ import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 interface LwtLanguageModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Called with the selected language's DB id */
-  onConfirm: (languageId: string) => void;
+  /** Called with the selected language (id, code, and name all needed by callers) */
+  onConfirm: (language: LanguageItem) => void;
   /** Raw language name extracted from column 6 of the TSV/TXT file */
   detectedLanguageName: string;
 }
@@ -116,8 +116,9 @@ export function LwtLanguageModal({
   }, [isOpen]);
 
   const handleConfirm = useCallback(() => {
-    if (selectedId) onConfirm(selectedId);
-  }, [selectedId, onConfirm]);
+    const language = languages.find((l) => l.id === selectedId);
+    if (language) onConfirm(language);
+  }, [selectedId, languages, onConfirm]);
 
   const handleBackdropClick = useCallback(() => {
     onClose();

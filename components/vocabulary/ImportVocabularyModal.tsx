@@ -3,20 +3,40 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
-import { Upload, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
+import type { LanguageItem } from '@/lib/types/api';
 import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
+import { LwtLanguageModal } from '@/components/ui/LwtLanguageModal';
+import { ColumnMappingModal, type ColumnMapping } from '@/components/vocabulary/ColumnMappingModal';
+
+const EMPTY_MAPPING: ColumnMapping = {
+  lemmaIndex: -1,
+  translationIndex: -1,
+  statusIndex: -1,
+  frequencyIndex: -1,
+  tagsIndex: -1,
+};
 
 // ============================================================================
 // ImportVocabularyModal Component
-// Bulk import vocabulary items from CSV/JSON files
+// Bulk import vocabulary items from CSV/TSV/TXT/JSON files. Handles both this
+// app's own header-named shape and an auto-detected LWT-shaped positional
+// file (no header, numeric status codes, a language-name column) — the
+// single import entry point for the whole app; there is no separate LWT
+// importer anymore.
 // ============================================================================
 
 interface ImportVocabularyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (items: ImportedVocabularyData[], strategy: MergeStrategy) => void;
+  /**
+   * languageCodeOverride is set only for an LWT-shaped file, once the user
+   * has confirmed which of their languages it targets (LWT files can be for
+   * a different language than whatever is currently selected in the app).
+   */
+  onImport: (items: ImportedVocabularyData[], strategy: MergeStrategy, languageCodeOverride?: string) => void;
 }
 
 export function ImportVocabularyModal({
@@ -37,6 +57,22 @@ export function ImportVocabularyModal({
   const [txtFileContent, setTxtFileContent] = useState<string | null>(null);
   const [txtDelimiter, setTxtDelimiter] = useState<',' | '\t'>('\t');
 
+  // Set only when the parsed file was auto-detected as LWT-shaped — its
+  // language-name column isn't necessarily the currently active app
+  // language, so we ask before importing rather than assuming.
+  const [pendingLwtLanguageName, setPendingLwtLanguageName] = useState<string | null>(null);
+  const [showLwtLanguageModal, setShowLwtLanguageModal] = useState(false);
+
+  // Set for any non-LWT-shaped CSV/TSV/TXT file — column roles are always
+  // confirmed (or corrected) explicitly rather than trusted from a silent
+  // header-alias/positional guess.
+  const [pendingMapping, setPendingMapping] = useState<{
+    header: string[];
+    rawRows: string[][];
+    initial: ColumnMapping;
+  } | null>(null);
+  const [showColumnMappingModal, setShowColumnMappingModal] = useState(false);
+
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +92,10 @@ export function ImportVocabularyModal({
       setIsDragging(false);
       setTxtFileContent(null);
       setTxtDelimiter('\t');
+      setPendingLwtLanguageName(null);
+      setShowLwtLanguageModal(false);
+      setPendingMapping(null);
+      setShowColumnMappingModal(false);
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
   }, [isOpen]);
@@ -146,6 +186,21 @@ export function ImportVocabularyModal({
     return { lemma: stripped, status: VocabularyStatus.IGNORE };
   };
 
+  // LWT's own numeric status codes, ported from the old dedicated
+  // /api/vocabulary/import-lwt route (now retired in favor of auto-detecting
+  // this shape here).
+  const mapLwtStatus = (raw: string): VocabularyStatus => {
+    const n = parseInt(raw, 10);
+    if (n === 1) return VocabularyStatus.NEWLY_SEEN;
+    if (n === 2 || n === 3) return VocabularyStatus.FAMILIAR;
+    if (n === 4 || n === 5) return VocabularyStatus.KNOWN;
+    if (n === 99) return VocabularyStatus.WELL_KNOWN;
+    if (n === 98) return VocabularyStatus.IGNORE;
+    return VocabularyStatus.NEWLY_SEEN;
+  };
+
+  const LWT_STATUS_CODES = new Set(['1', '2', '3', '4', '5', '98', '99']);
+
   // Header aliases — real-world exports label these columns all sorts of
   // ways ("Word", "Meaning", "Def"), so we try a small synonym list before
   // ever falling back to guessing by position.
@@ -165,33 +220,87 @@ export function ImportVocabularyModal({
     return -1;
   };
 
-  // Parse CSV or TSV content — same header-named column layout either way,
-  // just a different field delimiter (comma vs. tab). Note this is NOT the
-  // LWT positional .tsv format used by the /settings/data importer.
-  //
-  // If no column names match any known alias, we don't give up: we assume
-  // the file has no header at all and fall back to a fixed column order
-  // (lemma, translation, status, dictionaryFrequency, tags) — matching the
-  // order this app's own TSV export uses — so the first row is treated as
-  // data instead of being silently discarded as an unrecognized header.
-  const parseDelimited = (content: string, delimiter: ',' | '\t'): ImportedVocabularyData[] => {
-    const lines = content.split('\n').filter((line) => line.trim() !== '');
-    if (lines.length === 0) return [];
+  interface AnalyzedDelimited {
+    /** LWT's column layout is fixed by spec — no ambiguity to confirm, so its
+     * items are built immediately rather than routed through the column-mapping modal. */
+    isLwtShaped: boolean;
+    lwtItems?: ImportedVocabularyData[];
+    lwtLanguageName?: string;
+    /** Present only when !isLwtShaped — raw material for the column-mapping modal. */
+    header?: string[];
+    rawRows?: string[][];
+    initialMapping?: ColumnMapping;
+  }
 
-    const header = lines[0].split(delimiter).map((h) => h.trim().toLowerCase());
-    let lemmaIndex = findColumn(header, HEADER_ALIASES.lemma);
-    let translationIndex = findColumn(header, HEADER_ALIASES.translation);
-    let statusIndex = findColumn(header, HEADER_ALIASES.status);
-    let frequencyIndex = findColumn(header, HEADER_ALIASES.frequency);
-    let tagsIndex = findColumn(header, HEADER_ALIASES.tags);
+  // Detects the file's shape and either builds LWT items directly (fixed
+  // layout) or hands back raw rows + a best-guess column mapping for the
+  // user to confirm/correct in ColumnMappingModal before anything is built.
+  //
+  // If no column names match any known alias, we first check whether the
+  // file looks like an LWT export (no header, tab delimited, a small-integer
+  // status code in column 5, a language name in column 6). Otherwise the
+  // guessed mapping falls back to a fixed column order (lemma, translation,
+  // status, dictionaryFrequency, tags) — matching the order this app's own
+  // TSV export uses — as the mapping modal's starting point, with row 0
+  // treated as data since there's no header to skip.
+  const analyzeDelimited = (content: string, delimiter: ',' | '\t'): AnalyzedDelimited => {
+    const lines = content.split('\n').filter((line) => line.trim() !== '');
+    if (lines.length === 0) {
+      return { isLwtShaped: false, header: [], rawRows: [], initialMapping: EMPTY_MAPPING };
+    }
+
+    const headerCells = lines[0].split(delimiter).map((h) => h.trim());
+    const headerLower = headerCells.map((h) => h.toLowerCase());
+    let lemmaIndex = findColumn(headerLower, HEADER_ALIASES.lemma);
+    let translationIndex = findColumn(headerLower, HEADER_ALIASES.translation);
+    let statusIndex = findColumn(headerLower, HEADER_ALIASES.status);
+    let frequencyIndex = findColumn(headerLower, HEADER_ALIASES.frequency);
+    let tagsIndex = findColumn(headerLower, HEADER_ALIASES.tags);
 
     const hasRecognizedHeader =
       lemmaIndex !== -1 || translationIndex !== -1 || statusIndex !== -1 || frequencyIndex !== -1 || tagsIndex !== -1;
 
     let dataStartRow = 1;
     if (!hasRecognizedHeader) {
-      // Nothing recognized at all — guess by position instead of erroring
-      // out, and treat row 0 as data too, since there's no header to skip.
+      let isLwtShaped = false;
+      if (delimiter === '\t') {
+        const probeCols = lines[0].split(delimiter);
+        const statusCode = probeCols[4]?.trim();
+        const languageName = probeCols[5]?.trim();
+        isLwtShaped =
+          probeCols.length >= 6 &&
+          statusCode !== undefined &&
+          LWT_STATUS_CODES.has(statusCode) &&
+          !!languageName &&
+          !/^\d+$/.test(languageName);
+      }
+
+      if (isLwtShaped) {
+        const items: ImportedVocabularyData[] = [];
+        let lwtLanguageName: string | undefined;
+        for (let i = 0; i < lines.length && items.length < 10000; i++) {
+          const cols = lines[i].split(delimiter);
+          if (cols.length < 6) continue;
+          const lemma = cols[0]?.trim();
+          const translation = cols[1]?.trim();
+          if (!lemma || !translation) continue;
+          // column 2 = merged inflected forms, ignored — lemma is the source of truth
+          const romanization = cols[3]?.trim() || undefined;
+          const status = mapLwtStatus(cols[4]?.trim() ?? '');
+          if (!lwtLanguageName) lwtLanguageName = cols[5]?.trim();
+          // column 6 = merged tags, ignored — no per-user tag scoping on words yet
+
+          const resolved = applyIgnoreMarker(lemma, status);
+          if (!resolved) continue;
+
+          items.push({ lemma: resolved.lemma, translation, status: resolved.status, romanization });
+        }
+        return { isLwtShaped: true, lwtItems: items, lwtLanguageName };
+      }
+
+      // Nothing recognized at all — this becomes the mapping modal's
+      // starting guess, not a final answer, and row 0 counts as data since
+      // there's no header to skip.
       lemmaIndex = 0;
       translationIndex = 1;
       statusIndex = 2;
@@ -201,7 +310,8 @@ export function ImportVocabularyModal({
     } else {
       // A header row clearly exists (something matched), but one of the two
       // required columns used a name we don't recognize — fill it in from
-      // the first column position the header row isn't already using.
+      // the first column position the header row isn't already using. Still
+      // just a starting guess for the mapping modal to confirm or correct.
       const used = new Set([lemmaIndex, translationIndex, statusIndex, frequencyIndex, tagsIndex]);
       const nextFreeColumn = () => {
         let col = 0;
@@ -213,22 +323,44 @@ export function ImportVocabularyModal({
       if (translationIndex === -1) translationIndex = nextFreeColumn();
     }
 
+    const rawRows: string[][] = [];
+    for (let i = dataStartRow; i < lines.length && rawRows.length < 10000; i++) {
+      rawRows.push(lines[i].split(delimiter));
+    }
+
+    const columnCount = Math.max(headerCells.length, ...rawRows.map((r) => r.length), 1);
+    const header =
+      dataStartRow === 1 ? headerCells : Array.from({ length: columnCount }, (_, i) => `Column ${i + 1}`);
+
+    return {
+      isLwtShaped: false,
+      header,
+      rawRows,
+      initialMapping: { lemmaIndex, translationIndex, statusIndex, frequencyIndex, tagsIndex },
+    };
+  };
+
+  // Builds final items from raw rows once the user has confirmed (or
+  // corrected) the column mapping and picked a default status.
+  const buildItemsFromMapping = (
+    rawRows: string[][],
+    mapping: ColumnMapping,
+    defaultStatus: VocabularyStatus
+  ): ImportedVocabularyData[] => {
+    const { lemmaIndex, translationIndex, statusIndex, frequencyIndex, tagsIndex } = mapping;
     const items: ImportedVocabularyData[] = [];
-    for (let i = dataStartRow; i < lines.length && items.length < 10000; i++) {
-      const cols = lines[i].split(delimiter);
+
+    for (const cols of rawRows) {
+      if (items.length >= 10000) break;
       if (cols.length < Math.max(lemmaIndex, translationIndex) + 1) continue;
 
       const lemma = cols[lemmaIndex]?.trim();
       const translation = cols[translationIndex]?.trim();
       if (!lemma || !translation) continue;
 
-      // Parse optional fields
-      const status =
-        statusIndex !== -1 ? parseStatus(cols[statusIndex]?.trim()) : undefined;
+      const status = (statusIndex !== -1 ? parseStatus(cols[statusIndex]?.trim()) : undefined) ?? defaultStatus;
       const frequency =
-        frequencyIndex !== -1 && cols[frequencyIndex]
-          ? parseInt(cols[frequencyIndex].trim(), 10)
-          : undefined;
+        frequencyIndex !== -1 && cols[frequencyIndex] ? parseInt(cols[frequencyIndex].trim(), 10) : undefined;
       const tags =
         tagsIndex !== -1 && cols[tagsIndex]
           ? cols[tagsIndex].split(';').map((t) => t.trim()).filter(Boolean)
@@ -300,7 +432,9 @@ export function ImportVocabularyModal({
 
   // Applies importedItems/error state from a parse result, shared by the
   // initial parse and by re-parsing a .txt file under a different delimiter.
-  const applyParsedItems = (items: ImportedVocabularyData[], emptyMessage: string) => {
+  const applyParsedItems = (items: ImportedVocabularyData[], emptyMessage: string, lwtLanguageName?: string) => {
+    setPendingLwtLanguageName(lwtLanguageName ?? null);
+
     if (items.length === 0) {
       setError(emptyMessage);
       setImportedItems([]);
@@ -315,6 +449,37 @@ export function ImportVocabularyModal({
     }
   };
 
+  // Routes an analyzeDelimited result: LWT-shaped files are ready
+  // immediately (only the language still needs confirming, on Import
+  // click); anything else opens the column-mapping modal and leaves
+  // importedItems empty (hiding preview/merge-strategy/Import) until the
+  // user confirms a mapping.
+  const handleAnalyzed = (analyzed: AnalyzedDelimited, emptyMessage: string) => {
+    if (analyzed.isLwtShaped) {
+      setPendingMapping(null);
+      setShowColumnMappingModal(false);
+      applyParsedItems(analyzed.lwtItems ?? [], emptyMessage, analyzed.lwtLanguageName);
+      return;
+    }
+
+    const rawRows = analyzed.rawRows ?? [];
+    setPendingLwtLanguageName(null);
+    setImportedItems([]);
+    if (rawRows.length === 0) {
+      setPendingMapping(null);
+      setShowColumnMappingModal(false);
+      setError(emptyMessage);
+      return;
+    }
+    setError(null);
+    setPendingMapping({
+      header: analyzed.header ?? [],
+      rawRows,
+      initial: analyzed.initialMapping ?? EMPTY_MAPPING,
+    });
+    setShowColumnMappingModal(true);
+  };
+
   // Shared by both the click-to-browse file input and drag-and-drop —
   // drag-and-drop is the primary path per the Verbista design system's file
   // upload law (.claude/design-system.md), click-to-browse stays as a fallback.
@@ -322,6 +487,10 @@ export function ImportVocabularyModal({
     setIsProcessing(true);
     setError(null);
     setTxtFileContent(null);
+    setPendingLwtLanguageName(null);
+    setShowLwtLanguageModal(false);
+    setPendingMapping(null);
+    setShowColumnMappingModal(false);
 
     try {
       if (file.size > 25 * 1024 * 1024) {
@@ -353,12 +522,13 @@ export function ImportVocabularyModal({
       }
 
       if (ext === 'csv') {
-        applyParsedItems(parseDelimited(content, ','), 'No valid vocabulary items found in file');
+        // LWT never exports comma-delimited, so no LWT-shape detection here.
+        handleAnalyzed(analyzeDelimited(content, ','), 'No valid vocabulary items found in file');
         return;
       }
 
       if (ext === 'tsv') {
-        applyParsedItems(parseDelimited(content, '\t'), 'No valid vocabulary items found in file');
+        handleAnalyzed(analyzeDelimited(content, '\t'), 'No valid vocabulary items found in file');
         return;
       }
 
@@ -367,7 +537,7 @@ export function ImportVocabularyModal({
       const detected = detectDelimiter(content);
       setTxtFileContent(content);
       setTxtDelimiter(detected);
-      applyParsedItems(parseDelimited(content, detected), 'No valid vocabulary items found in file');
+      handleAnalyzed(analyzeDelimited(content, detected), 'No valid vocabulary items found in file');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process file');
       setImportedItems([]);
@@ -384,8 +554,8 @@ export function ImportVocabularyModal({
   const handleTxtDelimiterChange = (delimiter: ',' | '\t') => {
     if (!txtFileContent) return;
     setTxtDelimiter(delimiter);
-    applyParsedItems(
-      parseDelimited(txtFileContent, delimiter),
+    handleAnalyzed(
+      analyzeDelimited(txtFileContent, delimiter),
       `No valid vocabulary items found with ${delimiter === '\t' ? 'tab' : 'comma'} delimiting`
     );
   };
@@ -417,11 +587,40 @@ export function ImportVocabularyModal({
     if (file) processFile(file);
   };
 
-  // Final submission
+  // Final submission — an LWT-shaped file needs a language confirmed first,
+  // since its language-name column isn't necessarily the app's current one.
   const handleSubmit = useCallback(() => {
     if (importedItems.length === 0) return;
+    if (pendingLwtLanguageName) {
+      setShowLwtLanguageModal(true);
+      return;
+    }
     onImport(importedItems, mergeStrategy);
-  }, [importedItems, mergeStrategy, onImport]);
+  }, [importedItems, mergeStrategy, onImport, pendingLwtLanguageName]);
+
+  const handleLwtLanguageConfirm = (language: LanguageItem) => {
+    setShowLwtLanguageModal(false);
+    onImport(importedItems, mergeStrategy, language.code);
+  };
+
+  const handleColumnMappingConfirm = (mapping: ColumnMapping, defaultStatus: VocabularyStatus) => {
+    if (!pendingMapping) return;
+    setShowColumnMappingModal(false);
+    applyParsedItems(
+      buildItemsFromMapping(pendingMapping.rawRows, mapping, defaultStatus),
+      'No valid vocabulary items found with this column mapping'
+    );
+  };
+
+  // Nothing usable exists yet without a confirmed mapping, so cancelling
+  // clears the file entirely rather than leaving a half-parsed dangling state.
+  const handleColumnMappingCancel = () => {
+    setShowColumnMappingModal(false);
+    setPendingMapping(null);
+    setImportedItems([]);
+    setError(null);
+    setTxtFileContent(null);
+  };
 
   if (!mounted || !isOpen) return null;
 
@@ -514,6 +713,20 @@ export function ImportVocabularyModal({
             </div>
           </div>
 
+          {/* LWT-shape detected banner — the file has no header, numeric
+              status codes, and a language-name column, so we recognized it
+              as an LWT export. Language confirmation happens when Import is clicked. */}
+          {pendingLwtLanguageName && (
+            <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-primary/5 border border-primary/20 rounded">
+              <Info size={16} className="text-primary shrink-0 mt-0.5" />
+              <p className="font-sans text-ui-xs text-ink">
+                Detected an LWT-format export for language{' '}
+                <strong>&ldquo;{pendingLwtLanguageName}&rdquo;</strong>. You&rsquo;ll confirm
+                which of your languages that maps to before this imports.
+              </p>
+            </div>
+          )}
+
           {/* TXT delimiter picker — shown once a .txt file has been read, since
               its delimiter is ambiguous and we've only guessed at it */}
           {txtFileContent && (
@@ -558,10 +771,13 @@ export function ImportVocabularyModal({
               TXT files can be either (we guess, then let you switch it below
               if we guessed wrong). A header row naming the columns below
               works best, matched case-insensitively; other common names like
-              &ldquo;Word&rdquo; or &ldquo;Meaning&rdquo; are recognized too,
-              and if none of that matches, the first two columns are assumed
-              to be lemma and translation. This is a different format from
-              the LWT-export importer in Settings &rarr; Data.
+              &ldquo;Word&rdquo; or &ldquo;Meaning&rdquo; are recognized too.
+              Either way, you&rsquo;ll get a chance to confirm or correct
+              which column is which (and pick a default learning status)
+              before anything imports. A raw LWT (Learning With Texts) export
+              is also recognized automatically, numeric status codes and
+              all; you&rsquo;ll just be asked to confirm which language
+              it&rsquo;s for instead.
             </p>
             <p className="font-sans text-ui-xs font-medium text-ink mb-1">
               Required Fields:
@@ -740,6 +956,27 @@ export function ImportVocabularyModal({
           </div>
         </div>
       </div>
+
+      {/* Shown right after parsing any non-LWT-shaped CSV/TSV/TXT file — lets
+          the user confirm or correct which column is which, and what
+          learning status rows without one should default to. */}
+      <ColumnMappingModal
+        isOpen={showColumnMappingModal}
+        onClose={handleColumnMappingCancel}
+        onConfirm={handleColumnMappingConfirm}
+        header={pendingMapping?.header ?? []}
+        sampleRows={pendingMapping?.rawRows ?? []}
+        initialMapping={pendingMapping?.initial ?? EMPTY_MAPPING}
+      />
+
+      {/* Shown when Import is clicked on an LWT-detected file — confirms
+          which of the user's languages the file's language column maps to. */}
+      <LwtLanguageModal
+        isOpen={showLwtLanguageModal}
+        onClose={() => setShowLwtLanguageModal(false)}
+        onConfirm={handleLwtLanguageConfirm}
+        detectedLanguageName={pendingLwtLanguageName ?? ''}
+      />
     </>,
     document.body
   );

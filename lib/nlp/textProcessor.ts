@@ -28,6 +28,7 @@ import { processWithSpacy } from '@/lib/nlp/spacyClient';
 import { matchesLanguageScript, requiresRomanization } from '@/lib/nlp/utils/script-detector';
 import type { LemmatizeResult } from '@/lib/nlp/types';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
+import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 import { calculateCompletionPercentage } from '@/lib/utils/textStats';
 
 // ============================================================================
@@ -446,6 +447,17 @@ export async function processTextForImport(
         // Get all unique lemmas from lemmatization results
         const uniqueLemmas = [...new Set(Array.from(lemmaResults.values()).map((r) => r.lemma))];
 
+        // userFrequency counts actual encounters — how many times this lemma
+        // occurs as a word instance in this text — not "was this text
+        // imported" (that would cap every text's contribution at +1
+        // regardless of whether the word appeared once or fifty times).
+        const lemmaOccurrenceCounts = new Map<string, number>();
+        for (const token of wordTokens) {
+          const lemma = lemmaResults.get(token.cleanForm)?.lemma;
+          if (!lemma) continue;
+          lemmaOccurrenceCounts.set(lemma, (lemmaOccurrenceCounts.get(lemma) ?? 0) + 1);
+        }
+
         // Batch query existing words (NOT N+1 queries) — scoped to this user
         const existingWords = await tx.query.words.findMany({
           where: and(
@@ -487,8 +499,8 @@ export async function processTextForImport(
               userId,
               status: 'UNKNOWN' as const,
               romanization,
-              dictionaryFrequency: 0, // TODO: Integrate frequency dictionary
-              userFrequency: 1,
+              dictionaryFrequency: lookupDictionaryFrequency(language.code, lemma) ?? 0,
+              userFrequency: lemmaOccurrenceCounts.get(lemma) ?? 1,
             };
           });
 
@@ -518,21 +530,29 @@ export async function processTextForImport(
         );
 
         if (existingLemmas.length > 0) {
-          // Batch update using single SQL query (10-100x faster than N individual queries)
-          // This uses a single UPDATE with WHERE IN instead of Promise.all with N queries
-          await tx
-            .update(words)
-            .set({
-              userFrequency: sql`${words.userFrequency} + 1`,
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(words.languageId, languageId),
-                inArray(words.lemma, existingLemmas),
-                eq(words.userId, userId),
-              )
-            );
+          // Each lemma increments by its own occurrence count in this text,
+          // not a flat +1 per text — so a per-row CASE expression is needed
+          // instead of a single WHERE-IN update (which could only apply one
+          // shared increment to every matched row). Batched at 500 rows per
+          // statement, same convention as the word-instance inserts above.
+          const USER_FREQ_UPDATE_BATCH_SIZE = 500;
+          for (let i = 0; i < existingLemmas.length; i += USER_FREQ_UPDATE_BATCH_SIZE) {
+            const batch = existingLemmas.slice(i, i + USER_FREQ_UPDATE_BATCH_SIZE);
+            const wordIds = batch.map((lemma) => existingWordsMap.get(lemma)!.id);
+            const caseExpr = sql`CASE ${sql.join(
+              batch.map((lemma) => {
+                const word = existingWordsMap.get(lemma)!;
+                const count = lemmaOccurrenceCounts.get(lemma) ?? 1;
+                return sql`WHEN ${words.id} = ${word.id} THEN ${words.userFrequency} + ${count}`;
+              }),
+              sql` `
+            )} END`;
+
+            await tx
+              .update(words)
+              .set({ userFrequency: caseExpr, updatedAt: new Date() })
+              .where(inArray(words.id, wordIds));
+          }
 
           reportProgress(
             progressCallback,
@@ -785,6 +805,16 @@ export async function reprocessTextContent(
 
         const uniqueLemmas = [...new Set(Array.from(lemmaResults.values()).map((r) => r.lemma))];
 
+        // See processTextForImport's identical comment — userFrequency counts
+        // actual occurrences of the lemma in the (regenerated) content, not a
+        // flat 1 per newly-created word.
+        const lemmaOccurrenceCounts = new Map<string, number>();
+        for (const token of wordTokens) {
+          const lemma = lemmaResults.get(token.cleanForm)?.lemma;
+          if (!lemma) continue;
+          lemmaOccurrenceCounts.set(lemma, (lemmaOccurrenceCounts.get(lemma) ?? 0) + 1);
+        }
+
         const existingWords = await tx.query.words.findMany({
           where: and(
             eq(words.languageId, language.id),
@@ -810,8 +840,8 @@ export async function reprocessTextContent(
               userId,
               status: 'UNKNOWN' as const,
               romanization,
-              dictionaryFrequency: 0,
-              userFrequency: 1,
+              dictionaryFrequency: lookupDictionaryFrequency(language.code, lemma) ?? 0,
+              userFrequency: lemmaOccurrenceCounts.get(lemma) ?? 1,
             };
           });
 

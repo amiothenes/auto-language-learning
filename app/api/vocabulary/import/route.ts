@@ -6,12 +6,14 @@ import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 
 // ============================================================================
 // POST /api/vocabulary/import — Bulk import vocabulary from the Vocabulary
-// page's CSV/TSV/JSON modal (header-named columns, already parsed client-side
-// into ImportedVocabularyData[]). Separate from /api/vocabulary/import-lwt,
-// which speaks LWT's positional .tsv format with numeric status codes.
+// page's Import modal. Handles both this app's own header-named CSV/TSV/JSON
+// shape and (auto-detected client-side) LWT-shaped positional .tsv/.txt
+// files — both arrive here already normalized into ImportedVocabularyData[],
+// so this route doesn't need to know which shape the source file was.
 // ============================================================================
 
 const BATCH_SIZE = 500;
@@ -22,6 +24,7 @@ interface ImportItem {
   translation?: string;
   status?: string;
   dictionaryFrequency?: number;
+  romanization?: string;
 }
 
 interface ImportRequestBody {
@@ -85,17 +88,25 @@ export async function POST(request: NextRequest) {
         item.status && validStatuses.has(item.status)
           ? (item.status as VocabularyStatus)
           : VocabularyStatus.NEWLY_SEEN;
-      const dictionaryFrequency =
+      const providedFrequency =
         typeof item.dictionaryFrequency === 'number' &&
         item.dictionaryFrequency >= 0 &&
         item.dictionaryFrequency <= 100
           ? item.dictionaryFrequency
           : undefined;
+      // Corpus-calculated commonality takes priority over whatever the file
+      // said — the file's number is only a fallback for lemmas the corpus
+      // has no data for (rare words, proper nouns). Always resolves to a
+      // concrete number (0 if neither source has one) so every row writes
+      // an explicit value rather than silently relying on the column default.
+      const dictionaryFrequency =
+        lookupDictionaryFrequency(languageCode, lemma) ?? providedFrequency ?? 0;
       return {
         lemma,
         translation: item.translation?.trim() || null,
         status,
         dictionaryFrequency,
+        romanization: item.romanization?.trim() || null,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
@@ -122,7 +133,8 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         status: row.status,
         translation: row.translation,
-        ...(row.dictionaryFrequency !== undefined ? { dictionaryFrequency: row.dictionaryFrequency } : {}),
+        dictionaryFrequency: row.dictionaryFrequency,
+        romanization: row.romanization,
       }));
 
       if (mergeStrategy === 'skip') {
@@ -146,7 +158,11 @@ export async function POST(request: NextRequest) {
             set: {
               status: sql`EXCLUDED.status`,
               translation: sql`COALESCE(EXCLUDED.translation, ${words.translation})`,
-              dictionaryFrequency: sql`COALESCE(EXCLUDED.dictionary_frequency, ${words.dictionaryFrequency})`,
+              // Always freshly calculated (corpus lookup, falling back to a
+              // provided value, falling back to 0) — never partially stale
+              // via a COALESCE-to-existing fallback like translation gets.
+              dictionaryFrequency: sql`EXCLUDED.dictionary_frequency`,
+              romanization: sql`COALESCE(EXCLUDED.romanization, ${words.romanization})`,
               updatedAt: sql`now()`,
             },
           });
