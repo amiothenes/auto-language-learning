@@ -6,7 +6,8 @@
 // Keyboard: Arrow Up/Down, Home/End, Enter, ESC
 // ============================================================================
 
-import { useState, useRef, useEffect, useId } from 'react';
+import { useState, useRef, useEffect, useId, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,12 @@ interface SelectProps {
   className?: string;
 }
 
+interface MenuRect {
+  top: number;
+  left: number;
+  width: number;
+}
+
 export function Select({
   options,
   value,
@@ -34,9 +41,30 @@ export function Select({
   className,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuRect, setMenuRect] = useState<MenuRect | null>(null);
+  const [portalMounted, setPortalMounted] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectId = useId();
+
+  // Portal target only exists client-side
+  useEffect(() => {
+    setPortalMounted(true);
+  }, []);
+
+  // Position the portaled menu against the trigger button's current viewport position
+  const updateMenuRect = useCallback(() => {
+    const btn = triggerRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    setMenuRect({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }, []);
+
+  const handleToggle = () => {
+    if (!isOpen) updateMenuRect();
+    setIsOpen((prev) => !prev);
+  };
 
   // Keyboard navigation
   const { highlightedIndex } = useDropdownNavigation(
@@ -51,10 +79,13 @@ export function Select({
     dropdownRef
   );
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside the trigger or the portaled menu
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideTrigger = selectRef.current?.contains(target);
+      const insideMenu = dropdownRef.current?.contains(target);
+      if (!insideTrigger && !insideMenu) {
         setIsOpen(false);
       }
     }
@@ -64,6 +95,26 @@ export function Select({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isOpen]);
+
+  // Close on scroll of any ancestor (e.g. a scrollable modal) so the menu never
+  // drifts from its trigger; ignore scrolling inside the menu's own option list.
+  // Reposition (rather than close) on resize.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleScroll = (event: Event) => {
+      if (dropdownRef.current?.contains(event.target as Node)) return;
+      setIsOpen(false);
+    };
+    const handleResize = () => updateMenuRect();
+
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, updateMenuRect]);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -79,8 +130,9 @@ export function Select({
       )}
       <div ref={selectRef} className="relative">
         <button
+          ref={triggerRef}
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggle}
           role="combobox"
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -100,37 +152,40 @@ export function Select({
           />
         </button>
 
-        {isOpen && (
-          <div
-            ref={dropdownRef}
-            id={`${selectId}-listbox`}
-            role="listbox"
-            className="absolute top-full left-0 right-0 mt-1 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10 max-h-60 overflow-y-auto"
-          >
-            {options.map((option, index) => (
-              <button
-                key={option.value}
-                role="option"
-                aria-selected={value === option.value}
-                data-index={index}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer',
-                  value === option.value
-                    ? 'bg-primary text-white font-medium'
-                    : highlightedIndex === index
-                    ? 'bg-desk text-ink'
-                    : 'text-ink hover:bg-desk'
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {isOpen && portalMounted && menuRect &&
+          createPortal(
+            <div
+              ref={dropdownRef}
+              id={`${selectId}-listbox`}
+              role="listbox"
+              style={{ position: 'fixed', top: menuRect.top, left: menuRect.left, width: menuRect.width }}
+              className="z-[9999] bg-paper border border-border rounded-card shadow-modal overflow-hidden max-h-60 overflow-y-auto"
+            >
+              {options.map((option, index) => (
+                <button
+                  key={option.value}
+                  role="option"
+                  aria-selected={value === option.value}
+                  data-index={index}
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  className={cn(
+                    'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer',
+                    value === option.value
+                      ? 'bg-primary text-white font-medium'
+                      : highlightedIndex === index
+                      ? 'bg-desk text-ink'
+                      : 'text-ink hover:bg-desk'
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>,
+            document.body
+          )}
       </div>
     </div>
   );
