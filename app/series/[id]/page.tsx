@@ -37,13 +37,38 @@ import { EditTextModal } from '@/components/texts/EditTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
-import { Plus, Upload, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { Plus, Upload, ChevronDown, ArrowUpDown, Download } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
-import type { ImportTextRequest, ImportTextResponse } from '@/lib/types/api';
+import type { ImportTextRequest, ImportTextResponse, WordInstanceItem, SentenceListItem } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { TextSortOption } from '@/lib/types/ui';
 import { compareByRecentlyRead } from '@/lib/utils/textSort';
+import { buildOneTCards, buildOneTCsv, buildOneTCsvWithSource, type OneTCardWithSource } from '@/lib/utils/oneTSentences';
+
+// Fetches one text's word instances + sentences and derives its qualifying 1T
+// cards — shared by the per-row export and the whole-series export below,
+// since the series page (unlike the Reader) never has this data preloaded.
+async function fetchOneTCardsForText(textId: string) {
+  const [instancesRes, sentencesRes] = await Promise.all([
+    fetch(`/api/texts/${textId}/word-instances`),
+    fetch(`/api/texts/${textId}/sentences`),
+  ]);
+  if (!instancesRes.ok || !sentencesRes.ok) throw new Error('Failed to fetch text data');
+  const { instances } = await instancesRes.json() as { instances: WordInstanceItem[] };
+  const { sentences } = await sentencesRes.json() as { sentences: SentenceListItem[] };
+  return buildOneTCards(sentences, instances);
+}
+
+function triggerDownload(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ============================================================================
 // SortableTextListRow — thin DnD wrapper around TextListRow
@@ -60,6 +85,7 @@ interface SortableTextListRowProps {
   onRead: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onExportOneT: () => void;
 }
 
 function SortableTextListRow(props: SortableTextListRowProps) {
@@ -232,6 +258,46 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     });
   }, []);
 
+  const [isExportingSeriesOneT, setIsExportingSeriesOneT] = useState(false);
+
+  const handleExportOneTForText = useCallback(async (text: { id: string; title: string }) => {
+    try {
+      const cards = await fetchOneTCardsForText(text.id);
+      if (cards.length === 0) {
+        showToast('No 1T sentences found', 'info');
+        return;
+      }
+      const safeTitle = text.title.replace(/[^\w\s-]/g, '').trim();
+      triggerDownload(buildOneTCsv(cards), `${safeTitle}-1t-sentences.csv`, 'text/csv;charset=utf-8');
+    } catch {
+      showToast('Failed to export 1T sentences', 'error');
+    }
+  }, [showToast]);
+
+  const handleExportSeriesOneT = useCallback(async () => {
+    if (!seriesData || isExportingSeriesOneT) return;
+    setIsExportingSeriesOneT(true);
+    try {
+      const perText = await Promise.all(
+        seriesData.texts.map(async (text): Promise<OneTCardWithSource[]> => {
+          const cards = await fetchOneTCardsForText(text.id);
+          return cards.map((card) => ({ ...card, sourceTitle: text.title }));
+        })
+      );
+      const allCards = perText.flat();
+      if (allCards.length === 0) {
+        showToast('No 1T sentences found in this series', 'info');
+        return;
+      }
+      const safeName = seriesName.replace(/[^\w\s-]/g, '').trim();
+      triggerDownload(buildOneTCsvWithSource(allCards), `${safeName}-1t-sentences.csv`, 'text/csv;charset=utf-8');
+    } catch {
+      showToast('Failed to export series 1T sentences', 'error');
+    } finally {
+      setIsExportingSeriesOneT(false);
+    }
+  }, [seriesData, seriesName, isExportingSeriesOneT, showToast]);
+
   const handleTitleUpdate = async (newTitle: string) => {
     setSeriesName(newTitle);
     try {
@@ -254,8 +320,8 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     const partCount = result.texts.length;
     const totalWords = result.texts.reduce((s, t) => s + t.wordCount, 0);
     const msg = partCount > 1
-      ? `Imported as ${partCount} parts · ${totalWords.toLocaleString()} words total`
-      : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString()} words`;
+      ? `Imported as ${partCount} parts · ${totalWords.toLocaleString('en-US')} words total`
+      : `"${result.texts[0]?.title}" imported · ${totalWords.toLocaleString('en-US')} words`;
     showToast(msg);
     queryClient.invalidateQueries({ queryKey: ['series', id] });
     queryClient.invalidateQueries({ queryKey: ['series-list'] });
@@ -528,6 +594,16 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
               >
                 Import
               </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<Download size={14} strokeWidth={1.5} />}
+                onClick={handleExportSeriesOneT}
+                disabled={isExportingSeriesOneT}
+              >
+                {isExportingSeriesOneT ? 'Exporting…' : 'Export 1T'}
+              </Button>
             </div>
 
             {/* Texts content */}
@@ -570,6 +646,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                         onRead={() => router.push(`/reader/${text.id}`)}
                         onEdit={() => setEditTextTarget({ id: text.id, title: text.title })}
                         onDelete={() => setDeleteTextTarget({ id: text.id, title: text.title })}
+                        onExportOneT={() => handleExportOneTForText({ id: text.id, title: text.title })}
                       />
                     ))}
                   </div>
@@ -589,6 +666,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
                     preview={text.preview}
                     onDelete={setDeleteTextTarget}
                     onEdit={setEditTextTarget}
+                    onExportOneT={handleExportOneTForText}
                   />
                 ))}
               </div>

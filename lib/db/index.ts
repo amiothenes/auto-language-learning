@@ -13,18 +13,9 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// Reuse the client across Next.js dev-mode hot reloads to avoid exhausting
-// Supabase's pooler connection limit (each module reload would otherwise
-// spin up a brand new postgres() connection pool).
-const globalForDb = globalThis as unknown as {
-  postgresClient?: ReturnType<typeof postgres>;
-};
-
-const client =
-  globalForDb.postgresClient ?? postgres(process.env.DATABASE_URL, { max: 10 });
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForDb.postgresClient = client;
-}
-
+// max: 1 — each warm serverless instance holds its own module-scoped client,
+// so this caps connections per instance, not per request (Supabase guidance).
+// prepare: false — required for the transaction-mode pooler (Supavisor), which
+// hands out a different underlying connection per query.
+const client = postgres(process.env.DATABASE_URL, { max: 1, prepare: false });
 export const db = drizzle({ client, schema });

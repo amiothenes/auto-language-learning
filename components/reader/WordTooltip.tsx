@@ -9,6 +9,7 @@ import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 import { X, ExternalLink, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
+import { MORPH_PRIORITY, buildMorphSummary, buildMorphFull } from '@/lib/utils/morphology';
 
 interface WordTooltipProps {
   wordData: WordData;
@@ -30,27 +31,6 @@ const STATUS_CONFIG: Record<VocabularyStatus, { label: string }> = {
   [VocabularyStatus.WELL_KNOWN]: { label: 'Well Known'  },
   [VocabularyStatus.IGNORE]:     { label: 'Ignored'     },
 };
-
-const MORPH_PRIORITY = ['tense', 'case', 'number'] as const;
-
-const MORPH_LABELS: Record<string, string> = {
-  tense: 'Tense', case: 'Case', number: 'Number', mood: 'Mood',
-  gender: 'Gender', voice: 'Voice', aspect: 'Aspect', person: 'Person',
-};
-
-function buildMorphSummary(data: Record<string, unknown>): string {
-  const d = Object.fromEntries(Object.entries(data).map(([k, v]) => [k.toLowerCase(), v]));
-  return MORPH_PRIORITY.filter((k) => d[k]).map((k) => String(d[k])).join(', ');
-}
-
-function buildMorphFull(data: Record<string, unknown>): string {
-  const d = Object.fromEntries(Object.entries(data).map(([k, v]) => [k.toLowerCase(), v]));
-  const order = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'];
-  return order
-    .filter((k) => d[k])
-    .map((k) => `${MORPH_LABELS[k] ?? k}: ${d[k]}`)
-    .join(' · ');
-}
 
 export function WordTooltip({
   wordData,

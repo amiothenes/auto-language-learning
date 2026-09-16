@@ -6,7 +6,7 @@ import { Content, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { MoreVertical, FileText, Edit, Trash2 } from 'lucide-react';
+import { MoreVertical, FileText, Edit, Trash2, Download } from 'lucide-react';
 
 // ============================================================================
 // TextCard Component
@@ -25,6 +25,7 @@ interface TextCardProps {
   dateAdded?: string;
   onDelete?: (text: { id: string; title: string }) => void;
   onEdit?: (text: { id: string; title: string }) => void;
+  onExportOneT?: (text: { id: string; title: string }) => void;
 }
 
 export function TextCard({
@@ -39,6 +40,7 @@ export function TextCard({
   dateAdded,
   onDelete,
   onEdit,
+  onExportOneT,
 }: TextCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -76,6 +78,9 @@ export function TextCard({
     }
     if (action === 'edit' && onEdit) {
       onEdit({ id, title });
+    }
+    if (action === 'export-onet' && onExportOneT) {
+      onExportOneT({ id, title });
     }
   };
 
@@ -118,6 +123,15 @@ export function TextCard({
                 className="w-full px-4 py-3 text-left rounded-none justify-start"
               >
                 Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<Download size={16} className="text-muted" strokeWidth={1.5} />}
+                onClick={(e) => handleMenuAction(e, 'export-onet')}
+                className="w-full px-4 py-3 text-left rounded-none justify-start"
+              >
+                Export 1T Sentences
               </Button>
               <Button
                 variant="ghost"

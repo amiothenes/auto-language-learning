@@ -83,16 +83,6 @@ export interface ApiErrorResponse {
 }
 
 // ============================================================================
-// LWT Vocabulary Import API — POST /api/vocabulary/import-lwt
-// ============================================================================
-
-export interface ImportLwtResponse {
-  imported: number;
-  skipped: number;
-  errors: string[];
-}
-
-// ============================================================================
 // Languages API
 // ============================================================================
 

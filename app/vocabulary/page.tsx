@@ -20,11 +20,13 @@ import { ImportVocabularyModal } from '@/components/vocabulary/ImportVocabularyM
 import { EditVocabularyModal } from '@/components/vocabulary/EditVocabularyModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ChevronLeft, ChevronRight, Library, Plus, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Library, Plus, Upload, Download } from 'lucide-react';
 import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
+import type { VocabularyResponse } from '@/lib/hooks/useVocabulary';
 import { useVocabulary } from '@/lib/hooks/useVocabulary';
 import { useStats } from '@/lib/hooks/useStats';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 // ============================================================================
 // Vocabulary Page Component
@@ -34,6 +36,8 @@ export default function VocabularyPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast, showToast, hideToast } = useToast();
+  const { selectedLanguage, languages } = useLanguage();
+  const [isExporting, setIsExporting] = useState(false);
 
   // Filter state (passed to API as query params)
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,14 +244,160 @@ export default function VocabularyPage() {
     showToast('Word updated');
   };
 
-  const handleAddVocabulary = (vocabData: NewVocabularyData) => {
-    showToast(`"${vocabData.lemma}" added to vocabulary!`);
-    setIsAddVocabModalOpen(false);
+  // Shared with the Import modal — both go through /api/vocabulary/import,
+  // just with a one-item array and an 'update' upsert for the single-add case.
+  // languageCodeOverride is set only for an LWT-shaped file the user has
+  // confirmed a target language for, which may differ from the currently
+  // selected app language.
+  const postVocabularyImport = async (
+    items: ImportedVocabularyData[],
+    mergeStrategy: MergeStrategy,
+    languageCodeOverride?: string
+  ) => {
+    const res = await fetch('/api/vocabulary/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        languageCode: languageCodeOverride ?? selectedLanguage,
+        mergeStrategy,
+        items,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || 'Failed to save vocabulary');
+    }
+    return res.json() as Promise<{ imported: number; skipped: number }>;
   };
 
-  const handleImportVocabulary = (items: ImportedVocabularyData[], _strategy: MergeStrategy) => {
-    showToast(`${items.length} vocabulary item${items.length > 1 ? 's' : ''} imported successfully!`);
-    setIsImportVocabModalOpen(false);
+  const addVocabularyMutation = useMutation({
+    mutationFn: (vocabData: NewVocabularyData) =>
+      postVocabularyImport(
+        [
+          {
+            lemma: vocabData.lemma,
+            translation: vocabData.translation,
+            status: vocabData.status,
+            dictionaryFrequency: vocabData.dictionaryFrequency,
+          },
+        ],
+        'update'
+      ),
+    onSuccess: (_data, vocabData) => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setIsAddVocabModalOpen(false);
+      showToast(`"${vocabData.lemma}" added to vocabulary!`);
+    },
+    onError: (error) => {
+      showToast(error instanceof Error ? error.message : 'Failed to add word', 'error');
+    },
+  });
+
+  const handleAddVocabulary = (vocabData: NewVocabularyData) => {
+    addVocabularyMutation.mutate(vocabData);
+  };
+
+  // Bulk import mutation — persists items parsed client-side by
+  // ImportVocabularyModal (CSV/TSV/TXT/JSON, including auto-detected LWT files).
+  const importMutation = useMutation({
+    mutationFn: ({
+      items,
+      mergeStrategy,
+      languageCodeOverride,
+    }: {
+      items: ImportedVocabularyData[];
+      mergeStrategy: MergeStrategy;
+      languageCodeOverride?: string;
+    }) => postVocabularyImport(items, mergeStrategy, languageCodeOverride),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setIsImportVocabModalOpen(false);
+
+      // Imported into a different language than the one currently shown on
+      // screen (an LWT file's own language, confirmed via the picker) — the
+      // list on screen won't include these until the user switches to it,
+      // so say so rather than leaving a "where did my words go?" moment.
+      const targetedOtherLanguage =
+        variables.languageCodeOverride && variables.languageCodeOverride !== selectedLanguage;
+      const targetLanguageName = targetedOtherLanguage
+        ? languages.find((l) => l.code === variables.languageCodeOverride)?.name
+        : undefined;
+
+      showToast(
+        `Imported ${data.imported} word${data.imported === 1 ? '' : 's'}` +
+          (data.skipped > 0 ? ` (${data.skipped} skipped as duplicates)` : '') +
+          (targetLanguageName ? ` into ${targetLanguageName}. Switch languages to see them.` : '')
+      );
+    },
+    onError: (error) => {
+      showToast(error instanceof Error ? error.message : 'Failed to import vocabulary', 'error');
+    },
+  });
+
+  const handleImportVocabulary = (
+    items: ImportedVocabularyData[],
+    strategy: MergeStrategy,
+    languageCodeOverride?: string
+  ) => {
+    importMutation.mutate({ items, mergeStrategy: strategy, languageCodeOverride });
+  };
+
+  // TSV export — pages through the filtered vocabulary (search/status/sort
+  // already applied server-side) at the API's max page size, since export
+  // should cover every matching word, not just the current page on screen.
+  const handleExportTsv = async () => {
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams({ languageCode: selectedLanguage, limit: '100' });
+      if (debouncedSearchQuery) params.set('search', debouncedSearchQuery);
+      if (activeStatus) params.set('status', activeStatus);
+      if (sortBy) params.set('sort', sortBy);
+
+      const escapeTsv = (val: string | number | null | undefined) => {
+        const s = String(val ?? '');
+        return s.includes('\t') || s.includes('"') || s.includes('\n')
+          ? `"${s.replace(/"/g, '""')}"`
+          : s;
+      };
+
+      const rows: string[] = [];
+      let page = 1;
+      let totalPagesRemote = 1;
+      do {
+        params.set('page', String(page));
+        const res = await fetch(`/api/vocabulary?${params}`);
+        if (!res.ok) throw new Error('Failed to fetch vocabulary for export');
+        const data = (await res.json()) as VocabularyResponse;
+        totalPagesRemote = data.totalPages;
+        for (const w of data.words) {
+          rows.push(
+            [escapeTsv(w.lemma), escapeTsv(w.translation), escapeTsv(w.status), w.dictionaryFrequency, w.userFrequency]
+              .join('\t')
+          );
+        }
+        page++;
+      } while (page <= totalPagesRemote);
+
+      if (rows.length === 0) {
+        showToast('No vocabulary to export', 'info');
+        return;
+      }
+
+      const header = 'Lemma\tTranslation\tStatus\tDictionaryFrequency\tUserFrequency\n';
+      const blob = new Blob(['﻿' + header + rows.join('\n')], { type: 'text/tab-separated-values;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vocabulary-${selectedLanguage}.tsv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to export vocabulary', 'error');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -264,6 +414,15 @@ export default function VocabularyPage() {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              size="lg"
+              leftIcon={<Download size={18} strokeWidth={1.5} />}
+              onClick={handleExportTsv}
+              disabled={isExporting || total === 0}
+            >
+              {isExporting ? 'Exporting...' : 'Export'}
+            </Button>
             <Button
               variant="secondary"
               size="lg"

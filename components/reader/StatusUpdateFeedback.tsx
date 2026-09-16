@@ -169,7 +169,7 @@ export function StatusUpdateFeedback({
                 <span className="inline-flex items-center gap-1.5">
                   <span>Words seen:</span>
                   <span className="font-serif text-ui-base text-ink font-semibold tabular-nums">
-                    {animatedKnownWords.toLocaleString()}
+                    {animatedKnownWords.toLocaleString('en-US')}
                   </span>
                   {knownWordsDelta > 0 && (
                     <span className="text-primary font-medium">

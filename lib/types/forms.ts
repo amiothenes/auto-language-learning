@@ -112,4 +112,6 @@ export interface ImportedVocabularyData {
   dictionaryFrequency?: number;
   /** Optional tags */
   tags?: string[];
+  /** Optional romanization (only populated from an LWT-shaped import file) */
+  romanization?: string;
 }

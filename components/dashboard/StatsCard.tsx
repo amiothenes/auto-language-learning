@@ -138,13 +138,13 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
         <div className="grid grid-cols-3 divide-x divide-border xl:hidden">
           <div className="py-3 px-2 flex flex-col items-center gap-0.5 text-center">
             <Heading size="xl" weight="bold" as="h3">
-              {totalWords.toLocaleString()}
+              {totalWords.toLocaleString('en-US')}
             </Heading>
             <Muted size="xs">Total Words</Muted>
           </div>
           <div className="py-3 px-2 flex flex-col items-center gap-0.5 text-center">
             <Heading size="xl" weight="bold" as="h3">
-              {knownWords.toLocaleString()}
+              {knownWords.toLocaleString('en-US')}
             </Heading>
             <Muted size="xs">Known Words</Muted>
           </div>
@@ -165,7 +165,7 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
             <div className="flex-1 min-w-0">
               <Muted size="xs" className="mb-0.5">Total Words</Muted>
               <Heading size="xl" weight="bold" as="h3">
-                {totalWords.toLocaleString()}
+                {totalWords.toLocaleString('en-US')}
               </Heading>
             </div>
           </div>
@@ -177,11 +177,11 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
               <Muted size="xs" className="mb-0.5">Known Words</Muted>
               <div className="flex items-baseline gap-2">
                 <Heading size="xl" weight="bold" as="h3">
-                  {knownWords.toLocaleString()}
+                  {knownWords.toLocaleString('en-US')}
                 </Heading>
                 {totalWords > 0 && (
                   <Body size="xs" className="text-primary">
-                    of {totalWords.toLocaleString()} reviewed
+                    of {totalWords.toLocaleString('en-US')} reviewed
                   </Body>
                 )}
               </div>

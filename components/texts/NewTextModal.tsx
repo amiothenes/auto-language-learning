@@ -387,11 +387,11 @@ export function NewTextModal({
                   </span>
                 ) : estimatedParts > 1 ? (
                   <span>
-                    {wordCount.toLocaleString()} words{' '}
+                    {wordCount.toLocaleString('en-US')} words{' '}
                     <span className="text-amber-600 font-medium">· will split into ~{estimatedParts} parts</span>
                   </span>
                 ) : (
-                  wordCount > 0 ? `${wordCount.toLocaleString()} words` : `${contentLength} characters`
+                  wordCount > 0 ? `${wordCount.toLocaleString('en-US')} words` : `${contentLength} characters`
                 )}
               </p>
             </div>
