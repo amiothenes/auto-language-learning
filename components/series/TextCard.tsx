@@ -19,6 +19,7 @@ interface TextCardProps {
   wordCount: number;
   knownPercentage: number;
   lastRead: string;
+  hasBeenRead: boolean;
   preview: string;
   seriesName?: string;
   dateAdded?: string;
@@ -32,6 +33,7 @@ export function TextCard({
   wordCount,
   knownPercentage,
   lastRead,
+  hasBeenRead,
   preview,
   seriesName,
   dateAdded,
@@ -143,7 +145,7 @@ export function TextCard({
           <Muted size="xs">{wordCount.toLocaleString('en-US')} words</Muted>
         </div>
         <Muted size="xs" className="text-primary font-medium">
-          {knownPercentage}% complete
+          {Math.round(knownPercentage)}% complete
         </Muted>
       </div>
 
@@ -152,7 +154,7 @@ export function TextCard({
 
       {/* Last Read / Date Added */}
       <div className="flex items-center justify-between gap-2">
-        <Muted size="xs">Last read {lastRead}</Muted>
+        <Muted size="xs">{hasBeenRead ? `Last read ${lastRead}` : 'Never opened'}</Muted>
         {dateAdded && <Muted size="xs">Added {dateAdded}</Muted>}
       </div>
     </Card>

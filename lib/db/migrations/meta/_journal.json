@@ -71,6 +71,20 @@
       "when": 1785624783547,
       "tag": "0009_mean_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789408699280,
+      "tag": "0010_cute_scrambler",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789480766424,
+      "tag": "0011_fast_nuke",
+      "breakpoints": true
     }
   ]
 }

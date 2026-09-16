@@ -101,7 +101,7 @@ export function MiniPlayerMobile({
           onClick={onPlayPause}
           disabled={disabled || isLoading}
           className={cn(
-            'flex items-center justify-center w-9 h-9 rounded-full text-paper transition-colors disabled:opacity-40 shrink-0',
+            'flex items-center justify-center w-9 h-9 rounded-full text-paper transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0',
             isError ? 'bg-danger hover:bg-danger/90' : 'bg-primary hover:bg-primary/90',
           )}
           aria-label={isError ? 'Narration unavailable — tap to retry' : isPlaying ? 'Pause narration' : 'Play narration'}
@@ -130,7 +130,7 @@ export function MiniPlayerMobile({
           onClick={onToggleTutorMode}
           disabled={disabled}
           className={cn(
-            'flex items-center justify-center gap-1.5 h-8 px-3 rounded-full font-sans text-ui-xs transition-colors disabled:opacity-40 shrink-0',
+            'flex items-center justify-center gap-1.5 h-8 px-3 rounded-full font-sans text-ui-xs transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0',
             tutorModeEnabled
               ? 'bg-primary/10 border border-primary/30 text-primary font-medium'
               : 'border border-border text-muted',
@@ -144,7 +144,7 @@ export function MiniPlayerMobile({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-ink transition-colors shrink-0"
+          className="flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-ink transition-colors shrink-0 cursor-pointer"
           aria-expanded={expanded}
           aria-label={expanded ? 'Hide player controls' : 'Show player controls'}
         >
@@ -160,7 +160,7 @@ export function MiniPlayerMobile({
               type="button"
               onClick={onPrevious}
               disabled={disabled || !started}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Previous sentence"
             >
               <SkipBack size={15} strokeWidth={2} fill="currentColor" />
@@ -169,7 +169,7 @@ export function MiniPlayerMobile({
               type="button"
               onClick={onNext}
               disabled={disabled}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Next sentence"
             >
               <SkipForward size={15} strokeWidth={2} fill="currentColor" />
@@ -178,7 +178,7 @@ export function MiniPlayerMobile({
               type="button"
               onClick={onStop}
               disabled={disabled || !started}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors disabled:opacity-30"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-muted hover:text-ink hover:bg-desk transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Stop narration and clear highlight"
             >
               <Square size={13} strokeWidth={2} fill="currentColor" />

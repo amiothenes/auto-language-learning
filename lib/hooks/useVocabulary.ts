@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { VocabularyItem, VocabularyStatus } from '@/lib/types/vocabulary';
 
@@ -36,5 +36,6 @@ export function useVocabulary(filters: VocabularyFilters = {}) {
       return res.json() as Promise<VocabularyResponse>;
     },
     enabled: !!selectedLanguage,
+    placeholderData: keepPreviousData,
   });
 }

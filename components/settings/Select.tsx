@@ -86,7 +86,7 @@ export function Select({
           aria-haspopup="listbox"
           aria-labelledby={label ? `${selectId}-label` : undefined}
           aria-controls={`${selectId}-listbox`}
-          className="w-full px-4 py-2 bg-paper border border-border rounded font-sans text-ui-base text-ink hover:bg-desk focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all flex items-center justify-between"
+          className="w-full px-4 py-2 bg-paper border border-border rounded font-sans text-ui-base text-ink hover:bg-desk focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all flex items-center justify-between cursor-pointer"
         >
           <span className={selectedOption ? 'text-ink' : 'text-muted'}>
             {selectedOption ? selectedOption.label : placeholder}
@@ -118,7 +118,7 @@ export function Select({
                   setIsOpen(false);
                 }}
                 className={cn(
-                  'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
+                  'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer',
                   value === option.value
                     ? 'bg-primary text-white font-medium'
                     : highlightedIndex === index

@@ -8,6 +8,7 @@ import { Upload, FileText, Trash2, AlertCircle, Link, Pencil, X } from 'lucide-r
 import { cn } from '@/lib/utils';
 import type { ImportedTextData } from '@/lib/types/forms';
 import { useFetchUrl } from '@/lib/hooks/useFetchUrl';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // ImportTextsModal Component
@@ -101,15 +102,7 @@ export function ImportTextsModal({
     }
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Restore focus on close
   useEffect(() => {
@@ -520,7 +513,7 @@ export function ImportTextsModal({
               type="button"
               onClick={() => { setActiveTab('file'); setError(null); }}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 font-sans text-ui-sm font-medium border-b-2 -mb-px transition-colors',
+                'flex items-center gap-1.5 px-4 py-2 font-sans text-ui-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer',
                 activeTab === 'file' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'
               )}
             >
@@ -531,7 +524,7 @@ export function ImportTextsModal({
               type="button"
               onClick={() => { setActiveTab('url'); setError(null); }}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 font-sans text-ui-sm font-medium border-b-2 -mb-px transition-colors',
+                'flex items-center gap-1.5 px-4 py-2 font-sans text-ui-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer',
                 activeTab === 'url' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'
               )}
             >
@@ -661,7 +654,7 @@ export function ImportTextsModal({
                   <button
                     type="button"
                     onClick={() => setLangWarningDismissed(true)}
-                    className="font-sans text-ui-xs font-medium text-amber-700 hover:text-amber-900 shrink-0"
+                    className="font-sans text-ui-xs font-medium text-amber-700 hover:text-amber-900 shrink-0 cursor-pointer"
                   >
                     Dismiss
                   </button>
@@ -753,14 +746,14 @@ export function ImportTextsModal({
                     <button
                       type="button"
                       onClick={() => handleEditOpen(index)}
-                      className="text-muted hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0"
+                      className="text-muted hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0 cursor-pointer"
                       aria-label={`Edit content of ${text.title}`}
                     >
                       <Pencil size={16} strokeWidth={1.5} />
                     </button>
                     <button
                       onClick={() => handleRemoveText(index)}
-                      className="text-muted hover:text-danger transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0"
+                      className="text-muted hover:text-danger transition-colors focus:outline-none focus:ring-2 focus:ring-primary rounded p-1 shrink-0 cursor-pointer"
                       aria-label={`Remove ${text.title}`}
                     >
                       <Trash2 size={16} strokeWidth={1.5} />
@@ -855,7 +848,7 @@ function ContentEditOverlay({ draft, onChange, onSave, onCancel }: ContentEditOv
             <button
               type="button"
               onClick={onCancel}
-              className="text-muted hover:text-ink transition-colors rounded p-1 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="text-muted hover:text-ink transition-colors rounded p-1 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
               aria-label="Close editor"
             >
               <X size={18} strokeWidth={1.5} />

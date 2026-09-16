@@ -24,6 +24,7 @@ import { ChevronLeft, ChevronRight, Library, Plus, Upload } from 'lucide-react';
 import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
 import { useVocabulary } from '@/lib/hooks/useVocabulary';
 import { useStats } from '@/lib/hooks/useStats';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 
 // ============================================================================
 // Vocabulary Page Component
@@ -36,6 +37,7 @@ export default function VocabularyPage() {
 
   // Filter state (passed to API as query params)
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const [activeStatuses, setActiveStatuses] = useState<Set<VocabularyStatus>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
 
@@ -63,7 +65,7 @@ export default function VocabularyPage() {
 
   // Real data
   const vocabularyQuery = useVocabulary({
-    search: searchQuery || undefined,
+    search: debouncedSearchQuery || undefined,
     status: activeStatus,
     sort: sortBy,
     page: currentPage,
@@ -94,7 +96,7 @@ export default function VocabularyPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeStatuses, sortBy]);
+  }, [debouncedSearchQuery, activeStatuses, sortBy]);
 
   // Bulk update mutation (mark as known, etc.)
   const bulkUpdateMutation = useMutation({

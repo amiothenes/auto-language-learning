@@ -538,7 +538,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => router.push(`/series/${textData?.seriesId ?? ''}`)}
-              className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors"
+              className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors cursor-pointer"
               aria-label="Back to series"
             >
               <ChevronLeft size={20} strokeWidth={2} />
@@ -552,7 +552,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             <div className="flex items-center gap-1">
               <button
                 onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
-                className="text-muted hover:text-ink transition-colors p-1"
+                className="text-muted hover:text-ink transition-colors p-1 cursor-pointer"
                 aria-label="Reader settings"
                 aria-expanded={!!settingsAnchorEl}
               >
@@ -561,7 +561,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               {!settings.isImmersionMode && (
                 <button
                   onClick={() => setIsTextInfoOpen(true)}
-                  className="text-muted hover:text-ink transition-colors p-1"
+                  className="text-muted hover:text-ink transition-colors p-1 cursor-pointer"
                   aria-label="Text information"
                 >
                   <Info size={20} strokeWidth={1.5} />
@@ -613,7 +613,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         >
           <button
             onClick={() => setIsTextInfoOpen(false)}
-            className="absolute top-4 right-4 xl:hidden text-muted hover:text-ink transition-colors z-10"
+            className="absolute top-4 right-4 xl:hidden text-muted hover:text-ink transition-colors z-10 cursor-pointer"
             aria-label="Close text information"
           >
             <X size={24} strokeWidth={1.5} />
@@ -825,7 +825,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         <button
           onClick={toggleImmersionMode}
           className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-sans text-ui-xs transition-all',
+            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-sans text-ui-xs transition-all cursor-pointer',
             settings.isImmersionMode
               ? 'bg-primary-10 text-primary border border-primary/30'
               : 'text-muted hover:text-ink hover:bg-desk border border-transparent hover:border-border',
@@ -841,7 +841,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             setSettingsTab('reading');
             setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget);
           }}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted hover:text-ink hover:bg-desk border border-transparent hover:border-border transition-all"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-muted hover:text-ink hover:bg-desk border border-transparent hover:border-border transition-all cursor-pointer"
           aria-label="Reader settings"
           aria-expanded={!!settingsAnchorEl}
         >
@@ -920,7 +920,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               <p className="font-sans text-ui-sm font-semibold text-ink">Paragraph Map</p>
               <button
                 onClick={() => setIsParaMapOpen(false)}
-                className="text-muted hover:text-ink transition-colors p-1 -mr-1"
+                className="text-muted hover:text-ink transition-colors p-1 -mr-1 cursor-pointer"
                 aria-label="Close paragraph map"
               >
                 <X size={18} strokeWidth={1.5} />

@@ -224,14 +224,14 @@ export function VocabCard({
                   <div className="absolute top-full right-0 mt-1 w-32 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
                     <button
                       onClick={(e) => handleMenuAction(e, 'edit')}
-                      className="w-full px-3 py-2 text-left font-sans text-ui-xs text-ink hover:bg-desk transition-colors flex items-center gap-1.5"
+                      className="w-full px-3 py-2 text-left font-sans text-ui-xs text-ink hover:bg-desk transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Edit size={12} className="text-muted" strokeWidth={1.5} />
                       Edit
                     </button>
                     <button
                       onClick={(e) => handleMenuAction(e, 'delete')}
-                      className="w-full px-3 py-2 text-left font-sans text-ui-xs text-ink hover:bg-desk transition-colors flex items-center gap-1.5"
+                      className="w-full px-3 py-2 text-left font-sans text-ui-xs text-ink hover:bg-desk transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Trash2 size={12} className="text-muted" strokeWidth={1.5} />
                       Delete

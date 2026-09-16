@@ -6,12 +6,14 @@ import { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
+import { useSrsDueCount } from '@/lib/hooks/useSrsDueCount';
 import { createClient } from '@/lib/supabase/client';
 import {
   Globe,
   LayoutDashboard,
   Library,
   ClipboardList,
+  BookOpenCheck,
   Settings,
   ChevronUp,
   ChevronDown,
@@ -26,6 +28,7 @@ import {
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { id: 'series', label: 'Series', href: '/series', icon: 'series' },
+  { id: 'review', label: 'Review', href: '/review', icon: 'review' },
   { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings' },
 ] as const;
@@ -35,6 +38,7 @@ const iconMap = {
   dashboard: LayoutDashboard,
   series: Library,
   vocabulary: ClipboardList,
+  review: BookOpenCheck,
   settings: Settings,
 };
 
@@ -60,6 +64,8 @@ export function Sidebar() {
     isDropdownOpen,
     setIsDropdownOpen,
   } = useLanguage();
+
+  const { data: reviewDueCount = 0 } = useSrsDueCount(currentLanguage?.id);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -128,7 +134,7 @@ export function Sidebar() {
                         router.push('/dashboard');
                       }}
                       className={cn(
-                        'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
+                        'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer',
                         lang.code === selectedLanguage
                           ? 'bg-primary text-white font-medium'
                           : highlightedIndex === index
@@ -167,11 +173,16 @@ export function Sidebar() {
                   {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary rounded-r"></div>
                   )}
-                  <IconComponent 
-                    size={20} 
-                    className={cn("shrink-0", isActive ? "text-primary" : "text-ink")} 
-                    strokeWidth={1.5} 
-                  />
+                  <span className="relative shrink-0">
+                    <IconComponent
+                      size={20}
+                      className={cn(isActive ? "text-primary" : "text-ink")}
+                      strokeWidth={1.5}
+                    />
+                    {item.id === 'review' && reviewDueCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger" aria-hidden="true" />
+                    )}
+                  </span>
                   <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200">
                     {item.label}
                   </span>
@@ -227,11 +238,16 @@ export function Sidebar() {
                     : 'text-muted hover:text-ink'
                 )}
               >
-                <IconComponent 
-                  size={24} 
-                  className={isActive ? 'text-primary' : 'text-muted'} 
-                  strokeWidth={1.5} 
-                />
+                <span className="relative">
+                  <IconComponent
+                    size={24}
+                    className={isActive ? 'text-primary' : 'text-muted'}
+                    strokeWidth={1.5}
+                  />
+                  {item.id === 'review' && reviewDueCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger" aria-hidden="true" />
+                  )}
+                </span>
                 <span>{item.label}</span>
               </Link>
             );

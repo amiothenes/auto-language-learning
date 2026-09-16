@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Toggle } from '@/components/settings/Toggle';
+import { Select, SelectOption } from '@/components/settings/Select';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
+import { PRESET_LANGUAGES } from '@/lib/languages/presets';
 
 // ============================================================================
 // AddLanguageModal Component
@@ -23,25 +25,32 @@ interface AddLanguageModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (language: NewLanguageData) => void;
+  /** Codes of languages the user already has — excluded from the picker to avoid duplicates. */
+  existingCodes: string[];
 }
 
 export function AddLanguageModal({
   isOpen,
   onClose,
   onAdd,
+  existingCodes,
 }: AddLanguageModalProps) {
-  const [formData, setFormData] = useState<NewLanguageData>({
-    name: '',
-    code: '',
-    dictUri: '',
-    ttsCode: '',
-    rtl: false,
-  });
+  const [selectedCode, setSelectedCode] = useState('');
+  const [dictUri, setDictUri] = useState('');
   const [mounted, setMounted] = useState(false);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const availablePresets = useMemo(
+    () => PRESET_LANGUAGES.filter((preset) => !existingCodes.includes(preset.code)),
+    [existingCodes]
+  );
+  const languageOptions: SelectOption[] = availablePresets.map((preset) => ({
+    value: preset.code,
+    label: `${preset.flag} ${preset.name}`,
+  }));
+  const selectedPreset = availablePresets.find((preset) => preset.code === selectedCode);
 
   // SSR guard for portal
   useEffect(() => {
@@ -51,37 +60,13 @@ export function AddLanguageModal({
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        name: '',
-        code: '',
-        dictUri: '',
-        ttsCode: '',
-        rtl: false,
-      });
+      setSelectedCode('');
+      setDictUri('');
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
-
-  // Auto-focus on name input when opened
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(() => {
-      if (nameInputRef.current) {
-        nameInputRef.current.focus();
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Restore focus on close
   useEffect(() => {
@@ -144,24 +129,21 @@ export function AddLanguageModal({
     (e: React.FormEvent) => {
       e.preventDefault();
 
-      // Validation: name and code are required
-      if (!formData.name.trim() || !formData.code.trim()) {
-        return;
-      }
+      if (!selectedPreset) return;
 
       onAdd({
-        name: formData.name.trim(),
-        code: formData.code.trim(),
-        dictUri: formData.dictUri?.trim() || undefined,
-        ttsCode: formData.ttsCode?.trim() || undefined,
-        rtl: formData.rtl,
+        name: selectedPreset.name,
+        code: selectedPreset.code,
+        dictUri: dictUri.trim() || undefined,
+        ttsCode: selectedPreset.ttsCode,
+        rtl: selectedPreset.rtl,
       });
     },
-    [formData, onAdd]
+    [selectedPreset, dictUri, onAdd]
   );
 
   // Check if form is valid
-  const isFormValid = formData.name.trim() !== '' && formData.code.trim() !== '';
+  const isFormValid = !!selectedPreset;
 
   if (!mounted || !isOpen) return null;
 
@@ -204,7 +186,7 @@ export function AddLanguageModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-muted hover:text-ink transition-colors"
+                className="text-muted hover:text-ink transition-colors cursor-pointer"
                 aria-label="Close dialog"
               >
                 <X size={20} strokeWidth={1.5} />
@@ -214,88 +196,47 @@ export function AddLanguageModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            {/* Language Name */}
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Language Name <span className="text-danger">*</span>
-              </label>
-              <input
-                ref={nameInputRef}
-                type="text"
-                placeholder="e.g., Spanish"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-
-            {/* Language Code */}
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Language Code <span className="text-danger">*</span>
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., es"
-                value={formData.code}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, code: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-            </div>
-
-            {/* Dictionary URI */}
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                Dictionary URI
-              </label>
-              <input
-                type="text"
-                placeholder="https://dictionary.example.com/{word}"
-                value={formData.dictUri}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, dictUri: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-              <p className="font-sans text-ui-xs text-muted mt-1">
-                Use {'{word}'} as a placeholder for the word to look up
+            {availablePresets.length === 0 ? (
+              <p className="font-sans text-ui-sm text-muted">
+                You&apos;ve already added every available language.
               </p>
-            </div>
+            ) : (
+              <>
+                {/* Language picker */}
+                <Select
+                  label="Language"
+                  options={languageOptions}
+                  value={selectedCode}
+                  onChange={setSelectedCode}
+                  placeholder="Select a language"
+                />
 
-            {/* TTS Code */}
-            <div>
-              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
-                TTS Code
-              </label>
-              <input
-                type="text"
-                placeholder="es-ES"
-                value={formData.ttsCode}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, ttsCode: e.target.value }))
-                }
-                className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-              />
-              <p className="font-sans text-ui-xs text-muted mt-1">
-                Text-to-speech language code (e.g., es-ES, fr-FR)
-              </p>
-            </div>
+                {/* Autofilled details (read-only) */}
+                {selectedPreset && (
+                  <p className="font-sans text-ui-xs text-muted -mt-2">
+                    Code: {selectedPreset.code} · TTS: {selectedPreset.ttsCode} · RTL:{' '}
+                    {selectedPreset.rtl ? 'Yes' : 'No'}
+                  </p>
+                )}
 
-            {/* RTL Toggle */}
-            <div>
-              <Toggle
-                checked={formData.rtl}
-                onChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, rtl: checked }))
-                }
-                label="Right-to-Left (RTL)"
-                description="Enable for Arabic, Hebrew, and other RTL languages"
-              />
-            </div>
+                {/* Dictionary URI */}
+                <div>
+                  <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                    Dictionary URI
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://dictionary.example.com/{word}"
+                    value={dictUri}
+                    onChange={(e) => setDictUri(e.target.value)}
+                    className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  />
+                  <p className="font-sans text-ui-xs text-muted mt-1">
+                    Use {'{word}'} as a placeholder for the word to look up
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Action buttons */}
             <div className="flex justify-end gap-3 pt-2">

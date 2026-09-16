@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Upload, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // ImportVocabularyModal Component
@@ -49,15 +50,7 @@ export function ImportVocabularyModal({
     }
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Restore focus on close
   useEffect(() => {

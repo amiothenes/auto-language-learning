@@ -38,7 +38,7 @@ function ShareProgressButton({ languageCode }: { languageCode: string }) {
     <button
       onClick={handleShare}
       disabled={busy}
-      className="inline-flex items-center gap-1.5 font-sans text-ui-sm text-muted hover:text-ink border border-border bg-paper rounded px-3 py-1.5 transition-colors hover:border-border disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 font-sans text-ui-sm text-muted hover:text-ink border border-border bg-paper rounded px-3 py-1.5 transition-colors hover:border-border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {copied ? (
         <>

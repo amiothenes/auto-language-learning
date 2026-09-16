@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { VocabularyItem } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 const STATUS_OPTIONS: {
   value: VocabularyStatus;
@@ -51,13 +52,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
     }
   }, [isOpen, item]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Restore focus on close
   useEffect(() => {
@@ -154,7 +149,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
                     type="button"
                     onClick={() => setStatus(opt.value)}
                     className={cn(
-                      'px-3 py-2 rounded font-sans text-ui-xs font-medium transition-all text-center',
+                      'px-3 py-2 rounded font-sans text-ui-xs font-medium transition-all text-center cursor-pointer',
                       status === opt.value
                         ? 'ring-2 ring-primary ring-offset-1 scale-[1.03]'
                         : 'opacity-60 hover:opacity-90'

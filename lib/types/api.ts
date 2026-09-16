@@ -383,3 +383,124 @@ export interface TtsManifestResponse {
   ratePercent: number;
   entries: TtsManifestEntry[];
 }
+
+// ============================================================================
+// SRS Flashcard API — GET/POST /api/srs/*
+// ============================================================================
+
+export type SrsCardType = 'SENTENCE' | 'WORD';
+export type SrsGrade = 'DIDNT_KNOW' | 'KNEW';
+
+export interface SrsCardSentence {
+  sentenceId: string;
+  content: string;
+  /** Surface form of the target word as it appears in this sentence, for bolding. */
+  targetSurface: string;
+  /** True when this sentence has more than one non-mastered target word — the
+   * front should still only bold the primary target ("degraded" 1T card). */
+  degraded: boolean;
+}
+
+export interface SrsCardSource {
+  textId: string;
+  textTitle: string;
+  seriesId: string | null;
+  seriesName: string | null;
+}
+
+export interface SrsCardGradeOutcome {
+  status: VocabularyStatus;
+  intervalDays: number;
+}
+
+export interface SrsCardPreview {
+  knew: SrsCardGradeOutcome;
+  didntKnow: SrsCardGradeOutcome;
+}
+
+export interface SrsCard {
+  wordId: string;
+  cardType: SrsCardType;
+  lemma: string;
+  translation: string | null;
+  meanings: TranslationMeaning[] | null;
+  pos: string | null;
+  inflectionData: Record<string, unknown> | null;
+  romanization: string | null;
+  /** Present for SENTENCE cards (front context) and WORD cards (shown on the back). Null if the word has no usable sentence instance. */
+  sentence: SrsCardSentence | null;
+  source: SrsCardSource | null;
+  /** True when this word has no wordReviews row yet (first-ever review). */
+  isNew: boolean;
+  /** Current learning status, for the on-card status badge. */
+  status: VocabularyStatus;
+  /** What grading this card as "Didn't Know" / "Did Know" will actually do — computed with the same SM-2/status-step logic POST /api/srs/review uses, so it can never drift from the real outcome. */
+  preview: SrsCardPreview;
+}
+
+export interface SrsSessionResponse {
+  languageId: string;
+  cards: SrsCard[];
+  dueCount: number;
+  newCount: number;
+}
+
+export interface SrsDueCountResponse {
+  dueCount: number;
+}
+
+export interface SrsReviewRequest {
+  wordId: string;
+  grade: SrsGrade;
+}
+
+export interface SrsReviewResponse {
+  wordId: string;
+  status: VocabularyStatus;
+  dueAt: string;
+  isNew: boolean;
+}
+
+export type SrsNewCardsPosition = 'end' | 'interleaved';
+
+export interface SrsSettingsPayload {
+  newCardsPerDay: number;
+  /** null = unlimited */
+  reviewsPerDay: number | null;
+  minEligibleStatus: VocabularyStatus;
+  maxEligibleStatus: VocabularyStatus;
+  typeSwitchStatus: VocabularyStatus;
+  sentenceAudioEnabled: boolean;
+  wordAudioEnabled: boolean;
+  /** Where new cards fall in the session queue relative to due reviews. */
+  newCardsPosition: SrsNewCardsPosition;
+}
+
+export interface SrsSettingsResponse {
+  settings: SrsSettingsPayload;
+}
+
+// ============================================================================
+// SRS Insights — GET /api/srs/forecast, GET /api/srs/activity
+// ============================================================================
+
+export interface SrsForecastBucket {
+  /** ISO date (YYYY-MM-DD) */
+  date: string;
+  count: number;
+}
+
+export interface SrsForecastResponse {
+  buckets: SrsForecastBucket[];
+}
+
+export interface SrsActivityBucket {
+  /** ISO date (YYYY-MM-DD) */
+  date: string;
+  reviews: number;
+  newCards: number;
+}
+
+export interface SrsActivityResponse {
+  buckets: SrsActivityBucket[];
+}

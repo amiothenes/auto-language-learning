@@ -126,7 +126,7 @@ export function WordTooltip({
             </div>
             <button
               onClick={onClose}
-              className="text-muted hover:text-ink transition-colors p-0.5 -mr-1"
+              className="text-muted hover:text-ink transition-colors p-0.5 -mr-1 cursor-pointer"
               aria-label="Close"
             >
               <X size={14} strokeWidth={1.5} />
@@ -143,7 +143,7 @@ export function WordTooltip({
                 type="button"
                 onClick={playAudio}
                 disabled={audioState === 'loading'}
-                className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 disabled:opacity-50"
+                className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={`Hear pronunciation of ${wordData.lemma}`}
               >
                 {audioState === 'loading' ? (
@@ -172,7 +172,7 @@ export function WordTooltip({
                     )}
                   </div>
                 ) : !editingTranslation ? (
-                  <button className="w-full text-left group" onClick={() => setEditingTranslation(true)}>
+                  <button className="w-full text-left group cursor-pointer" onClick={() => setEditingTranslation(true)}>
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
                         {translationValue || (
@@ -240,7 +240,7 @@ export function WordTooltip({
                 </div>
                 <button
                   onClick={() => setShowFullMorph((v) => !v)}
-                  className="font-sans text-primary hover:text-primary/80 transition-colors"
+                  className="font-sans text-primary hover:text-primary/80 transition-colors cursor-pointer"
                 >
                   {showFullMorph ? 'less ‹' : 'more ›'}
                 </button>
@@ -291,7 +291,7 @@ export function WordTooltip({
             {onMoreClick && (
               <button
                 onClick={onMoreClick}
-                className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors"
+                className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
               >
                 More →
               </button>

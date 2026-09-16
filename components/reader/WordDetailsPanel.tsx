@@ -13,6 +13,7 @@ import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -62,12 +63,7 @@ export function WordDetailsPanel({
     setIsExiting(false);
   }, [wordData?.wordId]);
 
-  // Body scroll lock — save and restore previous value for safe stacking
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, []);
+  useBodyScrollLock(true);
 
   const handleClose = useCallback(() => {
     setIsExiting(true);
@@ -125,7 +121,7 @@ export function WordDetailsPanel({
                   type="button"
                   onClick={playAudio}
                   disabled={audioState === 'loading'}
-                  className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 disabled:opacity-50"
+                  className="text-muted hover:text-primary transition-colors p-0.5 shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label={`Hear pronunciation of ${wordData.lemma}`}
                 >
                   {audioState === 'loading' ? (

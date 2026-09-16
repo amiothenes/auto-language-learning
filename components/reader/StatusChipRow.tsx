@@ -74,7 +74,7 @@ export function StatusChipRow({ currentStatus, onStatusChange, className }: Stat
             key={status}
             onClick={() => onStatusChange(status)}
             className={cn(
-              'flex-1 min-w-0 py-1 rounded text-center font-sans text-[10px] leading-none',
+              'flex-1 min-w-0 py-1 rounded text-center font-sans text-[10px] leading-none cursor-pointer',
               'transition-all hover:brightness-95 active:scale-95',
               isActive ? active : base,
             )}

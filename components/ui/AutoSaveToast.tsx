@@ -67,7 +67,7 @@ export function AutoSaveToast({
       {variant === 'error' && (
         <button
           onClick={onRetry ?? onDismiss}
-          className="font-sans text-ui-xs text-muted underline ml-1 hover:text-ink transition-colors"
+          className="font-sans text-ui-xs text-muted underline ml-1 hover:text-ink transition-colors cursor-pointer"
         >
           {onRetry ? 'Retry' : 'Dismiss'}
         </button>

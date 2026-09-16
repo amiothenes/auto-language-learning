@@ -36,6 +36,12 @@
     --font-eb-garamond: 'EB Garamond', Georgia, serif;
   }
 
+  html {
+    /* Reserve the scrollbar's gutter permanently so toggling body overflow
+       (modals, dropdowns) never shifts page width. */
+    scrollbar-gutter: stable;
+  }
+
   body {
     background-color: #F0EFEA;
     color: #141413;

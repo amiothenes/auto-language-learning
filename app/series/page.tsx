@@ -369,6 +369,7 @@ function SeriesPageContent() {
                       wordCount={text.wordCount}
                       knownPercentage={text.knownPercentage}
                       lastRead={text.lastRead}
+                      hasBeenRead={text.hasBeenRead}
                       preview={text.preview}
                       seriesName={text.seriesName ?? undefined}
                       dateAdded={formatRelativeTime(text.createdAt)}
@@ -457,7 +458,7 @@ function SeriesPageContent() {
                       setSortBy(option.value);
                       setIsSortOpen(false);
                     }}
-                    className={`w-full px-4 py-3 text-left font-sans text-ui-base transition-colors ${
+                    className={`w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer ${
                       sortBy === option.value
                         ? 'bg-primary text-white font-medium'
                         : 'text-ink hover:bg-desk'

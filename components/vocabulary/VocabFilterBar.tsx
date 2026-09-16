@@ -168,7 +168,7 @@ export function VocabFilterBar({
                     setIsSortOpen(false);
                   }}
                   className={cn(
-                    'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors',
+                    'w-full px-4 py-3 text-left font-sans text-ui-base transition-colors cursor-pointer',
                     sortBy === option.value
                       ? 'bg-primary text-white font-medium'
                       : highlightedIndex === index

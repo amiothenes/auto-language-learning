@@ -153,7 +153,7 @@ export function SeriesCard({
           <Muted size="xs">{textCount} {textCount === 1 ? 'text' : 'texts'}</Muted>
         </div>
         <Muted size="xs" className="text-primary font-medium">
-          {progress}% complete
+          {Math.round(progress)}% complete
         </Muted>
         {readiness && (
           <span className={cn('font-sans text-[10px] font-medium px-1.5 py-0.5 rounded-full', readiness.className)}>

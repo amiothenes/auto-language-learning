@@ -114,7 +114,7 @@ export function MoreMenu({
               role="menuitem"
               onClick={() => { onStatusChange(status); onClose(); }}
               className={cn(
-                'w-full flex items-center gap-2.5 px-3 py-[7px] text-left transition-colors hover:bg-desk',
+                'w-full flex items-center gap-2.5 px-3 py-[7px] text-left transition-colors hover:bg-desk cursor-pointer',
                 isActive && 'bg-primary-05',
               )}
             >
@@ -137,7 +137,7 @@ export function MoreMenu({
         <button
           role="menuitem"
           onClick={() => { onStatusChange(VocabularyStatus.IGNORE); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-[7px] text-left hover:bg-desk transition-colors"
+          className="w-full flex items-center gap-2.5 px-3 py-[7px] text-left hover:bg-desk transition-colors cursor-pointer"
         >
           <Ban size={14} strokeWidth={1.5} className="text-muted shrink-0" />
           <span className="font-sans text-ui-sm text-ink">Ignore word</span>
@@ -148,7 +148,7 @@ export function MoreMenu({
         <button
           role="menuitem"
           onClick={() => { onStatusChange(VocabularyStatus.UNKNOWN); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-[7px] text-left hover:bg-desk transition-colors"
+          className="w-full flex items-center gap-2.5 px-3 py-[7px] text-left hover:bg-desk transition-colors cursor-pointer"
         >
           <RotateCcw size={14} strokeWidth={1.5} className="text-muted shrink-0" />
           <span className="font-sans text-ui-sm text-ink">Reset to Unknown</span>

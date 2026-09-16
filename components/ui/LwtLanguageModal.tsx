@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import type { LanguageItem } from '@/lib/types/api';
+import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 
 // ============================================================================
 // LwtLanguageModal
@@ -74,15 +75,7 @@ export function LwtLanguageModal({
     previousFocusRef.current = null;
   }, [isOpen]);
 
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [isOpen]);
+  useBodyScrollLock(isOpen);
 
   // Escape key dismiss
   useEffect(() => {
