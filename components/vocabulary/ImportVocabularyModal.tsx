@@ -67,8 +67,16 @@ function guessStatusValue(raw: string): VocabularyStatus | undefined {
 interface ImportVocabularyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (items: ImportedVocabularyData[], strategy: MergeStrategy) => void;
+  onImport: (items: ImportedVocabularyData[], strategy: MergeStrategy) => Promise<void>;
 }
+
+// Cycled while the import request is in flight so a large batch doesn't look
+// frozen — purely cosmetic, doesn't reflect real server-side progress.
+const IMPORT_STAGES = [
+  'Validating rows…',
+  'Checking for duplicates…',
+  'Saving to your vocabulary…',
+] as const;
 
 // Detect which target field a source column/key most likely represents
 function detectTargetField(header: string): TargetField | null {
@@ -163,6 +171,8 @@ export function ImportVocabularyModal({
   const [importedItems, setImportedItems] = useState<ImportedVocabularyData[]>([]);
   const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('skip');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stageIndex, setStageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -193,6 +203,7 @@ export function ImportVocabularyModal({
       setMergeStrategy('skip');
       setError(null);
       setIsProcessing(false);
+      setIsSubmitting(false);
       previousFocusRef.current = document.activeElement as HTMLElement;
     }
   }, [isOpen]);
@@ -212,13 +223,24 @@ export function ImportVocabularyModal({
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isProcessing) {
+      if (e.key === 'Escape' && !isProcessing && !isSubmitting) {
         onClose();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isProcessing, onClose]);
+  }, [isOpen, isProcessing, isSubmitting, onClose]);
+
+  // Cycle through the cosmetic stage labels while the import request is in flight
+  useEffect(() => {
+    if (!isSubmitting) {
+      setStageIndex(0);
+      return;
+    }
+    if (stageIndex >= IMPORT_STAGES.length - 1) return;
+    const timer = setTimeout(() => setStageIndex((prev) => prev + 1), 1500);
+    return () => clearTimeout(timer);
+  }, [isSubmitting, stageIndex]);
 
   // Focus trap
   useEffect(() => {
@@ -252,10 +274,10 @@ export function ImportVocabularyModal({
 
   // Backdrop click handler
   const handleBackdropClick = useCallback(() => {
-    if (!isProcessing) {
+    if (!isProcessing && !isSubmitting) {
       onClose();
     }
-  }, [isProcessing, onClose]);
+  }, [isProcessing, isSubmitting, onClose]);
 
   const toText = (value: unknown): string => {
     if (value === undefined || value === null) return '';
@@ -503,10 +525,17 @@ export function ImportVocabularyModal({
   };
 
   // Final submission
-  const handleSubmit = useCallback(() => {
-    if (importedItems.length === 0) return;
-    onImport(importedItems, mergeStrategy);
-  }, [importedItems, mergeStrategy, onImport]);
+  const handleSubmit = useCallback(async () => {
+    if (importedItems.length === 0 || isSubmitting) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await onImport(importedItems, mergeStrategy);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Import failed');
+      setIsSubmitting(false);
+    }
+  }, [importedItems, mergeStrategy, onImport, isSubmitting]);
 
   if (!mounted || !isOpen) return null;
 
@@ -548,9 +577,31 @@ export function ImportVocabularyModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="import-vocabulary-dialog-title"
-          className="w-full max-w-3xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-3xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Import Progress Overlay */}
+          {isSubmitting && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-card overflow-hidden bg-paper">
+              <div className="absolute inset-0 animate-shimmer" />
+              <div className="relative text-center px-6">
+                <img
+                  src="/illustrations/vocabulary.svg"
+                  width={72}
+                  height={72}
+                  alt=""
+                  className="mx-auto mb-4 opacity-90"
+                />
+                <p className="font-sans text-ui-sm font-medium text-ink">
+                  Importing {importedItems.length.toLocaleString()} item{importedItems.length !== 1 ? 's' : ''}…
+                </p>
+                <p className="font-sans text-ui-xs text-muted mt-1">
+                  {IMPORT_STAGES[stageIndex]}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Title */}
           <h2
             id="import-vocabulary-dialog-title"
@@ -897,6 +948,7 @@ export function ImportVocabularyModal({
                   variant="ghost"
                   size="md"
                   onClick={() => setStep(fieldMapping.status ? 'statusMapping' : 'mapping')}
+                  disabled={isSubmitting}
                 >
                   <ArrowLeft size={16} strokeWidth={1.5} className="mr-1" />
                   Back
@@ -909,7 +961,7 @@ export function ImportVocabularyModal({
                 variant="ghost"
                 size="md"
                 onClick={onClose}
-                disabled={isProcessing}
+                disabled={isProcessing || isSubmitting}
               >
                 Cancel
               </Button>
@@ -929,9 +981,11 @@ export function ImportVocabularyModal({
                   variant="primary"
                   size="md"
                   onClick={handleSubmit}
-                  disabled={importedItems.length === 0}
+                  disabled={importedItems.length === 0 || isSubmitting}
                 >
-                  Import {importedItems.length > 0 && `${importedItems.length.toLocaleString()} Item${importedItems.length > 1 ? 's' : ''}`}
+                  {isSubmitting
+                    ? 'Importing...'
+                    : `Import ${importedItems.length > 0 ? `${importedItems.length.toLocaleString()} Item${importedItems.length > 1 ? 's' : ''}` : ''}`}
                 </Button>
               )}
             </div>

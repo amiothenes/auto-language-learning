@@ -336,12 +336,12 @@ export default function VocabularyPage() {
     },
   });
 
-  const handleImportVocabulary = (
+  const handleImportVocabulary = async (
     items: ImportedVocabularyData[],
     strategy: MergeStrategy,
     languageCodeOverride?: string
   ) => {
-    importMutation.mutate({ items, mergeStrategy: strategy, languageCodeOverride });
+    await importMutation.mutateAsync({ items, mergeStrategy: strategy, languageCodeOverride });
   };
 
   // TSV export — pages through the filtered vocabulary (search/status/sort
