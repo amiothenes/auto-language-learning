@@ -508,9 +508,18 @@ export function ImportVocabularyModal({
 
   if (!mounted || !isOpen) return null;
 
-  const sampleRecord = sourceRecords[0];
+  // The first row often has a blank cell in any given column (e.g. a missing
+  // translation) — scan for the first row where each column actually has a
+  // value, so the dropdown sample is representative instead of blank.
+  const findColumnSample = (header: string): unknown => {
+    for (let i = 0; i < sourceRecords.length && i < 100; i++) {
+      const value = sourceRecords[i][header];
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return undefined;
+  };
   const headerOptions: SelectOption[] = sourceHeaders.map((h) => {
-    const sample = sampleRecord ? sampleRecord[h] : undefined;
+    const sample = findColumnSample(h);
     const sampleText =
       sample === undefined || sample === null || sample === ''
         ? null
