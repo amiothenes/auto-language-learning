@@ -100,3 +100,21 @@ export function buildOneTCsv(cards: OneTCard[]): string {
     .join('\n');
   return '﻿' + header + body;
 }
+
+/** A OneTCard tagged with the title of the text it came from — for
+ * series-wide exports, where cards from multiple texts share one file and
+ * need to stay distinguishable. */
+export interface OneTCardWithSource extends OneTCard {
+  sourceTitle: string;
+}
+
+/** Same as buildOneTCsv, with a leading Source Text column. */
+export function buildOneTCsvWithSource(cards: OneTCardWithSource[]): string {
+  const header = 'Source Text,Sentence,Target Word,Lemma,Grammar,Translation\n';
+  const body = cards
+    .map((c) => [c.sourceTitle, c.sentenceHtml, c.targetWord, c.lemma, c.grammar, c.translation]
+      .map(escapeCsvField)
+      .join(','))
+    .join('\n');
+  return '﻿' + header + body;
+}

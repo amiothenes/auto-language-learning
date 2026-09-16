@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { GripVertical, MoreVertical, Edit, Trash2, CheckCircle2, Circle, AlertTriangle, XCircle } from 'lucide-react';
+import { GripVertical, MoreVertical, Edit, Trash2, Download, CheckCircle2, Circle, AlertTriangle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
@@ -17,6 +17,7 @@ interface TextListRowProps {
   onRead: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onExportOneT: () => void;
   /** Passed from useSortable().listeners — attached to the drag handle */
   dragListeners?: DraggableSyntheticListeners;
   /** Passed from useSortable().attributes — ARIA props for a11y */
@@ -41,6 +42,7 @@ export function TextListRow({
   onRead,
   onEdit,
   onDelete,
+  onExportOneT,
   dragListeners,
   dragAttributes,
 }: TextListRowProps) {
@@ -133,6 +135,13 @@ export function TextListRow({
             >
               <Edit size={13} className="text-muted" strokeWidth={1.5} />
               Edit
+            </button>
+            <button
+              onClick={() => { setIsMenuOpen(false); onExportOneT(); }}
+              className="w-full px-3 py-2 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Download size={13} className="text-muted" strokeWidth={1.5} />
+              Export 1T Sentences
             </button>
             <button
               onClick={() => { setIsMenuOpen(false); onDelete(); }}
