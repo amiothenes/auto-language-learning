@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
 // Prefix-matched: sidebar hidden for these route subtrees
-const SHELL_HIDDEN_PREFIXES = ['/login', '/signup', '/onboarding', '/share'];
+const SHELL_HIDDEN_PREFIXES = ['/login', '/signup', '/forgot-password', '/reset-password', '/onboarding', '/share'];
 // Exact-matched: sidebar hidden on these specific paths
 const SHELL_HIDDEN_EXACT = ['/'];
 

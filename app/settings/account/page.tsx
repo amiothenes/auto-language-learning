@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { friendlyAuthError } from '@/lib/auth/authErrorMessages';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -57,8 +58,8 @@ export default function AccountSettingsPage() {
   }
 
   async function savePassword() {
-    if (newPassword.length < 6) {
-      passwordStatus.setError('Password must be at least 6 characters.');
+    if (newPassword.length < 8) {
+      passwordStatus.setError('Password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -68,7 +69,7 @@ export default function AccountSettingsPage() {
     passwordStatus.setSaving();
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      passwordStatus.setError(error.message);
+      passwordStatus.setError(friendlyAuthError(error.message));
     } else {
       passwordStatus.setSaved();
       setNewPassword('');

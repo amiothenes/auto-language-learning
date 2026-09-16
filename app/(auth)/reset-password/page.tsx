@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { friendlyAuthError } from '@/lib/auth/authErrorMessages';
@@ -9,37 +10,42 @@ import { Input } from '@/components/ui/Input';
 import { FormField } from '@/components/ui/FormField';
 import { AuthIllustration } from '@/components/illustrations/AuthIllustration';
 
-export default function SignupPage() {
-  const [email, setEmail] = useState('');
+type SessionState = 'checking' | 'valid' | 'invalid';
+
+export default function ResetPasswordPage() {
+  const router = useRouter();
+  const [sessionState, setSessionState] = useState<SessionState>('checking');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [confirmError, setConfirmError] = useState('');
-  const [done, setDone] = useState(false);
 
   const supabase = createClient();
 
-  async function handleSignup(e: React.FormEvent) {
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setSessionState(user ? 'valid' : 'invalid');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    setConfirmError('');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
     if (password !== confirmPassword) {
-      setConfirmError('Passwords do not match.');
+      setError('Passwords do not match.');
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { onboardingComplete: false },
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
-        },
-      });
+      const { data, error } = await supabase.auth.updateUser({ password });
       if (error) { setError(friendlyAuthError(error.message)); return; }
-      setDone(true);
+      const onboarded = data.user?.user_metadata?.onboardingComplete;
+      router.replace(onboarded ? '/dashboard' : '/onboarding');
     } catch {
       setError('Could not reach the server. Check your connection and try again.');
     } finally {
@@ -47,20 +53,23 @@ export default function SignupPage() {
     }
   }
 
-  if (done) {
+  if (sessionState === 'checking') {
+    return <div className="min-h-screen bg-desk" />;
+  }
+
+  if (sessionState === 'invalid') {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-desk">
         <div className="w-full max-w-sm bg-paper border border-border rounded-card shadow-modal p-8 space-y-4 text-center">
-          <p className="font-sans text-ui-xl font-semibold text-ink">Confirm your email</p>
+          <p className="font-sans text-ui-xl font-semibold text-ink">Link invalid or expired</p>
           <p className="font-sans text-ui-sm text-muted">
-            We sent a confirmation link to{' '}
-            <span className="text-ink font-medium">{email}</span>. Click it to activate your account.
+            This password reset link is invalid or has expired. Please request a new one.
           </p>
           <Link
-            href="/login"
+            href="/forgot-password"
             className="inline-block font-sans text-ui-sm text-primary hover:underline"
           >
-            Back to sign in
+            Request a new link
           </Link>
         </div>
       </div>
@@ -86,29 +95,13 @@ export default function SignupPage() {
           {/* Mobile wordmark */}
           <div className="text-center space-y-1 md:hidden">
             <p className="font-sans text-ui-2xl font-bold text-primary">Verbista</p>
-            <p className="font-sans text-ui-sm text-muted">Create your account</p>
+            <p className="font-sans text-ui-sm text-muted">Choose a new password</p>
           </div>
-          <p className="hidden md:block font-sans text-ui-xl font-semibold text-ink">Create account</p>
+          <p className="hidden md:block font-sans text-ui-xl font-semibold text-ink">Choose a new password</p>
 
           <div className="bg-paper border border-border rounded-card shadow-modal p-8 space-y-4">
-            <form onSubmit={handleSignup} className="space-y-4">
-              <FormField label="Email" fieldId="email" required>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                />
-              </FormField>
-              <FormField
-                label="Password"
-                fieldId="password"
-                helperText="At least 8 characters"
-                required
-              >
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <FormField label="New password" fieldId="password" helperText="At least 8 characters" required>
                 <Input
                   id="password"
                   type="password"
@@ -120,12 +113,7 @@ export default function SignupPage() {
                   required
                 />
               </FormField>
-              <FormField
-                label="Confirm password"
-                fieldId="confirm-password"
-                error={confirmError}
-                required
-              >
+              <FormField label="Confirm password" fieldId="confirm-password" required>
                 <Input
                   id="confirm-password"
                   type="password"
@@ -134,7 +122,6 @@ export default function SignupPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter your password"
                   minLength={8}
-                  hasError={!!confirmError}
                   required
                 />
               </FormField>
@@ -142,17 +129,10 @@ export default function SignupPage() {
                 <p className="font-sans text-ui-sm text-danger" role="alert">{error}</p>
               )}
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading ? 'Saving...' : 'Save new password'}
               </Button>
             </form>
           </div>
-
-          <p className="font-sans text-ui-sm text-muted text-center">
-            Already have an account?{' '}
-            <Link href="/login" className="text-primary hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
         </div>
       </div>
     </div>

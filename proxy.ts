@@ -2,7 +2,15 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Prefix-matched public paths (startsWith check)
-const PUBLIC_PATH_PREFIXES = ['/login', '/signup', '/og', '/auth/callback', '/share', '/api/public', '/manifest.json'];
+// '/auth' covers /auth/callback (dormant OAuth stub) and /auth/confirm (magic
+// link, signup confirmation, password recovery token_hash verification) — the
+// latter must stay public since verifyOtp() runs inside that route and the
+// visitor isn't authenticated yet when the proxy sees the request.
+// '/reset-password' is public too even though it's normally only reached with
+// a valid recovery session, so a stale/direct-navigated visit without one hits
+// the page's own "link invalid or expired" state instead of being silently
+// redirected to /login.
+const PUBLIC_PATH_PREFIXES = ['/login', '/signup', '/forgot-password', '/reset-password', '/og', '/auth', '/share', '/api/public', '/manifest.json'];
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -57,8 +65,10 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Authenticated users on the landing page or auth screens go straight to the dashboard
-  const AUTH_SCREENS = ['/login', '/signup'];
+  // Authenticated users on the landing page or auth screens go straight to the dashboard.
+  // /reset-password is deliberately excluded — a user lands there via a valid
+  // recovery session and must be allowed to see the reset form, not bounced away.
+  const AUTH_SCREENS = ['/login', '/signup', '/forgot-password'];
   if (user && (pathname === '/' || AUTH_SCREENS.some((p) => pathname.startsWith(p)))) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

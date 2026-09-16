@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { friendlyAuthError } from '@/lib/auth/authErrorMessages';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FormField } from '@/components/ui/FormField';
@@ -42,7 +43,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) { setError(error.message); return; }
+      if (error) { setError(friendlyAuthError(error.message)); return; }
       const destination = data.user?.user_metadata?.onboardingComplete ? '/dashboard' : '/onboarding';
       router.replace(destination);
     } catch {
@@ -59,9 +60,9 @@ function LoginForm() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard` },
       });
-      if (error) { setError(error.message); return; }
+      if (error) { setError(friendlyAuthError(error.message)); return; }
       setMagicSent(true);
     } catch {
       setError('Could not reach the server. Check your connection and try again.');
@@ -145,7 +146,15 @@ function LoginForm() {
                     required
                   />
                 </FormField>
-                <FormField label="Password" fieldId="password" required>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="password" className="block font-sans text-ui-sm font-medium text-ink">
+                      Password<span className="text-danger ml-1" aria-label="required">*</span>
+                    </label>
+                    <Link href="/forgot-password" className="font-sans text-ui-xs text-primary hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
                   <Input
                     id="password"
                     type="password"
@@ -155,7 +164,7 @@ function LoginForm() {
                     placeholder="Your password"
                     required
                   />
-                </FormField>
+                </div>
                 {error && (
                   <p className="font-sans text-ui-sm text-danger" role="alert">{error}</p>
                 )}
