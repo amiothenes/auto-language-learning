@@ -120,12 +120,14 @@ export function ImportVocabularyModal({
     return undefined;
   };
 
-  // Parse CSV content
-  const parseCSV = (content: string): ImportedVocabularyData[] => {
+  // Parse CSV or TSV content — same header-named column layout either way,
+  // just a different field delimiter (comma vs. tab). Note this is NOT the
+  // LWT positional .tsv format used by the /settings/data importer.
+  const parseDelimited = (content: string, delimiter: ',' | '\t'): ImportedVocabularyData[] => {
     const lines = content.split('\n').filter((line) => line.trim() !== '');
     if (lines.length < 2) return []; // Need at least header + 1 row
 
-    const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const header = lines[0].split(delimiter).map((h) => h.trim().toLowerCase());
     const lemmaIndex = header.indexOf('lemma');
     const translationIndex = header.indexOf('translation');
     const statusIndex = header.indexOf('status');
@@ -135,13 +137,15 @@ export function ImportVocabularyModal({
     const tagsIndex = header.indexOf('tags');
 
     if (lemmaIndex === -1 || translationIndex === -1) {
-      throw new Error('CSV must have "lemma" and "translation" columns');
+      throw new Error(
+        `File must have "lemma" and "translation" columns, delimited by ${delimiter === '\t' ? 'tabs' : 'commas'}`
+      );
     }
 
     const items: ImportedVocabularyData[] = [];
     for (let i = 1; i < lines.length && i < 10001; i++) {
       // Max 10,000 items
-      const cols = lines[i].split(',');
+      const cols = lines[i].split(delimiter);
       if (cols.length < Math.max(lemmaIndex, translationIndex) + 1) continue;
 
       const lemma = cols[lemmaIndex]?.trim();
@@ -223,8 +227,8 @@ export function ImportVocabularyModal({
       }
 
       const ext = file.name.split('.').pop()?.toLowerCase();
-      if (ext !== 'csv' && ext !== 'json') {
-        throw new Error('Only .csv and .json files are supported');
+      if (ext !== 'csv' && ext !== 'tsv' && ext !== 'json') {
+        throw new Error('Only .csv, .tsv, and .json files are supported');
       }
 
       const reader = new FileReader();
@@ -243,7 +247,9 @@ export function ImportVocabularyModal({
 
       let items: ImportedVocabularyData[];
       if (ext === 'csv') {
-        items = parseCSV(content);
+        items = parseDelimited(content, ',');
+      } else if (ext === 'tsv') {
+        items = parseDelimited(content, '\t');
       } else {
         items = parseJSON(content);
       }
@@ -305,7 +311,7 @@ export function ImportVocabularyModal({
           </h2>
 
           <p className="mt-2 font-sans text-ui-sm text-muted">
-            Import vocabulary items from CSV or JSON files
+            Import vocabulary items from CSV, TSV, or JSON files
           </p>
 
           {/* Error Message */}
@@ -324,7 +330,7 @@ export function ImportVocabularyModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.json"
+              accept=".csv,.tsv,.json"
               onChange={handleFileUpload}
               disabled={isProcessing}
               className="hidden"
@@ -339,7 +345,7 @@ export function ImportVocabularyModal({
                 <Upload size={20} strokeWidth={1.5} className="text-muted" />
                 <div className="text-center">
                   <p className="font-sans text-ui-sm text-ink font-medium">
-                    {isProcessing ? 'Processing file...' : 'Choose CSV or JSON file'}
+                    {isProcessing ? 'Processing file...' : 'Choose CSV, TSV, or JSON file'}
                   </p>
                   <p className="font-sans text-ui-xs text-muted mt-1">
                     Max 25MB, 10,000 items max
@@ -351,6 +357,11 @@ export function ImportVocabularyModal({
 
           {/* Format Guide */}
           <div className="mt-4 p-3 bg-desk border border-border rounded">
+            <p className="font-sans text-ui-xs text-muted mb-2">
+              CSV files are comma-delimited, TSV files are tab-delimited — both need
+              a header row with column names below (case-insensitive). This is a
+              different format from the LWT-export importer in Settings → Data.
+            </p>
             <p className="font-sans text-ui-xs font-medium text-ink mb-1">
               Required Fields:
             </p>
