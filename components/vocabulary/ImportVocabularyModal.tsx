@@ -15,7 +15,7 @@ import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 // "Confirm Fields" step shared by every supported format.
 // ============================================================================
 
-type ImportStep = 'upload' | 'mapping' | 'preview';
+type ImportStep = 'upload' | 'mapping' | 'statusMapping' | 'preview';
 type SourceFormat = 'csv' | 'json' | 'txt';
 type TxtDelimiter = 'comma' | 'tab';
 type TargetField = 'lemma' | 'translation' | 'status';
@@ -27,6 +27,42 @@ const TARGET_FIELDS: { key: TargetField; label: string; required: boolean }[] = 
 ];
 
 const NO_MAPPING = '__none__';
+
+// The 5 reviewable statuses a raw status value can be mapped to. UNKNOWN is
+// deliberately excluded — that's reserved for "no status info at all" (an
+// unmapped Status column, or a blank cell), not a value someone maps to.
+const STATUS_VALUE_OPTIONS: { value: VocabularyStatus; label: string }[] = [
+  { value: VocabularyStatus.NEWLY_SEEN, label: 'Newly Seen' },
+  { value: VocabularyStatus.FAMILIAR, label: 'Familiar' },
+  { value: VocabularyStatus.KNOWN, label: 'Known' },
+  { value: VocabularyStatus.WELL_KNOWN, label: 'Well Known' },
+  { value: VocabularyStatus.IGNORE, label: 'Ignore' },
+];
+
+// LWT's numeric status convention (from the app's former standalone LWT
+// importer): 1=new, 2-3=learning, 4-5=learned, 98=ignored, 99=well known.
+const LWT_STATUS_GUESS: Record<string, VocabularyStatus> = {
+  '1': VocabularyStatus.NEWLY_SEEN,
+  '2': VocabularyStatus.FAMILIAR,
+  '3': VocabularyStatus.FAMILIAR,
+  '4': VocabularyStatus.KNOWN,
+  '5': VocabularyStatus.KNOWN,
+  '98': VocabularyStatus.IGNORE,
+  '99': VocabularyStatus.WELL_KNOWN,
+};
+
+// Best-effort guess for a raw status value, used only to pre-fill the Confirm
+// Status Values step — never applied silently. Numeric values use the LWT
+// convention above; strings that already spell out one of the 5 statuses
+// (any casing, spaces/dashes/underscores) auto-match. Anything else is left
+// unguessed so the user must choose explicitly.
+function guessStatusValue(raw: string): VocabularyStatus | undefined {
+  const trimmed = raw.trim();
+  if (/^\d+$/.test(trimmed)) return LWT_STATUS_GUESS[trimmed];
+  const normalized = trimmed.toUpperCase().replace(/[-_ ]+/g, '_');
+  const match = STATUS_VALUE_OPTIONS.find((opt) => opt.value === normalized);
+  return match?.value;
+}
 
 interface ImportVocabularyModalProps {
   isOpen: boolean;
@@ -122,6 +158,8 @@ export function ImportVocabularyModal({
   const [sourceHeaders, setSourceHeaders] = useState<string[]>([]);
   const [sourceRecords, setSourceRecords] = useState<Record<string, unknown>[]>([]);
   const [fieldMapping, setFieldMapping] = useState<Partial<Record<TargetField, string>>>({});
+  const [statusValueCounts, setStatusValueCounts] = useState<{ value: string; count: number }[]>([]);
+  const [statusValueMapping, setStatusValueMapping] = useState<Record<string, VocabularyStatus>>({});
   const [importedItems, setImportedItems] = useState<ImportedVocabularyData[]>([]);
   const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('skip');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -149,6 +187,8 @@ export function ImportVocabularyModal({
       setSourceHeaders([]);
       setSourceRecords([]);
       setFieldMapping({});
+      setStatusValueCounts([]);
+      setStatusValueMapping({});
       setImportedItems([]);
       setMergeStrategy('skip');
       setError(null);
@@ -217,29 +257,43 @@ export function ImportVocabularyModal({
     }
   }, [isProcessing, onClose]);
 
-  // Validate and parse status
-  const parseStatus = (status?: string): VocabularyStatus | undefined => {
-    if (!status) return undefined;
-    const normalized = status.toUpperCase().replace(/[- ]/g, '_');
-    if (Object.values(VocabularyStatus).includes(normalized as VocabularyStatus)) {
-      return normalized as VocabularyStatus;
-    }
-    return undefined;
+  const toText = (value: unknown): string => {
+    if (value === undefined || value === null) return '';
+    return typeof value === 'string' ? value.trim() : String(value).trim();
   };
 
-  // Build final vocabulary items from raw records using the confirmed field mapping
+  // Every unique raw value found in the mapped status column, with how many
+  // rows use it — drives the Confirm Status Values step. Blank cells are
+  // excluded; those rows fall back to UNKNOWN like an unmapped column would.
+  const computeStatusValueCounts = useCallback(
+    (records: Record<string, unknown>[], statusKey: string): { value: string; count: number }[] => {
+      const counts = new Map<string, number>();
+      for (const record of records) {
+        const raw = toText(record[statusKey]);
+        if (!raw) continue;
+        counts.set(raw, (counts.get(raw) ?? 0) + 1);
+      }
+      return Array.from(counts, ([value, count]) => ({ value, count }));
+    },
+    []
+  );
+
+  // Build final vocabulary items from raw records using the confirmed field
+  // mapping. When a status column is mapped, each row's status comes from
+  // the user-confirmed per-value mapping; anything without an explicit
+  // mapping (unmapped column, blank cell, or somehow missing from the
+  // confirmed map) becomes UNKNOWN — never silently NEWLY_SEEN.
   const buildImportedItems = useCallback(
-    (records: Record<string, unknown>[], mapping: Partial<Record<TargetField, string>>): ImportedVocabularyData[] => {
+    (
+      records: Record<string, unknown>[],
+      mapping: Partial<Record<TargetField, string>>,
+      statusValues: Record<string, VocabularyStatus>
+    ): ImportedVocabularyData[] => {
       const lemmaKey = mapping.lemma;
       const translationKey = mapping.translation;
       if (!lemmaKey || !translationKey) return [];
 
       const statusKey = mapping.status;
-
-      const toText = (value: unknown): string => {
-        if (value === undefined || value === null) return '';
-        return typeof value === 'string' ? value.trim() : String(value).trim();
-      };
 
       const items: ImportedVocabularyData[] = [];
       for (let i = 0; i < records.length && items.length < 10000; i++) {
@@ -248,7 +302,8 @@ export function ImportVocabularyModal({
         const translation = toText(record[translationKey]);
         if (!lemma || !translation) continue;
 
-        const status = statusKey ? parseStatus(toText(record[statusKey]) || undefined) : undefined;
+        const rawStatus = statusKey ? toText(record[statusKey]) : '';
+        const status = (rawStatus && statusValues[rawStatus]) || VocabularyStatus.UNKNOWN;
 
         items.push({ lemma, translation, status });
       }
@@ -353,27 +408,81 @@ export function ImportVocabularyModal({
     setFieldMapping((prev) => ({ ...prev, [target]: header === NO_MAPPING ? undefined : header }));
   };
 
-  // Confirm the field mapping and build the preview
+  // Build items with the given status-value mapping, cap at 10,000, and move to Preview
+  const finalizeItems = useCallback(
+    (statusValues: Record<string, VocabularyStatus>) => {
+      const items = buildImportedItems(sourceRecords, fieldMapping, statusValues);
+      if (items.length === 0) {
+        setError('No valid vocabulary items found with the current field mapping.');
+        return;
+      }
+
+      setError(null);
+      if (sourceRecords.length > 10000 || items.length > 10000) {
+        setError('Maximum 10,000 items per import. Only first 10,000 will be imported.');
+        setImportedItems(items.slice(0, 10000));
+      } else {
+        setImportedItems(items);
+      }
+      setStep('preview');
+    },
+    [buildImportedItems, sourceRecords, fieldMapping]
+  );
+
+  // Confirm the field mapping. If a Status column was mapped, go confirm its
+  // unique values first instead of jumping straight to Preview.
   const handleConfirmMapping = () => {
     if (!fieldMapping.lemma || !fieldMapping.translation) {
       setError('Please map both Lemma and Translation to continue.');
       return;
     }
 
-    const items = buildImportedItems(sourceRecords, fieldMapping);
-    if (items.length === 0) {
-      setError('No valid vocabulary items found with the current field mapping.');
+    const statusKey = fieldMapping.status;
+    if (!statusKey) {
+      finalizeItems({});
       return;
     }
 
-    setError(null);
-    if (sourceRecords.length > 10000 || items.length > 10000) {
-      setError('Maximum 10,000 items per import. Only first 10,000 will be imported.');
-      setImportedItems(items.slice(0, 10000));
-    } else {
-      setImportedItems(items);
+    const counts = computeStatusValueCounts(sourceRecords, statusKey);
+    if (counts.length === 0) {
+      // Status column is mapped but every cell is blank — nothing to confirm
+      finalizeItems({});
+      return;
     }
-    setStep('preview');
+
+    const guesses: Record<string, VocabularyStatus> = {};
+    for (const { value } of counts) {
+      const guess = guessStatusValue(value);
+      if (guess) guesses[value] = guess;
+    }
+
+    setError(null);
+    setStatusValueCounts(counts);
+    setStatusValueMapping(guesses);
+    setStep('statusMapping');
+  };
+
+  // Update the target status a single raw status value maps to
+  const handleStatusValueChange = (rawValue: string, status: string) => {
+    setStatusValueMapping((prev) => {
+      const next = { ...prev };
+      if (status === NO_MAPPING) {
+        delete next[rawValue];
+      } else {
+        next[rawValue] = status as VocabularyStatus;
+      }
+      return next;
+    });
+  };
+
+  // Confirm every status value is mapped, then build the preview
+  const handleConfirmStatusValues = () => {
+    const allMapped = statusValueCounts.every(({ value }) => !!statusValueMapping[value]);
+    if (!allMapped) {
+      setError('Please map every status value before continuing.');
+      return;
+    }
+    finalizeItems(statusValueMapping);
   };
 
   // Go back to file upload, discarding the parsed source
@@ -386,6 +495,8 @@ export function ImportVocabularyModal({
     setSourceHeaders([]);
     setSourceRecords([]);
     setFieldMapping({});
+    setStatusValueCounts([]);
+    setStatusValueMapping({});
     setError(null);
   };
 
@@ -440,6 +551,7 @@ export function ImportVocabularyModal({
           <p className="mt-2 font-sans text-ui-sm text-muted">
             {step === 'upload' && 'Import vocabulary items from a CSV, JSON, or TXT file'}
             {step === 'mapping' && 'Confirm which columns map to each vocabulary field'}
+            {step === 'statusMapping' && 'Confirm how each status value in your file maps to a status'}
             {step === 'preview' && 'Review the parsed items and choose a merge strategy'}
           </p>
 
@@ -594,6 +706,47 @@ export function ImportVocabularyModal({
             </div>
           )}
 
+          {/* Step 2.5: Confirm Status Values (only when a Status column is mapped) */}
+          {step === 'statusMapping' && (
+            <div className="mt-6">
+              <div className="mb-4 p-3 bg-desk border border-border rounded">
+                <p className="font-sans text-ui-sm text-ink">
+                  <span className="font-semibold">{statusValueCounts.length.toLocaleString()}</span> unique status
+                  value{statusValueCounts.length !== 1 ? 's' : ''} found
+                </p>
+              </div>
+
+              <label className="block font-sans text-ui-sm font-medium text-ink mb-2">
+                Confirm Status Values
+              </label>
+              <div className="space-y-3">
+                {statusValueCounts.map(({ value, count }) => (
+                  <div key={value} className="flex items-center gap-3">
+                    <div className="w-44 shrink-0 truncate">
+                      <span className="font-sans text-ui-sm text-ink font-medium" title={value}>
+                        {value}
+                      </span>
+                      <span className="block font-sans text-ui-xs text-muted">
+                        {count.toLocaleString()} row{count !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Select
+                        value={statusValueMapping[value] ?? NO_MAPPING}
+                        onChange={(status) => handleStatusValueChange(value, status)}
+                        options={[
+                          { value: NO_MAPPING, label: 'Select a status...' },
+                          ...STATUS_VALUE_OPTIONS,
+                        ]}
+                        placeholder="Select a status..."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Step 3: Preview */}
           {step === 'preview' && (
             <>
@@ -701,7 +854,7 @@ export function ImportVocabularyModal({
                             {item.translation}
                           </td>
                           <td className="px-3 py-2 font-sans text-ui-xs text-muted">
-                            {item.status || 'NEWLY_SEEN'}
+                            {item.status}
                           </td>
                         </tr>
                       ))}
@@ -721,8 +874,19 @@ export function ImportVocabularyModal({
                   Back
                 </Button>
               )}
+              {step === 'statusMapping' && (
+                <Button type="button" variant="ghost" size="md" onClick={() => { setStep('mapping'); setError(null); }}>
+                  <ArrowLeft size={16} strokeWidth={1.5} className="mr-1" />
+                  Back
+                </Button>
+              )}
               {step === 'preview' && (
-                <Button type="button" variant="ghost" size="md" onClick={() => setStep('mapping')}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="md"
+                  onClick={() => setStep(fieldMapping.status ? 'statusMapping' : 'mapping')}
+                >
                   <ArrowLeft size={16} strokeWidth={1.5} className="mr-1" />
                   Back
                 </Button>
@@ -741,6 +905,11 @@ export function ImportVocabularyModal({
               {step === 'mapping' && (
                 <Button type="button" variant="primary" size="md" onClick={handleConfirmMapping}>
                   Confirm Fields
+                </Button>
+              )}
+              {step === 'statusMapping' && (
+                <Button type="button" variant="primary" size="md" onClick={handleConfirmStatusValues}>
+                  Confirm Status Values
                 </Button>
               )}
               {step === 'preview' && (
