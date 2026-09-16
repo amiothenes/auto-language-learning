@@ -98,9 +98,17 @@ export function NewSeriesModal({
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen]);
 
+  // Only dismiss on an outside click when every textbox is still empty, so
+  // an accidental click can't silently discard typed input.
+  const isDirty =
+    formData.name.trim() !== '' ||
+    formData.description.trim() !== '' ||
+    textContent.trim() !== '';
+
   const handleBackdropClick = useCallback(() => {
-    if (!isLoading) onClose();
-  }, [onClose, isLoading]);
+    if (isLoading || isDirty) return;
+    onClose();
+  }, [onClose, isLoading, isDirty]);
 
   const isFormValid = useMemo(
     () => formData.name.trim() !== '' && formData.name.trim().length <= 100,
@@ -144,13 +152,13 @@ export function NewSeriesModal({
       />
 
       {/* Dialog */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="new-series-dialog-title"
-          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Loading Overlay */}

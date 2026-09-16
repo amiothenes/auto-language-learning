@@ -31,6 +31,8 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
   const [tagsInput, setTagsInput] = useState('');
   const [contentInput, setContentInput] = useState('');
   const [originalContent, setOriginalContent] = useState('');
+  const [originalTitle, setOriginalTitle] = useState('');
+  const [originalTagsInput, setOriginalTagsInput] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
@@ -47,6 +49,8 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
 
   // Derived — placed early so effects and callbacks can reference it
   const hasContentChanged = contentInput !== originalContent;
+  const isDirty =
+    hasContentChanged || title !== originalTitle || tagsInput !== originalTagsInput;
 
   useEffect(() => {
     setMounted(true);
@@ -68,7 +72,9 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
       })
       .then(({ text }) => {
         setTitle(text.title);
+        setOriginalTitle(text.title);
         setTagsInput(text.tags.join(', '));
+        setOriginalTagsInput(text.tags.join(', '));
         setContentInput(text.content ?? '');
         setOriginalContent(text.content ?? '');
       })
@@ -145,8 +151,9 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
   }, [isSaving, hasContentChanged, stageIndex]);
 
   const handleBackdropClick = useCallback(() => {
-    if (!isSaving) onClose();
-  }, [isSaving, onClose]);
+    if (isSaving || isDirty) return;
+    onClose();
+  }, [isSaving, isDirty, onClose]);
 
   const parseTags = (input: string): string[] =>
     input
@@ -237,13 +244,13 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
       />
 
       {/* Dialog */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-text-dialog-title"
-          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* NLP Reprocess Shimmer Overlay */}

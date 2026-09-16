@@ -56,6 +56,8 @@ export function NewTextModal({
   const [stageIndex, setStageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  const [initialTitle, setInitialTitle] = useState('');
+
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +82,7 @@ export function NewTextModal({
         seriesId: prefilledSeriesId || '',
         tags: [],
       });
+      setInitialTitle(initialTitle);
       setTagsInput('');
       setUserEditedTitle(false);
       setIsRateLimited(false);
@@ -162,10 +165,18 @@ export function NewTextModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Backdrop click handler (blocked during import)
+  // Only dismiss on an outside click when every textbox still matches what
+  // was prepopulated, so an accidental click can't silently discard typed input.
+  const isDirty =
+    formData.title !== initialTitle ||
+    formData.content.trim() !== '' ||
+    tagsInput.trim() !== '';
+
+  // Backdrop click handler (blocked during import, or while dirty)
   const handleBackdropClick = useCallback(() => {
-    if (!mutation.isPending) onClose();
-  }, [onClose, mutation.isPending]);
+    if (mutation.isPending || isDirty) return;
+    onClose();
+  }, [onClose, mutation.isPending, isDirty]);
 
   // Derived series info
   const selectedSeries = availableSeries.find((s) => s.id === formData.seriesId) ?? null;
@@ -246,13 +257,13 @@ export function NewTextModal({
       />
 
       {/* Dialog Container */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="new-text-dialog-title"
-          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* NLP Processing Overlay */}

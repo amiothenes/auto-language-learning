@@ -119,10 +119,12 @@ export function AddLanguageModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Backdrop click handler
+  // Backdrop click handler — only dismisses when the Dictionary URI textbox
+  // is still empty, so an accidental outside click can't discard typed input.
   const handleBackdropClick = useCallback(() => {
+    if (dictUri.trim() !== '') return;
     onClose();
-  }, [onClose]);
+  }, [dictUri, onClose]);
 
   // Form submission handler
   const handleSubmit = useCallback(
@@ -157,13 +159,13 @@ export function AddLanguageModal({
       />
 
       {/* Dialog Container */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-language-dialog-title"
-          className="w-full max-w-md bg-paper rounded-card shadow-modal animate-modal-enter p-6"
+          className="w-full max-w-md bg-paper rounded-card shadow-modal animate-modal-enter p-6 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Title row */}

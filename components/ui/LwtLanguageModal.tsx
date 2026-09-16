@@ -140,14 +140,14 @@ export function LwtLanguageModal({
       />
 
       {/* Dialog */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="lwt-lang-title"
           aria-describedby="lwt-lang-desc"
-          className="w-full max-w-md bg-paper rounded-card shadow-modal animate-modal-enter p-6"
+          className="w-full max-w-md bg-paper rounded-card shadow-modal animate-modal-enter p-6 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <h2 id="lwt-lang-title" className="font-sans text-ui-lg font-semibold text-ink">

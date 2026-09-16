@@ -38,6 +38,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const initialTranslationRef = useRef('');
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -46,6 +47,7 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
     if (isOpen && item) {
       setStatus(item.status);
       setTranslation(item.translation ?? '');
+      initialTranslationRef.current = item.translation ?? '';
       setError(null);
       setIsSubmitting(false);
       previousFocusRef.current = document.activeElement as HTMLElement;
@@ -111,21 +113,24 @@ export function EditVocabularyModal({ isOpen, item, onClose, onSave }: EditVocab
 
   return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop — only dismisses when the translation textbox is unchanged */}
       <div
         className="fixed inset-0 z-50 bg-ink/40 animate-modal-backdrop-enter"
-        onClick={onClose}
+        onClick={() => {
+          if (translation !== initialTranslationRef.current) return;
+          onClose();
+        }}
         aria-hidden="true"
       />
 
       {/* Dialog */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-vocabulary-dialog-title"
-          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6"
+          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <h2

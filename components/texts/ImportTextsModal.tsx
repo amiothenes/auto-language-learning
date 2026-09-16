@@ -166,12 +166,12 @@ export function ImportTextsModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Backdrop click handler
+  // Backdrop click handler — also blocked while the URL textbox has typed,
+  // unsubmitted input, so an accidental outside click can't discard it.
   const handleBackdropClick = useCallback(() => {
-    if (!isProcessing && !isSubmitting) {
-      onClose();
-    }
-  }, [isProcessing, isSubmitting, onClose]);
+    if (isProcessing || isSubmitting || urlInput.trim() !== '') return;
+    onClose();
+  }, [isProcessing, isSubmitting, urlInput, onClose]);
 
   // Recompute titles when mode changes
   useEffect(() => {
@@ -461,13 +461,13 @@ export function ImportTextsModal({
       />
 
       {/* Dialog Container */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="import-texts-dialog-title"
-          className="relative w-full max-w-3xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-3xl bg-paper rounded-card shadow-modal animate-modal-enter p-6 max-h-[90vh] overflow-y-auto pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* NLP Processing Overlay */}

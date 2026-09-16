@@ -103,9 +103,14 @@ export function EditSeriesModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  // Only dismiss on an outside click when both fields still match what was
+  // prepopulated, so an accidental click can't silently discard edits.
+  const isDirty = name !== initialName || description !== initialDescription;
+
   const handleBackdropClick = useCallback(() => {
-    if (!isSaving) onClose();
-  }, [isSaving, onClose]);
+    if (isSaving || isDirty) return;
+    onClose();
+  }, [isSaving, isDirty, onClose]);
 
   const isFormValid = useMemo(
     () => name.trim().length > 0 && name.trim().length <= 100,
@@ -158,13 +163,13 @@ export function EditSeriesModal({
       />
 
       {/* Dialog */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-series-dialog-title"
-          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6"
+          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <h2

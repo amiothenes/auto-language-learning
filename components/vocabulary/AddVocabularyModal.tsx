@@ -123,10 +123,19 @@ export function AddVocabularyModal({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Backdrop click handler
+  // Backdrop click handler — only dismisses when every textbox is still at
+  // its prepopulated (empty) value, so an accidental outside click can't
+  // silently discard typed input.
+  const isDirty =
+    formData.lemma.trim() !== '' ||
+    formData.translation.trim() !== '' ||
+    tagsInput.trim() !== '' ||
+    frequencyInput.trim() !== '';
+
   const handleBackdropClick = useCallback(() => {
+    if (isDirty) return;
     onClose();
-  }, [onClose]);
+  }, [isDirty, onClose]);
 
   // Form validation
   const isFormValid = useMemo(() => {
@@ -203,13 +212,13 @@ export function AddVocabularyModal({
       />
 
       {/* Dialog Container */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-vocabulary-dialog-title"
-          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6"
+          className="w-full max-w-lg bg-paper rounded-card shadow-modal animate-modal-enter p-6 pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Title */}
