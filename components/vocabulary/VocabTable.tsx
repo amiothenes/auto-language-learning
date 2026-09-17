@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
-import { Content, Muted } from '@/components/ui/Typography';
+import { Muted } from '@/components/ui/Typography';
 import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
 
@@ -119,58 +119,58 @@ function TableRow({
   return (
     <tr className="border-b border-border hover:bg-desk transition-colors group">
       {/* Checkbox */}
-      <td className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3">
-        <label className="inline-flex items-center justify-center p-2 cursor-pointer">
+      <td className="w-9 md:w-11 px-2 md:px-3 py-1.5 md:py-2">
+        <label className="inline-flex items-center justify-center p-1.5 cursor-pointer">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onToggle}
-            className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+            className="w-[18px] h-[18px] rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
             aria-label={`Select ${item.lemma}`}
           />
         </label>
       </td>
 
       {/* Lemma */}
-      <td className="px-2 md:px-4 py-2 md:py-3">
-        <Content size="base" weight="semibold" className="line-clamp-1 text-ui-sm md:text-content-base">
+      <td className="px-2 md:px-3 py-1.5 md:py-2">
+        <p className="font-serif text-ink font-semibold leading-normal line-clamp-1 text-ui-base md:text-base">
           {item.lemma}
-        </Content>
+        </p>
       </td>
 
       {/* Status */}
-      <td className="px-2 md:px-4 py-2 md:py-3">
+      <td className="px-2 md:px-3 py-1.5 md:py-2">
         <StatusBadge status={item.status} />
       </td>
 
       {/* Frequency tier */}
-      <td className="px-2 md:px-3 py-2 md:py-3">
+      <td className="px-2 md:px-3 py-1.5 md:py-2">
         <FrequencyBadge score={item.dictionaryFrequency} percentile={item.frequencyPercentile} />
       </td>
 
       {/* Translation */}
-      <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
-        <Content size="base" className="text-ink opacity-80 line-clamp-1">
+      <td className="px-2 md:px-3 py-1.5 md:py-2 hidden lg:table-cell">
+        <p className="font-serif text-ink opacity-80 leading-normal line-clamp-1 text-base">
           {item.translation}
-        </Content>
+        </p>
       </td>
 
       {/* Seen In */}
-      <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
+      <td className="px-2 md:px-3 py-1.5 md:py-2 hidden lg:table-cell">
         {item.textCount > 0 ? (
           <button
             onClick={() => router.push(`/vocabulary/${item.id}/contexts`)}
-            className="font-sans text-ui-xs font-semibold text-primary hover:underline cursor-pointer"
+            className="font-sans text-ui-sm font-semibold text-primary hover:underline cursor-pointer"
           >
             {item.textCount} text{item.textCount !== 1 ? 's' : ''} →
           </button>
         ) : (
-          <Muted size="xs">—</Muted>
+          <Muted size="sm">—</Muted>
         )}
       </td>
 
       {/* Actions */}
-      <td className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3">
+      <td className="w-9 md:w-11 px-2 md:px-3 py-1.5 md:py-2">
         <button
           ref={menuButtonRef}
           onClick={(e) => {
@@ -237,8 +237,8 @@ export function VocabTable({
           {/* Table Header */}
           <thead className="bg-desk border-b border-border sticky top-0">
             <tr>
-              <th className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3">
-                <label className="inline-flex items-center justify-center p-2 cursor-pointer">
+              <th className="w-9 md:w-11 px-2 md:px-3 py-2 md:py-2.5">
+                <label className="inline-flex items-center justify-center p-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -246,27 +246,27 @@ export function VocabTable({
                       if (el) el.indeterminate = someSelected;
                     }}
                     onChange={onToggleAll}
-                    className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    className="w-[18px] h-[18px] rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     aria-label="Select all"
                   />
                 </label>
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink">
                 Lemma
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink">
                 Status
               </th>
-              <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink">
                 Frequency
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink hidden lg:table-cell">
                 Translation
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink hidden lg:table-cell">
                 Seen in
               </th>
-              <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
+              <th className="w-9 md:w-11 px-2 md:px-3 py-2 md:py-2.5"></th>
             </tr>
           </thead>
 

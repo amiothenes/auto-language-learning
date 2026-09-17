@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { words, wordInstances, languages, wordTranslations } from '@/lib/db/schema';
-import { eq, ne, and, ilike, asc, desc, count, countDistinct, inArray, SQL } from 'drizzle-orm';
+import { eq, and, asc, desc, count, countDistinct, inArray } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { VocabularyItem } from '@/lib/types/vocabulary';
 import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { lookupFrequencyPercentile } from '@/lib/utils/wordFrequency';
+import { buildVocabularyWhereClause } from '@/lib/vocabulary/vocabularyFilter';
 
 // ============================================================================
 // GET /api/vocabulary — Paginated, filtered vocabulary list for a language
@@ -57,27 +58,12 @@ export async function GET(request: NextRequest) {
     // Build WHERE conditions
     // ========================================================================
 
-    const conditions: SQL[] = [eq(words.languageId, language.id), eq(words.userId, user.id)];
-
-    // status may be a single value or a comma-separated list (multiselect filter chips)
-    const requestedStatuses = (statusParam?.split(',') ?? [])
-      .map((s) => s.trim())
-      .filter((s): s is VocabularyStatus =>
-        Object.values(VocabularyStatus).includes(s as VocabularyStatus)
-      );
-
-    if (requestedStatuses.length > 0) {
-      conditions.push(inArray(words.status, requestedStatuses));
-    } else {
-      conditions.push(ne(words.status, VocabularyStatus.IGNORE));
-      conditions.push(ne(words.status, VocabularyStatus.UNKNOWN));
-    }
-
-    if (searchParam?.trim()) {
-      conditions.push(ilike(words.lemma, `%${searchParam.trim()}%`));
-    }
-
-    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+    const whereClause = buildVocabularyWhereClause({
+      languageId: language.id,
+      userId: user.id,
+      statusParam,
+      searchParam,
+    });
 
     // ========================================================================
     // Build ORDER BY
