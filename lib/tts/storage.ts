@@ -1,9 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+import { supabaseServiceRole } from '@/lib/supabase/serviceRole';
 
 // Public-read bucket — pronunciation audio isn't sensitive per-user data,
-// it's a shared cache (see lib/tts/wordAudioService.ts). Writes go through
-// the same authenticated-user Supabase client used everywhere else in this
-// app (lib/supabase/server.ts) — there is no service-role client here.
+// it's a shared cache (see lib/tts/wordAudioService.ts). Writes use the
+// service-role client (lib/supabase/serviceRole.ts): uploads only ever
+// happen server-side after requireUser()/rate-limit checks, so there's no
+// need for the end user's own JWT to carry storage write access — this
+// also lets the `authenticated` INSERT/UPDATE storage.objects policies be
+// removed entirely, since nothing needs them anymore.
 export const TTS_AUDIO_BUCKET = 'tts-audio';
 
 // Storage paths are content-addressed (a hash of the text + voice + rate), so
@@ -14,8 +17,7 @@ export const TTS_AUDIO_BUCKET = 'tts-audio';
 const AUDIO_CACHE_CONTROL = '31536000';
 
 export async function uploadAudio(path: string, buffer: Buffer): Promise<void> {
-  const supabase = await createClient();
-  const { error } = await supabase.storage.from(TTS_AUDIO_BUCKET).upload(path, buffer, {
+  const { error } = await supabaseServiceRole.storage.from(TTS_AUDIO_BUCKET).upload(path, buffer, {
     contentType: 'audio/mpeg',
     cacheControl: AUDIO_CACHE_CONTROL,
     upsert: true,
