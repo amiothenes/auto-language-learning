@@ -29,6 +29,7 @@ import { SeriesHeaderSkeleton } from '@/components/series/SeriesHeaderSkeleton';
 import { TextCard } from '@/components/series/TextCard';
 import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
 import { TextListRow } from '@/components/series/TextListRow';
+import { TextListRowSkeleton } from '@/components/series/TextListRowSkeleton';
 import { ContinueReadingCard } from '@/components/series/ContinueReadingCard';
 import { TextsFilterBar, type TierFilter } from '@/components/series/TextsFilterBar';
 import { BulkActionsBar } from '@/components/series/BulkActionsBar';
@@ -40,7 +41,6 @@ import { NewTextModal } from '@/components/texts/NewTextModal';
 import { ImportTextsModal } from '@/components/texts/ImportTextsModal';
 import { EditTextModal } from '@/components/texts/EditTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
-import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
 import { Plus, Upload, Download, MoreVertical, List, LayoutGrid, CheckSquare, Check } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
@@ -526,6 +526,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleAddText = () => {
+    if (isLoading) return;
     setIsNewTextModalOpen(true);
   };
 
@@ -541,6 +542,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   };
 
   const handleImport = () => {
+    if (isLoading) return;
     setIsImportModalOpen(true);
   };
 
@@ -693,14 +695,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         })()}
 
         {/* Texts Section */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <TextCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : (
-          <div>
+        <div>
             {/* Texts toolbar — pinned so it stays reachable while scrolling a long list.
                 Sized off the toolbar's OWN rendered width via a container query
                 (`@container` + `@xl:`/`@3xl:` below), not the viewport (`sm:`/`lg:`). The
@@ -733,7 +728,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
               <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:flex-wrap">
               <div className="flex items-center gap-2 flex-wrap shrink-0">
                 <h2 className="font-sans font-semibold text-content-base shrink-0">
-                  Texts ({displayTexts.length})
+                  Texts{!isLoading && ` (${displayTexts.length})`}
                 </h2>
 
                 {isSelectMode ? (
@@ -937,7 +932,21 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             </div>
 
             {/* Texts content */}
-            {displayTexts.length === 0 ? (
+            {isLoading ? (
+              viewMode === 'list' ? (
+                <div>
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <TextListRowSkeleton key={i} />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <TextCardSkeleton key={i} />
+                  ))}
+                </div>
+              )
+            ) : displayTexts.length === 0 ? (
               isFiltering ? (
                 <EmptyState
                   illustration="search"
@@ -1066,7 +1075,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
               )
             )}
           </div>
-        )}
       </div>
 
       {/* Bulk actions bar — mounted only while selecting */}

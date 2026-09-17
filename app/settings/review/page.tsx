@@ -6,8 +6,8 @@ import { SettingSection } from '@/components/settings/SettingSection';
 import { SettingRow } from '@/components/settings/SettingRow';
 import { Select, SelectOption } from '@/components/settings/Select';
 import { Toggle } from '@/components/settings/Toggle';
+import { ReviewSettingsSkeleton } from '@/components/settings/ReviewSettingsSkeleton';
 import { useAutoSaveToast } from '@/components/ui/AutoSaveToast';
-import { Muted } from '@/components/ui/Typography';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { SrsSettingsPayload } from '@/lib/types/api';
 
@@ -57,7 +57,7 @@ export default function ReviewSettingsPage() {
   }
 
   if (!languageId || isLoading || !settings) {
-    return <Muted>Loading review settings…</Muted>;
+    return <ReviewSettingsSkeleton />;
   }
 
   return (

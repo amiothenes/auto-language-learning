@@ -16,8 +16,8 @@ import { EditSeriesModal } from '@/components/series/EditSeriesModal';
 import { NewTextModal } from '@/components/texts/NewTextModal';
 import type { ImportTextResponse } from '@/lib/types/api';
 import { Toast, useToast } from '@/components/ui/Toast';
-import { SkeletonText } from '@/components/ui/Skeleton';
 import { TextCard } from '@/components/series/TextCard';
+import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
 import { TextListRow } from '@/components/series/TextListRow';
 import { TextListRowSkeleton } from '@/components/series/TextListRowSkeleton';
 import { TextsFilterBar } from '@/components/series/TextsFilterBar';
@@ -336,17 +336,7 @@ function SeriesPageContent() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="bg-paper border border-border rounded-card p-5 space-y-3">
-                    <SkeletonText width="w-3/4" className="h-5" />
-                    <SkeletonText width="w-1/3" className="h-3" />
-                    <SkeletonText width="w-full" className="h-3 mt-2" />
-                    <SkeletonText width="w-4/5" className="h-3" />
-                    <div className="flex items-center gap-3 pt-1">
-                      <SkeletonText width="w-20" className="h-3" />
-                      <SkeletonText width="w-16" className="h-3" />
-                    </div>
-                    <SkeletonText width="w-full" className="h-1.5 rounded-full" />
-                  </div>
+                  <TextCardSkeleton key={i} />
                 ))}
               </div>
             )
