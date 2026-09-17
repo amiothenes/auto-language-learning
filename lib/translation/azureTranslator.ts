@@ -12,6 +12,31 @@ function headers() {
   };
 }
 
+const MAX_RETRIES = 3;
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+/**
+ * Azure Translator throttles hard under bursty concurrent load — the
+ * vocabulary import's bulk-translate job can fire dozens of lookups at
+ * once, so a 429/5xx here is usually transient rather than a real failure.
+ * Retries with backoff (honoring Retry-After when Azure sends one) before
+ * giving up, instead of permanently skipping the word for this run.
+ */
+async function fetchWithRetry(url: string, init: RequestInit, attempt = 0): Promise<Response> {
+  const res = await fetch(url, init);
+  if (res.ok || !RETRYABLE_STATUSES.has(res.status) || attempt >= MAX_RETRIES) {
+    return res;
+  }
+
+  const retryAfterSeconds = Number(res.headers.get('Retry-After'));
+  const backoffMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+    ? retryAfterSeconds * 1000
+    : 500 * 2 ** attempt + Math.random() * 250; // ~500-750ms, 1000-1250ms, 2000-2250ms
+
+  await new Promise((resolve) => setTimeout(resolve, backoffMs));
+  return fetchWithRetry(url, init, attempt + 1);
+}
+
 type AzureDictLookupEntry = {
   normalizedTarget: string;
   displayTarget: string;
@@ -62,7 +87,7 @@ export async function dictionaryLookup(
   if (!KEY) return null;
 
   const url = `${ENDPOINT}/dictionary/lookup?api-version=3.0&from=${fromLang}&to=${toLang}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify([{ Text: lemma }]),
@@ -99,7 +124,7 @@ export async function dictionaryExamples(
   if (!KEY) return null;
 
   const url = `${ENDPOINT}/dictionary/examples?api-version=3.0&from=${fromLang}&to=${toLang}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify([{ Text: lemma, Translation: targetWord }]),
@@ -130,7 +155,7 @@ export async function translateWord(
   if (!KEY) return null;
 
   const url = `${ENDPOINT}/translate?api-version=3.0&from=${fromLang}&to=${toLang}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify([{ Text: lemma }]),
