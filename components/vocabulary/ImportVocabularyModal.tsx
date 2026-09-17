@@ -109,7 +109,19 @@ function parseDelimited(
   let headers: string[];
   let dataLines: string[];
   if (hasHeaderRow) {
-    headers = lines[0].split(delimiter).map((h) => h.trim()).filter(Boolean);
+    // Name every column positionally (falling back to "Column N" for a blank
+    // cell, and disambiguating repeats) instead of filtering blanks out —
+    // filtering would shrink the headers array while `cols` below still has
+    // one entry per original column, shifting every later column's data
+    // under the wrong header name (e.g. Translation's blank cell would push
+    // Status's value one column to the left).
+    const seen = new Map<string, number>();
+    headers = lines[0].split(delimiter).map((h, idx) => {
+      const name = h.trim() || `Column ${idx + 1}`;
+      const priorCount = seen.get(name) ?? 0;
+      seen.set(name, priorCount + 1);
+      return priorCount === 0 ? name : `${name} (${priorCount + 1})`;
+    });
     dataLines = lines.slice(1);
   } else {
     const colCount = lines[0].split(delimiter).length;
@@ -323,8 +335,13 @@ export function ImportVocabularyModal({
         // Trailing "?" (or "??") marks an unresolved/unlemmatized form in
         // LWT-style exports — strip it so the stored lemma is clean.
         const lemma = toText(record[lemmaKey]).replace(/\?+$/, '');
+        // A blank translation cell is common for words a learner already
+        // knows well enough to skip glossing (LWT lets you rate a word
+        // without ever typing a translation) — it must not disqualify the
+        // row. Only the lemma is actually required; translation is filled
+        // in later by the post-import Azure lookup for rows that need it.
         const translation = toText(record[translationKey]);
-        if (!lemma || !translation) continue;
+        if (!lemma) continue;
 
         const rawStatus = statusKey ? toText(record[statusKey]) : '';
         const status = (rawStatus && statusValues[rawStatus]) || VocabularyStatus.UNKNOWN;
@@ -913,7 +930,12 @@ export function ImportVocabularyModal({
                             {item.lemma}
                           </td>
                           <td className="px-3 py-2 font-sans text-ui-sm text-muted">
-                            {item.translation}
+                            {item.translation ||
+                              (item.status === VocabularyStatus.IGNORE ? (
+                                <span className="italic">—</span>
+                              ) : (
+                                <span className="italic">will fetch via Azure</span>
+                              ))}
                           </td>
                           <td className="px-3 py-2 font-sans text-ui-xs text-muted">
                             {item.status}

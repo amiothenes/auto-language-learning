@@ -109,6 +109,63 @@ export async function fetchAndStoreTranslation(
 const BATCH_SIZE = 25;
 
 /**
+ * Shared batch worker: fetches + stores an Azure/Wiktionary translation for
+ * whichever of `wordIds` don't already have a word_translations row for
+ * `targetLangCode`. Used by both the per-text and per-word-list entry points.
+ */
+async function processTranslationsForWordIds(
+  wordIds: string[],
+  sourceLangCode: string,
+  targetLangCode: string,
+  logLabel: string
+): Promise<void> {
+  if (wordIds.length === 0) return;
+
+  const existing = await db
+    .select({ wordId: wordTranslations.wordId })
+    .from(wordTranslations)
+    .where(
+      and(
+        inArray(wordTranslations.wordId, wordIds),
+        eq(wordTranslations.targetLangCode, targetLangCode)
+      )
+    );
+
+  const alreadyTranslated = new Set(existing.map((r) => r.wordId));
+  const pendingIds = wordIds.filter((id) => !alreadyTranslated.has(id));
+
+  if (pendingIds.length === 0) return;
+
+  const wordRows = await db
+    .select({ id: words.id, lemma: words.lemma })
+    .from(words)
+    .where(inArray(words.id, pendingIds));
+
+  console.log(`[Translations] Processing ${wordRows.length} lemmas for ${logLabel} → ${targetLangCode}`);
+
+  let processed = 0;
+  let failed = 0;
+
+  for (let i = 0; i < wordRows.length; i += BATCH_SIZE) {
+    const batch = wordRows.slice(i, i + BATCH_SIZE);
+
+    await Promise.allSettled(
+      batch.map(async ({ id: wordId, lemma }) => {
+        try {
+          await fetchAndStoreTranslation(wordId, lemma, sourceLangCode, targetLangCode);
+          processed++;
+        } catch (err) {
+          console.error(`[Translations] Failed for "${lemma}":`, err);
+          failed++;
+        }
+      })
+    );
+  }
+
+  console.log(`[Translations] Done — ${processed} ok, ${failed} failed`);
+}
+
+/**
  * Processes all pending lemma translations for a given text.
  * Called via Next.js `after()` from the import route — runs after response is sent.
  * TODO(auth): accept userId and scope target language per-user when auth lands
@@ -129,8 +186,6 @@ export async function processTranslationsForText(textId: string): Promise<void> 
     return;
   }
 
-  const targetLangCode = language.defaultTranslationLangCode;
-
   const instances = await db
     .selectDistinct({ wordId: wordInstances.wordId })
     .from(wordInstances)
@@ -138,48 +193,25 @@ export async function processTranslationsForText(textId: string): Promise<void> 
 
   if (instances.length === 0) return;
 
-  const allWordIds = instances.map((i) => i.wordId);
+  await processTranslationsForWordIds(
+    instances.map((i) => i.wordId),
+    language.code,
+    language.defaultTranslationLangCode,
+    `text ${textId}`
+  );
+}
 
-  const existing = await db
-    .select({ wordId: wordTranslations.wordId })
-    .from(wordTranslations)
-    .where(
-      and(
-        inArray(wordTranslations.wordId, allWordIds),
-        eq(wordTranslations.targetLangCode, targetLangCode)
-      )
-    );
-
-  const alreadyTranslated = new Set(existing.map((r) => r.wordId));
-  const pendingIds = allWordIds.filter((id) => !alreadyTranslated.has(id));
-
-  if (pendingIds.length === 0) return;
-
-  const wordRows = await db
-    .select({ id: words.id, lemma: words.lemma })
-    .from(words)
-    .where(inArray(words.id, pendingIds));
-
-  console.log(`[Translations] Processing ${wordRows.length} lemmas for text ${textId} → ${targetLangCode}`);
-
-  let processed = 0;
-  let failed = 0;
-
-  for (let i = 0; i < wordRows.length; i += BATCH_SIZE) {
-    const batch = wordRows.slice(i, i + BATCH_SIZE);
-
-    await Promise.allSettled(
-      batch.map(async ({ id: wordId, lemma }) => {
-        try {
-          await fetchAndStoreTranslation(wordId, lemma, language.code, targetLangCode);
-          processed++;
-        } catch (err) {
-          console.error(`[Translations] Failed for "${lemma}":`, err);
-          failed++;
-        }
-      })
-    );
-  }
-
-  console.log(`[Translations] Done — ${processed} ok, ${failed} failed`);
+/**
+ * Processes pending translations for an explicit list of word IDs — used by
+ * the vocabulary import route for rows that landed with no translation
+ * (e.g. an LWT export rated a word without ever typing a gloss for it).
+ * Called via Next.js `after()`, same fire-and-forget convention as
+ * processTranslationsForText.
+ */
+export async function processTranslationsForWords(
+  wordIds: string[],
+  sourceLangCode: string,
+  targetLangCode: string
+): Promise<void> {
+  await processTranslationsForWordIds(wordIds, sourceLangCode, targetLangCode, 'vocabulary import');
 }
