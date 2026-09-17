@@ -20,7 +20,7 @@ import { ImportVocabularyModal } from '@/components/vocabulary/ImportVocabularyM
 import { EditVocabularyModal } from '@/components/vocabulary/EditVocabularyModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ChevronLeft, ChevronRight, Library, Plus, Upload, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Library, Plus, Upload, Download, Eraser } from 'lucide-react';
 import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
 import type { VocabularyResponse } from '@/lib/hooks/useVocabulary';
 import { useVocabulary } from '@/lib/hooks/useVocabulary';
@@ -59,6 +59,7 @@ export default function VocabularyPage() {
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<VocabularyItem | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -171,6 +172,32 @@ export default function VocabularyPage() {
     },
   });
 
+  // Cleanup mutation — permanently deletes UNKNOWN words with no text instances
+  const cleanupOrphanedMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/vocabulary/cleanup-orphaned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ languageCode: selectedLanguage }),
+      });
+      if (!res.ok) throw new Error('Failed to clean up vocabulary');
+      return res.json() as Promise<{ deleted: number }>;
+    },
+    onSuccess: ({ deleted }) => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setShowCleanupConfirm(false);
+      showToast(
+        deleted === 0
+          ? 'No orphaned words to clean up'
+          : `Removed ${deleted} orphaned word${deleted === 1 ? '' : 's'}`
+      );
+    },
+    onError: () => {
+      showToast('Failed to clean up vocabulary', 'error');
+    },
+  });
+
   // Selection handlers
   const handleToggleSelection = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -230,6 +257,10 @@ export default function VocabularyPage() {
     if (deleteTarget) {
       deleteMutation.mutate(deleteTarget.id);
     }
+  };
+
+  const handleConfirmCleanup = () => {
+    cleanupOrphanedMutation.mutate();
   };
 
   const handleEdit = (item: VocabularyItem) => setEditTarget(item);
@@ -403,7 +434,7 @@ export default function VocabularyPage() {
     <div className="min-h-screen p-4 md:p-8 pb-20 md:pb-8">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Page Header */}
-        <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <header className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div className="space-y-2">
             <Heading size="2xl" as="h1">
               Vocabulary
@@ -411,33 +442,97 @@ export default function VocabularyPage() {
             <Muted>Manage your learned words and track your progress</Muted>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              size="lg"
-              leftIcon={<Download size={18} strokeWidth={1.5} />}
-              onClick={handleExportTsv}
-              disabled={isExporting || total === 0}
-            >
-              {isExporting ? 'Exporting...' : 'Export'}
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              leftIcon={<Upload size={18} strokeWidth={1.5} />}
-              onClick={() => setIsImportVocabModalOpen(true)}
-            >
-              Import
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              leftIcon={<Plus size={18} strokeWidth={2} />}
-              onClick={() => setIsAddVocabModalOpen(true)}
-            >
-              Add Vocabulary
-            </Button>
+          {/* Action Buttons — icon-only on mobile, labeled from sm up, wraps rather than overflowing.
+              Responsive visibility lives on the wrapping span, not Button's className: Button already
+              renders its own `inline-flex` base class, and cn() here is a plain join with no
+              tailwind-merge dedup, so a conflicting display class passed as className would collide
+              with that base class instead of overriding it. */}
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <span className="sm:hidden">
+              <Button
+                variant="secondary"
+                size="md"
+                iconOnly
+                ariaLabel="Clean up orphaned words"
+                leftIcon={<Eraser size={18} strokeWidth={1.5} />}
+                onClick={() => setShowCleanupConfirm(true)}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="secondary"
+                size="md"
+                leftIcon={<Eraser size={18} strokeWidth={1.5} />}
+                onClick={() => setShowCleanupConfirm(true)}
+              >
+                Clean Up
+              </Button>
+            </span>
+
+            <span className="sm:hidden">
+              <Button
+                variant="secondary"
+                size="md"
+                iconOnly
+                ariaLabel={isExporting ? 'Exporting' : 'Export vocabulary'}
+                leftIcon={<Download size={18} strokeWidth={1.5} />}
+                onClick={handleExportTsv}
+                disabled={isExporting || total === 0}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="secondary"
+                size="md"
+                leftIcon={<Download size={18} strokeWidth={1.5} />}
+                onClick={handleExportTsv}
+                disabled={isExporting || total === 0}
+              >
+                {isExporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </span>
+
+            <span className="sm:hidden">
+              <Button
+                variant="secondary"
+                size="md"
+                iconOnly
+                ariaLabel="Import vocabulary"
+                leftIcon={<Upload size={18} strokeWidth={1.5} />}
+                onClick={() => setIsImportVocabModalOpen(true)}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="secondary"
+                size="md"
+                leftIcon={<Upload size={18} strokeWidth={1.5} />}
+                onClick={() => setIsImportVocabModalOpen(true)}
+              >
+                Import
+              </Button>
+            </span>
+
+            <span className="sm:hidden">
+              <Button
+                variant="primary"
+                size="md"
+                iconOnly
+                ariaLabel="Add vocabulary"
+                leftIcon={<Plus size={18} strokeWidth={2} />}
+                onClick={() => setIsAddVocabModalOpen(true)}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Plus size={18} strokeWidth={2} />}
+                onClick={() => setIsAddVocabModalOpen(true)}
+              >
+                Add Vocabulary
+              </Button>
+            </span>
           </div>
         </header>
 
@@ -634,7 +729,7 @@ export default function VocabularyPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmSingleDelete}
         title="Delete Word"
-        message={`Are you sure you want to delete "${deleteTarget?.lemma}" from your vocabulary? This action cannot be undone.`}
+        message={`This will reset "${deleteTarget?.lemma}" to unreviewed. It stays in your vocabulary and any texts it appears in.`}
         confirmLabel="Delete"
         variant="danger"
       />
@@ -645,8 +740,19 @@ export default function VocabularyPage() {
         onClose={() => setShowBulkDeleteConfirm(false)}
         onConfirm={handleConfirmBulkDelete}
         title="Delete Selected Words"
-        message={`Are you sure you want to delete ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} from your vocabulary? This action cannot be undone.`}
+        message={`This will reset ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} to unreviewed. They stay in your vocabulary and any texts they appear in.`}
         confirmLabel="Delete All"
+        variant="danger"
+      />
+
+      {/* Cleanup orphaned words confirmation */}
+      <ConfirmDialog
+        isOpen={showCleanupConfirm}
+        onClose={() => setShowCleanupConfirm(false)}
+        onConfirm={handleConfirmCleanup}
+        title="Clean Up Orphaned Words"
+        message="This permanently deletes unreviewed words that don't appear in any text, such as leftover typos or import mistakes. Words you're tracking from a text are never touched. This cannot be undone."
+        confirmLabel="Clean Up"
         variant="danger"
       />
 
