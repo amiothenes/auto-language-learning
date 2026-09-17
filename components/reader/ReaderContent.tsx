@@ -83,6 +83,11 @@ interface ReaderContentProps {
   isLoading?: boolean;
   loadError?: string | null;
   seriesId?: string;
+  /** Whether a next text exists in the series (per the reader's current sort).
+   * The full "End" treatment only makes sense once there's nothing left to
+   * read — otherwise it sits right above the "next text →" link and reads
+   * as a contradiction. */
+  hasNextText?: boolean;
 }
 
 export function ReaderContent({
@@ -98,6 +103,7 @@ export function ReaderContent({
   isLoading,
   loadError,
   seriesId,
+  hasNextText,
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
 
@@ -259,25 +265,29 @@ export function ReaderContent({
         </p>
       ))}
 
-      {/* End-of-text marker */}
-      <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
-        <img
-          src="/illustrations/mountain.svg"
-          width={72}
-          height={72}
-          alt=""
-          className="opacity-60"
-        />
-        <p className="font-serif italic text-content-base text-muted">End</p>
-        {seriesId && (
-          <Link
-            href={`/series/${seriesId}`}
-            className="font-sans text-ui-sm text-primary hover:underline"
-          >
-            Back to series →
-          </Link>
-        )}
-      </div>
+      {/* End-of-series marker — only when there's no next text to read, so it
+          never contradicts the "next text →" link the page renders right
+          below this. A standalone (non-series) text always qualifies. */}
+      {!hasNextText && (
+        <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
+          <img
+            src="/illustrations/mountain.svg"
+            width={72}
+            height={72}
+            alt=""
+            className="opacity-60"
+          />
+          <p className="font-serif italic text-content-base text-muted">End</p>
+          {seriesId && (
+            <Link
+              href={`/series/${seriesId}`}
+              className="font-sans text-ui-sm text-primary hover:underline"
+            >
+              Back to series →
+            </Link>
+          )}
+        </div>
+      )}
     </article>
   );
 }

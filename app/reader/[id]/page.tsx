@@ -735,6 +735,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 isLoading={instancesQuery.isLoading}
                 loadError={instancesQuery.error?.message ?? null}
                 seriesId={textData.seriesId}
+                hasNextText={!!adjacentQuery.data?.next}
               />
             )
           )}
