@@ -5,6 +5,7 @@ import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { VocabularyStatus, VocabularyItem } from '@/lib/types';
 import { Content, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -249,11 +250,8 @@ export function VocabCard({
 
           {/* Bottom Row: Frequencies + Tags */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-3 md:gap-2.5 text-ui-xs font-sans text-muted">
-              <div className="flex items-center gap-1">
-                <span className="opacity-60">Dict:</span>
-                <span className="font-medium text-ink">{item.dictionaryFrequency}</span>
-              </div>
+            <div className="flex items-center gap-2 text-ui-xs font-sans text-muted">
+              <FrequencyBadge score={item.dictionaryFrequency} percentile={item.frequencyPercentile} />
               <span className="opacity-40">•</span>
               <div className="flex items-center gap-1">
                 <span className="opacity-60">User:</span>

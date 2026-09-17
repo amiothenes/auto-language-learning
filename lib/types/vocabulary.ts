@@ -110,6 +110,9 @@ export type WordData = {
   translation: string;
   /** How common in the language (0-100, NOT encounter count) */
   dictionaryFrequency: number;
+  /** "Top X%" percentile within this language's corpus for the frequency
+   * tier badge's tooltip — nullish if the language/score has no corpus data */
+  frequencyPercentile?: number | null;
   /** User's encounter count for this lemma (1+) */
   userFrequency: number;
   /** Current learning status */
@@ -157,6 +160,9 @@ export type VocabularyItem = {
   status: VocabularyStatus;
   /** How common this lemma is in the language (0-100) */
   dictionaryFrequency: number;
+  /** "Top X%" percentile within this language's corpus for the frequency
+   * tier badge's tooltip — undefined if the language/score has no corpus data */
+  frequencyPercentile?: number;
   /** Total encounter count for this lemma across all texts (1+) */
   userFrequency: number;
   /** Translation in user's native language */

@@ -28,6 +28,7 @@ export function buildWordDataFromInstance(inst: WordInstanceItem): WordData {
     inflection: inst.inflectionData ? formatInflection(inst.inflectionData) : 'base form',
     translation: inst.translation ?? '—',
     dictionaryFrequency: inst.dictionaryFrequency,
+    frequencyPercentile: inst.frequencyPercentile,
     userFrequency: inst.userFrequency,
     status: inst.status,
     inflectionData: inst.inflectionData ?? null,

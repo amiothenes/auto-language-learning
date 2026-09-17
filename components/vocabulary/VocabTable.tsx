@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
 import { Content, Muted } from '@/components/ui/Typography';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
+import { cn } from '@/lib/utils';
 
 // Re-export for backward compatibility
 export type { VocabularyItem };
@@ -31,13 +34,6 @@ const STATUS_CONFIG = {
   [VocabularyStatus.WELL_KNOWN]: { label: 'Well Known', bgColor: 'hsla(145,60%,40%,.15)', textColor: 'hsl(145,60%,22%)' },
   [VocabularyStatus.IGNORE]:     { label: 'Ignored',    bgColor: 'hsla(0,0%,50%,.12)',    textColor: '#6E6D6A' },
 };
-
-function rarityLabel(freq: number): string {
-  if (freq >= 75) return 'Very common';
-  if (freq >= 50) return 'Common';
-  if (freq >= 25) return 'Uncommon';
-  return 'Rare';
-}
 
 // ============================================================================
 // Status Badge Component
@@ -78,14 +74,30 @@ function TableRow({
 }) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Menu is portaled to document.body (see below) so it isn't clipped by the
+  // table's own scroll wrapper / rounded-card overflow-hidden — position it
+  // from the trigger button's own rect once it opens.
+  const MENU_WIDTH = 160;
+  useLayoutEffect(() => {
+    if (!isMenuOpen) return;
+    const button = menuButtonRef.current;
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const margin = 8;
+    const left = Math.max(margin, Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH - margin));
+    setMenuPosition({ top: rect.bottom + 4, left });
+  }, [isMenuOpen]);
+
+  // Close dropdown when clicking outside (button or the portaled menu)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
+      const target = event.target as Node;
+      if (menuButtonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setIsMenuOpen(false);
     }
 
     if (isMenuOpen) {
@@ -131,11 +143,9 @@ function TableRow({
         <StatusBadge status={item.status} />
       </td>
 
-      {/* Rarity */}
-      <td className="px-2 md:px-3 py-2 md:py-3" title={String(item.dictionaryFrequency)}>
-        <Muted size="xs" className="font-sans text-ui-xs">
-          {rarityLabel(item.dictionaryFrequency)}
-        </Muted>
+      {/* Frequency tier */}
+      <td className="px-2 md:px-3 py-2 md:py-3">
+        <FrequencyBadge score={item.dictionaryFrequency} percentile={item.frequencyPercentile} />
       </td>
 
       {/* Translation */}
@@ -161,20 +171,28 @@ function TableRow({
 
       {/* Actions */}
       <td className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3">
-        <div ref={menuRef} className="relative">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMenuOpen(!isMenuOpen);
-            }}
-            className="p-1 md:p-1.5 rounded hover:bg-paper transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-            aria-label="Options"
-          >
-            <MoreVertical size={16} className="text-ink md:w-[18px] md:h-[18px]" strokeWidth={2} />
-          </button>
+        <button
+          ref={menuButtonRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(!isMenuOpen);
+          }}
+          className="p-1 md:p-1.5 rounded hover:bg-paper transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+          aria-label="Options"
+        >
+          <MoreVertical size={16} className="text-ink md:w-[18px] md:h-[18px]" strokeWidth={2} />
+        </button>
 
-          {isMenuOpen && (
-            <div className="absolute top-full right-0 mt-1 w-40 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
+        {isMenuOpen &&
+          createPortal(
+            <div
+              ref={menuRef}
+              className={cn(
+                'fixed w-40 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50',
+                menuPosition === null && 'opacity-0'
+              )}
+              style={menuPosition ? { top: menuPosition.top, left: menuPosition.left } : { top: 0, left: 0 }}
+            >
               <button
                 onClick={(e) => handleMenuAction(e, 'edit')}
                 className="w-full px-4 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
@@ -189,9 +207,9 @@ function TableRow({
                 <Trash2 size={14} className="text-muted" strokeWidth={1.5} />
                 Delete
               </button>
-            </div>
+            </div>,
+            document.body
           )}
-        </div>
       </td>
     </tr>
   );
@@ -240,7 +258,7 @@ export function VocabTable({
                 Status
               </th>
               <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
-                Rarity
+                Frequency
               </th>
               <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
                 Translation

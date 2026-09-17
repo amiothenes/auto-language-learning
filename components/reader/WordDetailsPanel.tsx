@@ -7,7 +7,7 @@ import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { Muted } from '@/components/ui/Typography';
 import { Input } from '@/components/ui/Input';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
@@ -234,14 +234,9 @@ export function WordDetailsPanel({
 
             {/* Frequencies */}
             <div className="border-t border-border pt-4 space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <Muted className="text-ui-xs">Dictionary Frequency</Muted>
-                  <span className="font-sans text-ui-sm text-ink font-medium">
-                    {wordData.dictionaryFrequency}/100
-                  </span>
-                </div>
-                <ProgressBar value={wordData.dictionaryFrequency} max={100} />
+              <div className="flex justify-between items-center">
+                <Muted className="text-ui-xs">Dictionary Frequency</Muted>
+                <FrequencyBadge score={wordData.dictionaryFrequency} percentile={wordData.frequencyPercentile} size="md" />
               </div>
               <div className="flex justify-between items-center">
                 <Muted className="text-ui-xs">Your Encounters</Muted>

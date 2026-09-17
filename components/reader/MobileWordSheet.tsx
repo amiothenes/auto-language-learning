@@ -6,6 +6,7 @@ import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { posMatches } from '@/lib/utils/pos';
@@ -481,24 +482,13 @@ export function MobileWordSheet({
                 <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
                   Frequency & History
                 </p>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <StatCard label="Dict. Freq" value={`${wordData.dictionaryFrequency}/100`} />
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <StatCard label="Encounters" value={`${wordData.userFrequency}×`} />
                   <StatCard label="First seen" value={wordData.firstSeen ?? '—'} />
                 </div>
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <span className="font-sans text-ui-xs text-muted">Dictionary Frequency</span>
-                    <span className="font-sans text-ui-xs text-ink font-medium">
-                      {wordData.dictionaryFrequency}/100
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-300"
-                      style={{ width: `${wordData.dictionaryFrequency}%` }}
-                    />
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-sans text-ui-xs text-muted">Dictionary Frequency</span>
+                  <FrequencyBadge score={wordData.dictionaryFrequency} percentile={wordData.frequencyPercentile} />
                 </div>
               </section>
 

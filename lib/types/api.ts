@@ -186,6 +186,9 @@ export interface WordInstanceItem {
   romanization: string | null;
   /** How common in the language (0–100, NOT encounter count) */
   dictionaryFrequency: number;
+  /** "Top X%" percentile within this language's corpus for the frequency
+   * tier badge's tooltip — null if the language/score has no corpus data */
+  frequencyPercentile: number | null;
   /** User's total encounter count for this lemma */
   userFrequency: number;
   /** Current learning status */

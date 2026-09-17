@@ -7,6 +7,7 @@ import type { VocabularyItem } from '@/lib/types/vocabulary';
 import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { lookupFrequencyPercentile } from '@/lib/utils/wordFrequency';
 
 // ============================================================================
 // GET /api/vocabulary — Paginated, filtered vocabulary list for a language
@@ -167,6 +168,7 @@ export async function GET(request: NextRequest) {
       lemma: r.lemma,
       status: r.status as VocabularyStatus,
       dictionaryFrequency: r.dictionaryFrequency,
+      frequencyPercentile: lookupFrequencyPercentile(languageCode, r.dictionaryFrequency),
       userFrequency: r.userFrequency,
       translation: wordTranslationMap.get(r.id)?.translation ?? r.translation ?? '',
       tags: [],

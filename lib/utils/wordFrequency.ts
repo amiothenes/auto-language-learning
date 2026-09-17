@@ -66,3 +66,67 @@ export function lookupDictionaryFrequency(languageCode: string, lemma: string): 
   const zipf = loadFreqMap(languageCode)[lemma];
   return zipf !== undefined ? zipfToFrequency(zipf) : undefined;
 }
+
+// ============================================================================
+// Frequency percentile ("Top X%") — for the frequency tier badge's tooltip.
+//
+// Deliberately keyed by SCORE (0-100), not by lemma: a word's
+// dictionaryFrequency can be hand-edited via AddVocabularyModal, decoupled
+// from any corpus lookup. Keying by score means the percentile shown always
+// matches whatever score is actually stored/displayed for that word, corpus
+// or user-entered — "what fraction of this language's top 100k words score
+// at or above N" is well-defined either way.
+// ============================================================================
+
+/** Index 0-100 -> percentage of corpus entries scoring >= that index, i.e.
+ * the "top X%" figure for a word with exactly that dictionaryFrequency score. */
+type PercentileTable = number[];
+
+const percentileTableCache = new Map<string, PercentileTable | null>();
+
+function buildPercentileTable(languageCode: string): PercentileTable | null {
+  const freqMap = loadFreqMap(languageCode);
+  const zipfValues = Object.values(freqMap);
+  const total = zipfValues.length;
+  if (total === 0) return null;
+
+  const countAtScore = new Array<number>(101).fill(0);
+  for (const zipf of zipfValues) {
+    countAtScore[zipfToFrequency(zipf)] += 1;
+  }
+
+  const table = new Array<number>(101).fill(0);
+  let runningCount = 0;
+  for (let score = 100; score >= 0; score--) {
+    runningCount += countAtScore[score];
+    table[score] = (runningCount / total) * 100;
+  }
+  return table;
+}
+
+function getPercentileTable(languageCode: string): PercentileTable | null {
+  if (percentileTableCache.has(languageCode)) {
+    return percentileTableCache.get(languageCode)!;
+  }
+  const table = buildPercentileTable(languageCode);
+  percentileTableCache.set(languageCode, table);
+  return table;
+}
+
+/**
+ * Returns the "top X%" percentile for a given dictionaryFrequency score
+ * (0-100), derived from this language's corpus score distribution. Returns
+ * undefined when the language has no corpus data, or the score is the
+ * "not found in corpus" sentinel (0) — callers should fall back to a
+ * "rare / not in corpus" message rather than showing 0 as a percentile.
+ */
+export function lookupFrequencyPercentile(
+  languageCode: string,
+  score: number | null | undefined
+): number | undefined {
+  if (!score) return undefined;
+  const table = getPercentileTable(languageCode);
+  if (!table) return undefined;
+  const clamped = Math.min(100, Math.max(0, Math.round(score)));
+  return table[clamped];
+}
