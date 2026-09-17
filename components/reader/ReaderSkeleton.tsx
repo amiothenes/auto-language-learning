@@ -52,10 +52,14 @@ export function TextInfoSkeleton() {
 
 /**
  * ReaderContent Skeleton - Main reading area
+ * Width matches ReaderContent's real `max-w-180` article so there's no
+ * layout shift between this (shown while the text itself is loading) and
+ * ReaderContent's own use of it below (shown once the text has loaded but
+ * word-instance data is still pending).
  */
-export function ReaderContentSkeleton() {
+export function ReaderContentSkeleton({ hint }: { hint?: string } = {}) {
   return (
-    <div className="w-full max-w-3xl space-y-6">
+    <div className="w-full max-w-180 space-y-6">
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="space-y-3">
           <SkeletonText width="w-full" className="h-4" />
@@ -64,6 +68,9 @@ export function ReaderContentSkeleton() {
           <SkeletonText width="w-5/6" className="h-4" />
         </div>
       ))}
+      {hint && (
+        <p className="font-sans text-ui-sm text-center text-muted">{hint}</p>
+      )}
     </div>
   );
 }

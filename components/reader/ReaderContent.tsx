@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Play, Square } from 'lucide-react';
 import { Word, WordData } from './Word';
+import { ReaderContentSkeleton } from './ReaderSkeleton';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { cn } from '@/lib/utils';
 import type { WordInstanceItem } from '@/lib/types/api';
@@ -167,21 +168,7 @@ export function ReaderContent({
   }[settings.fontSize];
 
   if (isLoading) {
-    return (
-      <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="space-y-3">
-            <div className="animate-shimmer h-5 rounded w-full" />
-            <div className="animate-shimmer h-5 rounded w-11/12" />
-            <div className="animate-shimmer h-5 rounded w-full" />
-            <div className="animate-shimmer h-5 rounded w-5/6" />
-          </div>
-        ))}
-        <p className="font-sans text-ui-sm text-center text-muted mt-6">
-          Loading word data...
-        </p>
-      </article>
-    );
+    return <ReaderContentSkeleton hint="Loading word data..." />;
   }
 
   if (loadError) {
