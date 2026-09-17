@@ -28,9 +28,12 @@ import { SeriesHeader } from '@/components/series/SeriesHeader';
 import { SeriesHeaderSkeleton } from '@/components/series/SeriesHeaderSkeleton';
 import { TextCard } from '@/components/series/TextCard';
 import { TextCardSkeleton } from '@/components/series/TextCardSkeleton';
-import { ReadingMap } from '@/components/series/ReadingMap';
 import { TextListRow } from '@/components/series/TextListRow';
 import { ContinueReadingCard } from '@/components/series/ContinueReadingCard';
+import { TextsFilterBar, type TierFilter } from '@/components/series/TextsFilterBar';
+import { BulkActionsBar } from '@/components/series/BulkActionsBar';
+import { BulkTagModal } from '@/components/series/BulkTagModal';
+import { MoveToSeriesModal } from '@/components/series/MoveToSeriesModal';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { NewTextModal } from '@/components/texts/NewTextModal';
@@ -39,10 +42,11 @@ import { EditTextModal } from '@/components/texts/EditTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/lib/utils';
-import { Plus, Upload, ChevronDown, Download } from 'lucide-react';
+import { Plus, Upload, Download, MoreVertical, List, LayoutGrid, CheckSquare, Check } from 'lucide-react';
 import type { ImportedTextData } from '@/lib/types/forms';
 import type { ImportTextRequest, ImportTextResponse, WordInstanceItem, SentenceListItem } from '@/lib/types/api';
 import { useSeries } from '@/lib/hooks/useSeries';
+import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { SeriesDetailSortOption } from '@/lib/types/ui';
 import { compareByRecentlyRead } from '@/lib/utils/textSort';
@@ -87,6 +91,9 @@ interface SortableTextListRowProps {
   onEdit: () => void;
   onDelete: () => void;
   onExportOneT: () => void;
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 function SortableTextListRow(props: SortableTextListRowProps) {
@@ -126,6 +133,9 @@ interface SortableTextCardProps {
   onDelete?: (text: { id: string; title: string }) => void;
   onEdit?: (text: { id: string; title: string }) => void;
   onExportOneT?: (text: { id: string; title: string }) => void;
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 function SortableTextCard(props: SortableTextCardProps) {
@@ -176,7 +186,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const [seriesName, setSeriesName] = useState('');
   const seriesNameInitialized = useRef(false);
   const [sortBy, setSortBy] = useState<SeriesDetailSortOption>('recent');
-  const [isSortOpen, setIsSortOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   // Holds the locally-reordered ID sequence while a drag is in flight / being
   // persisted. null means "not overriding — use sort order from sortedTexts".
@@ -185,6 +194,31 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   // confirm they want to leave their custom arrangement (see ConfirmDialog
   // near the sort dropdown below).
   const [pendingSort, setPendingSort] = useState<SeriesDetailSortOption | null>(null);
+
+  // Browse & organize: search / tag / tier filtering over the texts list.
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tierFilter, setTierFilter] = useState<TierFilter>('all');
+
+  // Multi-select for bulk delete/tag/move.
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+
+  // Mobile toolbar overflow (Import / Export tucked behind ⋮ below md:)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const seriesListQuery = useSeriesList();
+  const moveTargetSeries = useMemo(
+    () =>
+      (seriesListQuery.data ?? [])
+        .filter((s) => s.id !== id)
+        .map((s) => ({ id: s.id, name: s.name, textCount: s.textCount })),
+    [seriesListQuery.data, id]
+  );
 
   const sensors = useSensors(
     // Small movement threshold so a plain click (Read button, options menu,
@@ -216,7 +250,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
   const [isNewTextModalOpen, setIsNewTextModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editTextTarget, setEditTextTarget] = useState<{ id: string; title: string } | null>(null);
-  const sortRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (seriesData?.name) {
@@ -233,24 +266,57 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     }
   }, [seriesData]);
 
-  // Close sort dropdown when clicking outside
+  // Close mobile toolbar overflow menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (sortRef.current && !sortRef.current.contains(event.target as Node)) {
-        setIsSortOpen(false);
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
       }
     }
 
-    if (isSortOpen) {
+    if (isMobileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isSortOpen]);
+  }, [isMobileMenuOpen]);
 
-  // Sort texts based on selected option
-  const sortedTexts = useMemo(() => {
+  // Unique tags across this series' texts, for the filter bar's tag chips
+  const availableTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of seriesData?.texts ?? []) {
+      for (const tag of t.tags) set.add(tag);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [seriesData]);
+
+  const isFiltering = searchQuery.trim() !== '' || selectedTags.length > 0 || tierFilter !== 'all';
+
+  // Search / tag / tier filtering, applied before sort
+  const filteredTexts = useMemo(() => {
     if (!seriesData) return [];
-    const texts = [...seriesData.texts];
+    let result = seriesData.texts;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((t) => t.title.toLowerCase().includes(q));
+    }
+    if (selectedTags.length > 0) {
+      result = result.filter((t) => selectedTags.every((tag) => t.tags.includes(tag)));
+    }
+    if (tierFilter !== 'all') {
+      result = result.filter((t) => {
+        if (tierFilter === 'ready') return t.knownPercentage >= 80;
+        if (tierFilter === 'ok') return t.knownPercentage >= 65 && t.knownPercentage < 80;
+        return t.knownPercentage < 65;
+      });
+    }
+
+    return result;
+  }, [seriesData, searchQuery, selectedTags, tierFilter]);
+
+  // Sort the filtered texts based on selected option
+  const sortedTexts = useMemo(() => {
+    const texts = [...filteredTexts];
 
     switch (sortBy) {
       case 'title-asc':
@@ -271,7 +337,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     }
 
     return texts;
-  }, [seriesData, sortBy]);
+  }, [filteredTexts, sortBy]);
 
   // In reorder mode, display order follows reorderIds; otherwise use sortedTexts
   const displayTexts = useMemo(() => {
@@ -313,6 +379,96 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     },
     [id, reorderIds, sortedTexts, sortBy, commitSort, queryClient]
   );
+
+  // Leaving Custom Order for a fixed sort needs confirmation (see ConfirmDialog
+  // below); picking Custom Order itself never does — nothing is being lost.
+  const handleSortChange = useCallback(
+    (option: Exclude<SeriesDetailSortOption, 'custom'>) => {
+      if (sortBy === 'custom') {
+        setPendingSort(option);
+      } else {
+        commitSort(option);
+      }
+    },
+    [sortBy, commitSort]
+  );
+
+  const toggleSelectMode = useCallback(() => {
+    setIsSelectMode((v) => !v);
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelectId = useCallback((textId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(textId)) next.delete(textId);
+      else next.add(textId);
+      return next;
+    });
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    const textIds = Array.from(selectedIds);
+    try {
+      const res = await fetch('/api/texts/bulk-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', textIds }),
+      });
+      if (!res.ok) throw new Error('Failed to delete texts');
+      showToast(`${textIds.length} text${textIds.length === 1 ? '' : 's'} deleted`);
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+      setIsBulkDeleteConfirmOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ['series', id] });
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
+      queryClient.invalidateQueries({ queryKey: ['texts'] });
+    } catch {
+      showToast('Failed to delete texts');
+    }
+  }, [selectedIds, id, queryClient, showToast]);
+
+  const handleBulkTag = useCallback(async (tagNames: string[]) => {
+    const textIds = Array.from(selectedIds);
+    try {
+      const res = await fetch('/api/texts/bulk-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'tag', textIds, tagNames }),
+      });
+      if (!res.ok) throw new Error('Failed to tag texts');
+      showToast(`Tagged ${textIds.length} text${textIds.length === 1 ? '' : 's'}`);
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+      setIsBulkTagModalOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ['series', id] });
+      queryClient.invalidateQueries({ queryKey: ['texts'] });
+    } catch {
+      showToast('Failed to tag texts');
+    }
+  }, [selectedIds, id, queryClient, showToast]);
+
+  const handleBulkMove = useCallback(async (targetSeriesId: string) => {
+    const textIds = Array.from(selectedIds);
+    try {
+      const res = await fetch('/api/texts/bulk-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'move', textIds, targetSeriesId }),
+      });
+      if (!res.ok) throw new Error('Failed to move texts');
+      showToast(`Moved ${textIds.length} text${textIds.length === 1 ? '' : 's'}`);
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+      setIsMoveModalOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ['series', id] });
+      queryClient.invalidateQueries({ queryKey: ['series', targetSeriesId] });
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
+      queryClient.invalidateQueries({ queryKey: ['texts'] });
+    } catch {
+      showToast('Failed to move texts');
+    }
+  }, [selectedIds, id, queryClient, showToast]);
 
   const [isExportingSeriesOneT, setIsExportingSeriesOneT] = useState(false);
 
@@ -465,19 +621,9 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
     }
   };
 
-  const sortOptions = [
-    { value: 'title-asc', label: 'Title (A-Z)' },
-    { value: 'progress-desc', label: 'Progress (High-Low)' },
-    { value: 'progress-asc', label: 'Progress (Low-High)' },
-    { value: 'recent', label: 'Recently Read' },
-    { value: 'custom', label: 'Custom Order' },
-  ] as const;
-
-  const currentSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label;
-
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className={cn('max-w-5xl mx-auto space-y-8', isSelectMode && 'pb-24')}>
         {/* Series Header */}
         {isLoading ? (
           <SeriesHeaderSkeleton />
@@ -494,19 +640,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             onDelete={setDeleteSeriesTarget}
           />
         ) : null}
-
-        {/* Reading Map */}
-        {!isLoading && seriesData && sortedTexts.length > 0 && (
-          <ReadingMap
-            texts={sortedTexts.map((t) => ({
-              id: t.id,
-              title: t.title,
-              knownPercentage: t.knownPercentage,
-              isCurrentlyReading: t.id === seriesData.lastReadTextId,
-            }))}
-            onTextClick={(textId) => router.push(`/reader/${textId}`)}
-          />
-        )}
 
         {/* SD2: Series completion banner */}
         {!isLoading && seriesData && (() => {
@@ -537,8 +670,6 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
               <ContinueReadingCard
                 textId={seriesData.lastReadTextId}
                 textTitle={lastText.title}
-                paragraphIndex={seriesData.lastReadParagraphIndex ?? 0}
-                totalParagraphs={seriesData.lastReadTotalParagraphs ?? 1}
                 knownPercentage={Math.round(lastText.knownPercentage)}
                 lastReadAt={lastText.lastRead}
                 onResume={() => router.push(`/reader/${seriesData.lastReadTextId}`)}
@@ -567,172 +698,384 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
           </div>
         ) : (
           <div>
-            {/* Texts section header */}
-            <div className="flex items-center gap-2 mb-4 flex-wrap">
-              <h2 className="font-sans font-semibold text-content-base flex-1">
-                Texts ({displayTexts.length})
-              </h2>
+            {/* Texts toolbar — pinned so it stays reachable while scrolling a long list.
+                Sized off the toolbar's OWN rendered width via a container query
+                (`@container` + `@xl:`/`@3xl:` below), not the viewport (`sm:`/`lg:`). The
+                page column is capped at max-w-5xl (1024px), so a viewport breakpoint fires
+                whenever the *window* is wide enough even if the toolbar itself never gets
+                that much room (e.g. a maximized desktop window vs. two windows snapped
+                side-by-side both count as ">=lg" viewport-wise, but only one actually has
+                that much toolbar width) — a container query reads the space this element
+                actually has, which is the thing the layout truly depends on.
+                Every secondary control (view toggle, Select, Import, Export) is icon-only
+                with a tooltip at every size — there was an earlier version of this toolbar
+                that revealed text labels on those buttons past a size threshold, but the
+                math doesn't work: labels on all 5 controls PLUS the filter bar (search +
+                tags + tier + sort) never fit in a 1024px-capped column at the same time, so
+                that threshold was firing without actually producing a one-line layout.
+                Icon-only is what actually stays on one line. Only Add (the primary,
+                highest-frequency action) keeps a text label, at every size.
+                Below @xl: even the icon-only cluster doesn't fit next to the title, so it
+                collapses behind a single ⋮ overflow menu and only Add stays inline. From
+                @xl: the full icon-only cluster is shown. From @3xl: there's also room for
+                the filter bar to sit on the same line as the cluster, so the two become
+                flex siblings instead of stacked rows (flex-wrap as a fallback, not
+                horizontal scroll, if an unusually long tag list ever overflows it anyway).
+                Selecting overrides all of this: Add/Import/Export disappear regardless of
+                width, since BulkActionsBar (mounted below once something's selected) owns
+                the actions that matter now, and leaving them visible would just be noise
+                competing with it for attention. Only the view toggle (still useful while
+                selecting) and a Cancel button remain. */}
+            <div className="@container sticky top-0 z-20 bg-desk border-b border-border py-3 mb-4">
+              <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap shrink-0">
+                <h2 className="font-sans font-semibold text-content-base shrink-0">
+                  Texts ({displayTexts.length})
+                </h2>
 
-              {/* List / Cards toggle */}
-              <div className="flex border border-border rounded overflow-hidden">
-                {(['list', 'cards'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    className={cn(
-                      'px-3 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
-                      viewMode === mode ? 'bg-primary text-white' : 'text-muted hover:text-ink'
-                    )}
-                    onClick={() => {
-                      setViewMode(mode);
-                      localStorage.setItem(`series-view-${id}`, mode);
-                    }}
-                  >
-                    {mode === 'list' ? 'List' : 'Cards'}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sort dropdown (compact) */}
-              <div ref={sortRef} className="relative">
-                <button
-                  onClick={() => setIsSortOpen(!isSortOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded font-sans text-ui-xs font-medium text-ink hover:bg-desk transition-colors cursor-pointer"
-                >
-                  Sort: {currentSortLabel}
-                  <ChevronDown size={12} className="text-muted" strokeWidth={2} />
-                </button>
-                {isSortOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-44 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
-                    {sortOptions.map((option) => (
+                {isSelectMode ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex border border-border rounded overflow-hidden shrink-0">
                       <button
-                        key={option.value}
-                        onClick={() => {
-                          setIsSortOpen(false);
-                          if (sortBy === 'custom' && option.value !== 'custom') {
-                            setPendingSort(option.value);
-                          } else {
-                            commitSort(option.value);
-                          }
-                        }}
+                        onClick={() => { setViewMode('list'); localStorage.setItem(`series-view-${id}`, 'list'); }}
+                        aria-label="List view"
                         className={cn(
-                          'w-full px-4 py-2.5 text-left font-sans text-ui-sm transition-colors cursor-pointer',
-                          sortBy === option.value ? 'bg-primary text-white font-medium' : 'text-ink hover:bg-desk'
+                          'flex items-center px-2.5 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
+                          viewMode === 'list' ? 'bg-primary text-white' : 'text-muted hover:text-ink'
                         )}
                       >
-                        {option.label}
+                        <List size={14} strokeWidth={2} />
                       </button>
-                    ))}
+                      <button
+                        onClick={() => { setViewMode('cards'); localStorage.setItem(`series-view-${id}`, 'cards'); }}
+                        aria-label="Card view"
+                        className={cn(
+                          'flex items-center px-2.5 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
+                          viewMode === 'cards' ? 'bg-primary text-white' : 'text-muted hover:text-ink'
+                        )}
+                      >
+                        <LayoutGrid size={14} strokeWidth={2} />
+                      </button>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<CheckSquare size={14} strokeWidth={2} />}
+                      onClick={toggleSelectMode}
+                      aria-label="Cancel selection"
+                    >
+                      Cancel
+                    </Button>
                   </div>
+                ) : (
+                  <>
+                    {/* @xl and up: full cluster, left-aligned right after the title.
+                        Icon-only + native title tooltip at every size — see the toolbar
+                        comment above for why text labels here were a dead end. */}
+                    <div className="hidden @xl:flex items-center gap-1.5 flex-wrap">
+                      {/* List / Cards toggle */}
+                      <div className="flex border border-border rounded overflow-hidden shrink-0">
+                        <button
+                          onClick={() => { setViewMode('list'); localStorage.setItem(`series-view-${id}`, 'list'); }}
+                          aria-label="List view"
+                          title="List view"
+                          className={cn(
+                            'flex items-center px-2.5 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
+                            viewMode === 'list' ? 'bg-primary text-white' : 'text-muted hover:text-ink'
+                          )}
+                        >
+                          <List size={14} strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={() => { setViewMode('cards'); localStorage.setItem(`series-view-${id}`, 'cards'); }}
+                          aria-label="Card view"
+                          title="Card view"
+                          className={cn(
+                            'flex items-center px-2.5 py-1.5 font-sans text-ui-xs font-medium transition-colors cursor-pointer',
+                            viewMode === 'cards' ? 'bg-primary text-white' : 'text-muted hover:text-ink'
+                          )}
+                        >
+                          <LayoutGrid size={14} strokeWidth={2} />
+                        </button>
+                      </div>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<CheckSquare size={14} strokeWidth={2} />}
+                        onClick={toggleSelectMode}
+                        aria-label="Select texts"
+                        title="Select texts"
+                      />
+
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        leftIcon={<Plus size={14} strokeWidth={2} />}
+                        onClick={handleAddText}
+                      >
+                        Add
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Upload size={14} strokeWidth={1.5} />}
+                        onClick={handleImport}
+                        aria-label="Import texts"
+                        title="Import texts"
+                      />
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Download size={14} strokeWidth={1.5} />}
+                        onClick={handleExportSeriesOneT}
+                        disabled={isExportingSeriesOneT}
+                        aria-label={isExportingSeriesOneT ? 'Exporting…' : 'Export 1T sentences'}
+                        title={isExportingSeriesOneT ? 'Exporting…' : 'Export 1T sentences'}
+                      />
+                    </div>
+
+                    {/* Below @xl: just Add stays inline, everything else behind ⋮ */}
+                    <div className="flex @xl:hidden items-center gap-2 ml-auto">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        leftIcon={<Plus size={14} strokeWidth={2} />}
+                        onClick={handleAddText}
+                      >
+                        Add
+                      </Button>
+
+                      <div ref={mobileMenuRef} className="relative shrink-0">
+                        <button
+                          onClick={() => setIsMobileMenuOpen((v) => !v)}
+                          className="p-2 border border-border rounded hover:bg-desk transition-colors cursor-pointer"
+                          aria-label="More actions"
+                        >
+                          <MoreVertical size={16} className="text-muted" strokeWidth={2} />
+                        </button>
+                        {isMobileMenuOpen && (
+                          <div className="absolute top-full right-0 mt-1 w-48 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
+                            <button
+                              onClick={() => { setViewMode('list'); localStorage.setItem(`series-view-${id}`, 'list'); setIsMobileMenuOpen(false); }}
+                              className="w-full px-3 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center justify-between gap-2 cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2">
+                                <List size={14} className="text-muted" strokeWidth={1.5} />
+                                List View
+                              </span>
+                              {viewMode === 'list' && <Check size={14} strokeWidth={2} />}
+                            </button>
+                            <button
+                              onClick={() => { setViewMode('cards'); localStorage.setItem(`series-view-${id}`, 'cards'); setIsMobileMenuOpen(false); }}
+                              className="w-full px-3 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center justify-between gap-2 cursor-pointer"
+                            >
+                              <span className="flex items-center gap-2">
+                                <LayoutGrid size={14} className="text-muted" strokeWidth={1.5} />
+                                Card View
+                              </span>
+                              {viewMode === 'cards' && <Check size={14} strokeWidth={2} />}
+                            </button>
+                            <div className="border-t border-border" />
+                            <button
+                              onClick={() => { toggleSelectMode(); setIsMobileMenuOpen(false); }}
+                              className="w-full px-3 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
+                            >
+                              <CheckSquare size={14} className="text-muted" strokeWidth={1.5} />
+                              Select
+                            </button>
+                            <div className="border-t border-border" />
+                            <button
+                              onClick={() => { setIsMobileMenuOpen(false); handleImport(); }}
+                              className="w-full px-3 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
+                            >
+                              <Upload size={14} className="text-muted" strokeWidth={1.5} />
+                              Import
+                            </button>
+                            <button
+                              onClick={() => { setIsMobileMenuOpen(false); handleExportSeriesOneT(); }}
+                              disabled={isExportingSeriesOneT}
+                              className="w-full px-3 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                              <Download size={14} className="text-muted" strokeWidth={1.5} />
+                              {isExportingSeriesOneT ? 'Exporting…' : 'Export 1T'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
 
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<Plus size={14} strokeWidth={2} />}
-                onClick={handleAddText}
-              >
-                Add
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Upload size={14} strokeWidth={1.5} />}
-                onClick={handleImport}
-              >
-                Import
-              </Button>
-
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Download size={14} strokeWidth={1.5} />}
-                onClick={handleExportSeriesOneT}
-                disabled={isExportingSeriesOneT}
-              >
-                {isExportingSeriesOneT ? 'Exporting…' : 'Export 1T'}
-              </Button>
+              {/* Row 2 below @3xl / inline sibling at @3xl+: the filter bar. @3xl:flex-1
+                  lets it fill the rest of the one-line toolbar instead of hugging its own
+                  content width, so its internal tag-chips-then-spacer layout has room to
+                  push the tier/sort dropdowns to the right edge the same way it did before. */}
+              <div className="@3xl:flex-1 @3xl:min-w-0">
+                <TextsFilterBar
+                  sortBy={sortBy}
+                  onSortChange={handleSortChange}
+                  selectedTags={selectedTags}
+                  availableTags={availableTags}
+                  onTagsChange={setSelectedTags}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  tierFilter={tierFilter}
+                  onTierFilterChange={setTierFilter}
+                  showCustomOrder
+                  onSelectCustomOrder={() => commitSort('custom')}
+                />
+              </div>
+              </div>
             </div>
 
             {/* Texts content */}
             {displayTexts.length === 0 ? (
-              <EmptyState
-                illustration="books"
-                title="No texts in this series"
-                description="Add your first text to start building your collection and tracking your progress"
-                primaryAction={{
-                  label: "Add Text",
-                  onClick: handleAddText,
-                  icon: <Plus size={18} strokeWidth={2} />,
-                }}
-                secondaryAction={{
-                  label: "Import Texts",
-                  onClick: handleImport,
-                }}
-              />
+              isFiltering ? (
+                <EmptyState
+                  illustration="search"
+                  title="No texts match your filters"
+                  description="Try a different search term, or clear the tag and level filters."
+                />
+              ) : (
+                <EmptyState
+                  illustration="books"
+                  title="No texts in this series"
+                  description="Add your first text to start building your collection and tracking your progress"
+                  primaryAction={{
+                    label: "Add Text",
+                    onClick: handleAddText,
+                    icon: <Plus size={18} strokeWidth={2} />,
+                  }}
+                  secondaryAction={{
+                    label: "Import Texts",
+                    onClick: handleImport,
+                  }}
+                />
+              )
             ) : viewMode === 'list' ? (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={displayTexts.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
+              isFiltering || isSelectMode ? (
+                <div>
+                  {displayTexts.map((text, index) => (
+                    <TextListRow
+                      key={text.id}
+                      id={text.id}
+                      position={index + 1}
+                      title={text.title}
+                      wordCount={text.wordCount}
+                      knownPercentage={text.knownPercentage}
+                      isCurrentlyReading={text.id === seriesData?.lastReadTextId}
+                      onRead={() => router.push(`/reader/${text.id}`)}
+                      onEdit={() => setEditTextTarget({ id: text.id, title: text.title })}
+                      onDelete={() => setDeleteTextTarget({ id: text.id, title: text.title })}
+                      onExportOneT={() => handleExportOneTForText({ id: text.id, title: text.title })}
+                      selectMode={isSelectMode}
+                      selected={selectedIds.has(text.id)}
+                      onToggleSelect={() => toggleSelectId(text.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div>
-                    {displayTexts.map((text, index) => (
-                      <SortableTextListRow
-                        key={text.id}
-                        id={text.id}
-                        position={index + 1}
-                        title={text.title}
-                        wordCount={text.wordCount}
-                        knownPercentage={text.knownPercentage}
-                        isCurrentlyReading={text.id === seriesData?.lastReadTextId}
-                        onRead={() => router.push(`/reader/${text.id}`)}
-                        onEdit={() => setEditTextTarget({ id: text.id, title: text.title })}
-                        onDelete={() => setDeleteTextTarget({ id: text.id, title: text.title })}
-                        onExportOneT={() => handleExportOneTForText({ id: text.id, title: text.title })}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  <SortableContext
+                    items={displayTexts.map((t) => t.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div>
+                      {displayTexts.map((text, index) => (
+                        <SortableTextListRow
+                          key={text.id}
+                          id={text.id}
+                          position={index + 1}
+                          title={text.title}
+                          wordCount={text.wordCount}
+                          knownPercentage={text.knownPercentage}
+                          isCurrentlyReading={text.id === seriesData?.lastReadTextId}
+                          onRead={() => router.push(`/reader/${text.id}`)}
+                          onEdit={() => setEditTextTarget({ id: text.id, title: text.title })}
+                          onDelete={() => setDeleteTextTarget({ id: text.id, title: text.title })}
+                          onExportOneT={() => handleExportOneTForText({ id: text.id, title: text.title })}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )
             ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={displayTexts.map((t) => t.id)}
-                  strategy={rectSortingStrategy}
+              isFiltering || isSelectMode ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {displayTexts.map((text) => (
+                    <TextCard
+                      key={text.id}
+                      id={text.id}
+                      title={text.title}
+                      wordCount={text.wordCount}
+                      knownPercentage={text.knownPercentage}
+                      lastRead={text.lastRead}
+                      hasBeenRead={text.hasBeenRead}
+                      preview={text.preview}
+                      onDelete={setDeleteTextTarget}
+                      onEdit={setEditTextTarget}
+                      onExportOneT={handleExportOneTForText}
+                      selectMode={isSelectMode}
+                      selected={selectedIds.has(text.id)}
+                      onToggleSelect={() => toggleSelectId(text.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {displayTexts.map((text) => (
-                      <SortableTextCard
-                        key={text.id}
-                        id={text.id}
-                        title={text.title}
-                        wordCount={text.wordCount}
-                        knownPercentage={text.knownPercentage}
-                        lastRead={text.lastRead}
-                        hasBeenRead={text.hasBeenRead}
-                        preview={text.preview}
-                        onDelete={setDeleteTextTarget}
-                        onEdit={setEditTextTarget}
-                        onExportOneT={handleExportOneTForText}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                  <SortableContext
+                    items={displayTexts.map((t) => t.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {displayTexts.map((text) => (
+                        <SortableTextCard
+                          key={text.id}
+                          id={text.id}
+                          title={text.title}
+                          wordCount={text.wordCount}
+                          knownPercentage={text.knownPercentage}
+                          lastRead={text.lastRead}
+                          hasBeenRead={text.hasBeenRead}
+                          preview={text.preview}
+                          onDelete={setDeleteTextTarget}
+                          onEdit={setEditTextTarget}
+                          onExportOneT={handleExportOneTForText}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )
             )}
           </div>
         )}
       </div>
+
+      {/* Bulk actions bar — mounted only while selecting */}
+      {isSelectMode && (
+        <BulkActionsBar
+          selectedCount={selectedIds.size}
+          onMove={() => setIsMoveModalOpen(true)}
+          onTag={() => setIsBulkTagModalOpen(true)}
+          onDelete={() => setIsBulkDeleteConfirmOpen(true)}
+          onClearSelection={() => setSelectedIds(new Set())}
+        />
+      )}
 
       {/* Delete series confirmation dialog */}
       <ConfirmDialog
@@ -767,6 +1110,34 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
         title="Switch Sort Order?"
         message="This will change the display order away from your custom arrangement. Your custom order is saved and you can come back to it anytime by selecting Custom Order again."
         confirmLabel="Switch"
+      />
+
+      {/* Bulk delete confirmation dialog */}
+      <ConfirmDialog
+        isOpen={isBulkDeleteConfirmOpen}
+        onClose={() => setIsBulkDeleteConfirmOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete Selected Texts"
+        message={`Are you sure you want to delete ${selectedIds.size} text${selectedIds.size === 1 ? '' : 's'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
+
+      {/* Bulk tag modal */}
+      <BulkTagModal
+        isOpen={isBulkTagModalOpen}
+        onClose={() => setIsBulkTagModalOpen(false)}
+        count={selectedIds.size}
+        onConfirm={handleBulkTag}
+      />
+
+      {/* Move to series modal */}
+      <MoveToSeriesModal
+        isOpen={isMoveModalOpen}
+        onClose={() => setIsMoveModalOpen(false)}
+        count={selectedIds.size}
+        availableSeries={moveTargetSeries}
+        onConfirm={handleBulkMove}
       />
 
       {/* New Text Modal */}

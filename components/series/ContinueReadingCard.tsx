@@ -2,17 +2,16 @@
 
 import { BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 
 // ============================================================================
-// ContinueReadingCard — shown on Series Detail when there's reading progress
+// ContinueReadingCard — compact resume-reading strip on Series Detail.
+// Paragraph-level progress lives in the Reader itself; this only needs to get
+// the user back into the text they were last on, not re-show that detail.
 // ============================================================================
 
 interface ContinueReadingCardProps {
   textId: string;
   textTitle: string;
-  paragraphIndex: number;
-  totalParagraphs: number;
   knownPercentage: number;
   lastReadAt: string;
   onResume: () => void;
@@ -20,47 +19,23 @@ interface ContinueReadingCardProps {
 
 export function ContinueReadingCard({
   textTitle,
-  paragraphIndex,
-  totalParagraphs,
   knownPercentage,
   lastReadAt,
   onResume,
 }: ContinueReadingCardProps) {
-  const paragraphProgress =
-    totalParagraphs > 0
-      ? Math.round((paragraphIndex / totalParagraphs) * 100)
-      : 0;
-
   return (
-    <div className="bg-desk border border-border rounded-card p-3 mb-4">
-      {/* Header */}
-      <div className="flex items-center gap-1.5 mb-1 font-sans text-ui-xs font-bold text-primary">
-        <BookOpen size={14} strokeWidth={1.5} />
-        Continue Reading
-      </div>
-
-      {/* Text title */}
-      <p className="font-sans font-semibold text-content-base text-ink mb-0.5 truncate">
-        {textTitle}
-      </p>
-
-      {/* Meta */}
-      <p className="font-sans text-ui-xs text-muted mb-2">
-        {knownPercentage}% complete · last read {lastReadAt}
-      </p>
-
-      {/* Paragraph progress */}
-      <div className="flex justify-between mb-1">
-        <span className="font-sans text-ui-xs text-muted">
-          Paragraph {paragraphIndex + 1} of {totalParagraphs}
+    <div className="flex items-center gap-3 bg-desk border border-border rounded-card px-3 py-2.5 mb-4">
+      <BookOpen size={16} className="text-primary shrink-0" strokeWidth={1.5} />
+      <div className="flex-1 min-w-0">
+        <span className="font-sans text-ui-sm font-semibold text-ink truncate">
+          {textTitle}
         </span>
-        <span className="font-sans text-ui-xs text-muted">{paragraphProgress}%</span>
+        <span className="font-sans text-ui-xs text-muted ml-2">
+          {knownPercentage}% complete · last read {lastReadAt}
+        </span>
       </div>
-      <ProgressBar value={paragraphProgress} className="opacity-60 mb-3 h-2" />
-
-      {/* Resume button */}
-      <Button variant="primary" size="lg" className="w-full" onClick={onResume}>
-        Resume Reading →
+      <Button variant="primary" size="sm" className="shrink-0" onClick={onResume}>
+        Resume →
       </Button>
     </div>
   );

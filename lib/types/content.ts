@@ -122,6 +122,8 @@ export interface Text {
   order: number;
   /** Short preview of the text content (first ~100 characters) */
   preview: string;
+  /** User-defined tags for categorization */
+  tags: string[];
 }
 
 /**

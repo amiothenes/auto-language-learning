@@ -101,6 +101,7 @@ export async function GET(
       hasBeenRead: t.lastViewedAt !== null,
       order: t.order,
       preview: t.content.slice(0, 150).trimEnd(),
+      tags: t.tags.map((tt) => tt.tag.name),
     }));
 
     const seriesDetail: SeriesDetail = {

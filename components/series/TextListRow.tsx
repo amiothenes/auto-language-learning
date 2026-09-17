@@ -22,6 +22,10 @@ interface TextListRowProps {
   dragListeners?: DraggableSyntheticListeners;
   /** Passed from useSortable().attributes — ARIA props for a11y */
   dragAttributes?: DraggableAttributes;
+  /** When true, a checkbox replaces the drag handle and the row toggles selection instead of navigating. */
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 function TierIcon({ pct }: { pct: number }) {
@@ -45,6 +49,9 @@ export function TextListRow({
   onExportOneT,
   dragListeners,
   dragAttributes,
+  selectMode = false,
+  selected = false,
+  onToggleSelect,
 }: TextListRowProps) {
   void id; // used by parent SortableTextListRow
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -64,22 +71,35 @@ export function TextListRow({
 
   return (
     <div
+      onClick={selectMode ? onToggleSelect : undefined}
       className={cn(
         'flex items-center gap-2 p-2.5 border border-border rounded-md mb-2 bg-paper transition-colors',
-        isCurrentlyReading && 'border-primary/30 bg-primary/3'
+        isCurrentlyReading && 'border-primary/30 bg-primary/3',
+        selectMode && 'cursor-pointer',
+        selected && 'border-primary/40 bg-primary/5'
       )}
     >
-      {/* Drag handle — listeners from useSortable; shown whenever a parent wires them up
-          (i.e. dragging is supported in this context), no separate "reorder mode" needed */}
-      {dragListeners && (
-        <span
-          {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
-          {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
-          className="shrink-0 cursor-grab touch-none p-1 -m-1"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical size={14} className="text-border-strong" strokeWidth={2} />
-        </span>
+      {/* Checkbox (select mode) or drag handle — mutually exclusive, never shown together */}
+      {selectMode ? (
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 w-4 h-4 accent-primary cursor-pointer"
+          aria-label={`Select ${title}`}
+        />
+      ) : (
+        dragListeners && (
+          <span
+            {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
+            {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
+            className="shrink-0 cursor-grab touch-none p-1 -m-1"
+            aria-label="Drag to reorder"
+          >
+            <GripVertical size={14} className="text-border-strong" strokeWidth={2} />
+          </span>
+        )
       )}
 
       {/* Sequence number */}
@@ -115,14 +135,17 @@ export function TextListRow({
         {Math.round(knownPercentage)}%
       </span>
 
-      {/* Read / Resume action */}
-      {isCurrentlyReading ? (
-        <Button variant="primary" size="sm" onClick={onRead}>Resume</Button>
-      ) : (
-        <Button variant="secondary" size="sm" onClick={onRead}>Read</Button>
+      {/* Read / Resume action — hidden in select mode so the row's click target is unambiguous */}
+      {!selectMode && (
+        isCurrentlyReading ? (
+          <Button variant="primary" size="sm" onClick={onRead}>Resume</Button>
+        ) : (
+          <Button variant="secondary" size="sm" onClick={onRead}>Read</Button>
+        )
       )}
 
       {/* Options menu */}
+      {!selectMode && (
       <div ref={menuRef} className="relative shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); }}
@@ -158,6 +181,7 @@ export function TextListRow({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

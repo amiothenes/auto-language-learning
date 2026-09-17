@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { MoreVertical, FileText, Edit, Trash2, Download, GripVertical } from 'lucide-react';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
+import { cn } from '@/lib/utils';
 
 // ============================================================================
 // TextCard Component
@@ -31,6 +32,10 @@ interface TextCardProps {
   dragListeners?: DraggableSyntheticListeners;
   /** Passed from useSortable().attributes — ARIA props for a11y */
   dragAttributes?: DraggableAttributes;
+  /** When true, a checkbox replaces the drag handle and the card toggles selection instead of navigating. */
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function TextCard({
@@ -48,6 +53,9 @@ export function TextCard({
   onExportOneT,
   dragListeners,
   dragAttributes,
+  selectMode = false,
+  selected = false,
+  onToggleSelect,
 }: TextCardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -68,6 +76,10 @@ export function TextCard({
   }, [isMenuOpen]);
 
   const handleCardClick = () => {
+    if (selectMode) {
+      onToggleSelect?.();
+      return;
+    }
     router.push(`/reader/${id}`);
   };
 
@@ -96,24 +108,34 @@ export function TextCard({
       variant="interactive"
       padding="md"
       onClick={handleCardClick}
-      className="relative"
+      className={cn('relative', selected && 'border-primary/50 bg-primary/5')}
     >
-      {/* Header: Drag Handle + Text Title + Menu Button */}
+      {/* Header: Checkbox/Drag Handle + Text Title + Menu Button */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            {/* Drag handle — shown whenever a parent wires up dnd-kit listeners
-                (i.e. dragging is supported in this context) */}
-            {dragListeners && (
-              <span
-                {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
-                {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
+            {/* Checkbox (select mode) or drag handle — mutually exclusive */}
+            {selectMode ? (
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={onToggleSelect}
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 -ml-1 shrink-0 rounded hover:bg-desk transition-all cursor-grab touch-none"
-                aria-label="Drag to reorder"
-              >
-                <GripVertical size={16} className="text-muted" strokeWidth={2} />
-              </span>
+                className="p-1 -ml-1 shrink-0 w-4 h-4 accent-primary cursor-pointer"
+                aria-label={`Select ${title}`}
+              />
+            ) : (
+              dragListeners && (
+                <span
+                  {...(dragListeners as React.HTMLAttributes<HTMLSpanElement>)}
+                  {...(dragAttributes as React.HTMLAttributes<HTMLSpanElement>)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1 -ml-1 shrink-0 rounded hover:bg-desk transition-all cursor-grab touch-none"
+                  aria-label="Drag to reorder"
+                >
+                  <GripVertical size={16} className="text-muted" strokeWidth={2} />
+                </span>
+              )
             )}
 
             <Content size="lg" weight="semibold" className="line-clamp-1 flex-1 min-w-0">
@@ -125,7 +147,8 @@ export function TextCard({
           )}
         </div>
 
-        {/* Menu Button - Always visible on mobile, hover-only on desktop */}
+        {/* Menu Button - Always visible on mobile, hover-only on desktop; hidden in select mode */}
+        {!selectMode && (
         <div ref={menuRef} className="relative">
           <button
             onClick={handleMenuToggle}
@@ -168,6 +191,7 @@ export function TextCard({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Preview Snippet */}
