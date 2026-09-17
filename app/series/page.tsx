@@ -295,6 +295,7 @@ function SeriesPageContent() {
       setDeleteTarget(null);
       await seriesQuery.refetch();
       await queryClient.invalidateQueries({ queryKey: ['texts'] });
+      await queryClient.invalidateQueries({ queryKey: ['last-position'] });
     } catch {
       showToast('Failed to delete series');
     }

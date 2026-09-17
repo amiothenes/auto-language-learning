@@ -19,6 +19,9 @@ interface UseReaderKeyboardOptions {
   isPlaybackActive?: boolean;
   /** Escape stops narration, same as the Stop button. */
   onStop?: () => void;
+  /** True while a word tooltip/sheet/panel is open outside of a Tutor Mode
+   * check — Space is claimed by that module instead of narration. */
+  suppressPlayback?: boolean;
 }
 
 export function useReaderKeyboard({
@@ -28,6 +31,7 @@ export function useReaderKeyboard({
   onTogglePlayback,
   isPlaybackActive,
   onStop,
+  suppressPlayback,
 }: UseReaderKeyboardOptions) {
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
@@ -43,6 +47,12 @@ export function useReaderKeyboard({
       // the browser's default page-scroll (and stops Space from re-activating
       // a focused button, e.g. the word you just clicked).
       if (e.code === 'Space') {
+        // A word module (tooltip/sheet/panel) is open and using Space for its
+        // own purpose (e.g. revealing a translation) — narration sits out.
+        if (suppressPlayback) {
+          e.preventDefault();
+          return;
+        }
         if (!onTogglePlayback) return;
         e.preventDefault();
         onTogglePlayback();
@@ -101,7 +111,7 @@ export function useReaderKeyboard({
           break;
       }
     },
-    [isActive, currentStatus, onStatusChange, onTogglePlayback, isPlaybackActive, onStop]
+    [isActive, currentStatus, onStatusChange, onTogglePlayback, isPlaybackActive, onStop, suppressPlayback]
   );
 
   useEffect(() => {

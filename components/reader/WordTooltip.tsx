@@ -66,12 +66,33 @@ export function WordTooltip({
   const [translationValue, setTranslationValue] = useState(wordData.translation ?? '');
   const { state: audioState, play: playAudio } = useWordAudioButton(wordData.wordId);
 
-  // Well-Known words skip the "Know this word?" gate entirely — re-quizzing
-  // an already-mastered word on session reload serves no one.
-  const effectiveFirstTest = isFirstTest && wordData.status !== VocabularyStatus.WELL_KNOWN;
+  // Well-Known and Ignored words skip the "Know this word?" gate entirely — re-quizzing
+  // an already-mastered or deliberately-ignored word on session reload serves no one.
+  const effectiveFirstTest =
+    isFirstTest &&
+    wordData.status !== VocabularyStatus.WELL_KNOWN &&
+    wordData.status !== VocabularyStatus.IGNORE;
 
   const showTranslation = !effectiveFirstTest || translationRevealed;
   const showTestPrompt = effectiveFirstTest && !translationRevealed;
+
+  // Anki-style flip: reveal the translation without grading, so the user can
+  // check their recall before picking a grade. Space mirrors Anki's own binding.
+  const handleReveal = useCallback(() => {
+    if (showTestPrompt) setTranslationRevealed(true);
+  }, [showTestPrompt]);
+
+  useEffect(() => {
+    if (!showTestPrompt) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        handleReveal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showTestPrompt, handleReveal]);
 
   const handleTooltipClose = useCallback(() => {
     if (moreMenuAnchorEl) return;
@@ -288,11 +309,16 @@ export function WordTooltip({
             )}
           </div>
 
-          {/* ④ "Know this word?" prompt — test mode only */}
+          {/* ④ "Know this word?" prompt — test mode only. Click or Space reveals
+              the translation without grading, Anki-style, before the user picks a grade. */}
           {showTestPrompt && (
-            <p className="font-sans text-[11px] text-muted text-center mb-2 tracking-wide">
-              Know this word?
-            </p>
+            <button
+              type="button"
+              onClick={handleReveal}
+              className="w-full font-sans text-[11px] text-muted text-center mb-2 tracking-wide cursor-pointer hover:text-ink transition-colors"
+            >
+              Know this word? <span className="text-muted/60">(click or space to reveal)</span>
+            </button>
           )}
 
           {/* ⑤ Adaptive Stepper — hidden immediately after first-test grade */}

@@ -121,9 +121,12 @@ export function MobileWordSheet({
 
   if (!wordData) return null;
 
-  // Well-Known words skip the "Know this word?" gate entirely — re-quizzing
-  // an already-mastered word on session reload serves no one.
-  const effectiveFirstTest = isFirstTest && wordData.status !== VocabularyStatus.WELL_KNOWN;
+  // Well-Known and Ignored words skip the "Know this word?" gate entirely — re-quizzing
+  // an already-mastered or deliberately-ignored word on session reload serves no one.
+  const effectiveFirstTest =
+    isFirstTest &&
+    wordData.status !== VocabularyStatus.WELL_KNOWN &&
+    wordData.status !== VocabularyStatus.IGNORE;
 
   const dismiss = () => {
     setDismissing(true);
@@ -176,6 +179,12 @@ export function MobileWordSheet({
   const showTranslation = !effectiveFirstTest || translationRevealed;
   const isIgnored = wordData.status === VocabularyStatus.IGNORE;
   const showTestPrompt = effectiveFirstTest && !isIgnored && !translationRevealed;
+
+  // Anki-style flip: tapping the prompt reveals the translation without grading,
+  // so the user can check recall before picking a grade.
+  const handleReveal = () => {
+    if (showTestPrompt) setTranslationRevealed(true);
+  };
 
   // Best-guess sense for this occurrence — see WordTooltip for the desktop equivalent.
   const meaningsCount = wordData.meanings?.length ?? 0;
@@ -331,11 +340,16 @@ export function MobileWordSheet({
             </div>
           )}
 
-          {/* ④ "Know this word?" prompt — test mode only */}
+          {/* ④ "Know this word?" prompt — test mode only. Tap reveals the
+              translation without grading, Anki-style, before picking a grade. */}
           {showTestPrompt && (
-            <p className="font-sans text-[11px] text-muted text-center mb-2 tracking-wide">
-              Know this word?
-            </p>
+            <button
+              type="button"
+              onClick={handleReveal}
+              className="w-full font-sans text-[11px] text-muted text-center mb-2 tracking-wide cursor-pointer active:text-ink transition-colors"
+            >
+              Know this word? <span className="text-muted/60">(tap to reveal)</span>
+            </button>
           )}
 
           {/* ⑤ Grading buttons — hidden immediately after first-test grade */}
@@ -349,8 +363,9 @@ export function MobileWordSheet({
             </div>
           )}
 
-          {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only */}
-          {showTestPrompt && (
+          {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only. Stays available
+              after a reveal-without-grading — reveal only skips the quiz gate, not grading. */}
+          {effectiveFirstTest && !isIgnored && !justGraded && (
             <div className="flex justify-center mt-3 mb-2">
               <button
                 onClick={() => handleGrade(VocabularyStatus.IGNORE)}

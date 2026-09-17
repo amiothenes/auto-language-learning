@@ -41,14 +41,26 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showNewTextModal, setShowNewTextModal] = useState(false);
-  const { data: texts, isLoading: isLoadingTexts } = useTexts(3, {
+  const { data: readTexts, isLoading: isLoadingRead } = useTexts(3, {
     sortBy: 'lastViewedAt',
     onlyRead: true,
     staleTime: 0,
   });
+  const hasReadTexts = (readTexts?.length ?? 0) > 0;
+
+  // Fallback: nobody has read anything yet in this language (e.g. a single
+  // text was just added but never opened) — show the most recently added
+  // texts instead of an empty state, rather than hiding work the user just did.
+  const shouldFetchFallback = !isLoadingRead && !hasReadTexts;
+  const { data: fallbackTexts, isLoading: isLoadingFallback } = useTexts(3, {
+    staleTime: 0,
+    enabled: shouldFetchFallback,
+  });
+
+  const texts = hasReadTexts ? readTexts : fallbackTexts;
   const { data: seriesList, isLoading: isLoadingSeries } = useSeriesList();
   const { data: lastPosition } = useLastPosition();
-  const isLoading = isLoadingProp || isLoadingTexts;
+  const isLoading = isLoadingProp || isLoadingRead || (shouldFetchFallback && isLoadingFallback);
   const hasRecentTexts = (texts?.length ?? 0) > 0;
   const hasSeries = isLoadingSeries || (seriesList?.length ?? 0) > 0;
 
@@ -64,7 +76,7 @@ export function RecentTextsList({ isLoading: isLoadingProp = false }: RecentText
             Recent Texts
           </Heading>
           <Muted size="xs" className="hidden md:block md:text-ui-sm">
-            Continue reading where you left off
+            {hasReadTexts ? 'Continue reading where you left off' : 'Texts you\'ve added'}
           </Muted>
         </div>
 

@@ -423,6 +423,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       await queryClient.invalidateQueries({ queryKey: ['series', id] });
       queryClient.invalidateQueries({ queryKey: ['series-list'] });
       queryClient.invalidateQueries({ queryKey: ['texts'] });
+      queryClient.invalidateQueries({ queryKey: ['last-position'] });
     } catch {
       showToast('Failed to delete texts');
     }
@@ -599,6 +600,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       setDeleteSeriesTarget(null);
       queryClient.invalidateQueries({ queryKey: ['series-list'] });
       queryClient.invalidateQueries({ queryKey: ['texts'] });
+      queryClient.invalidateQueries({ queryKey: ['last-position'] });
       router.push('/series');
     } catch {
       showToast('Failed to delete series');
@@ -616,6 +618,7 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
       await queryClient.invalidateQueries({ queryKey: ['series', id] });
       await queryClient.invalidateQueries({ queryKey: ['series-list'] });
       await queryClient.invalidateQueries({ queryKey: ['texts'] });
+      await queryClient.invalidateQueries({ queryKey: ['last-position'] });
     } catch {
       showToast('Failed to delete text');
     }

@@ -226,6 +226,34 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     }, 120);
   }, [tooltipWord, tutorMode]);
 
+  // True whenever a word tooltip/sheet/panel is on screen — desktop popover,
+  // and the shared right-panel/mobile-sheet pair (selectedWord + isRightPanelOpen).
+  const isWordModuleOpen = !!tooltipWord || (isRightPanelOpen && !!selectedWord);
+
+  // Manually opening a word module (as opposed to a Tutor Mode auto-check,
+  // which already pauses/resumes narration itself around the check) pauses
+  // narration for as long as it's open, then resumes it on close — but only
+  // if this effect was the one that paused it, so a word opened while
+  // narration was already paused doesn't get resumed out from under the user.
+  const pausedForWordModuleRef = useRef(false);
+  useEffect(() => {
+    if (isWordModuleOpen) {
+      if (!tutorMode.isAwaitingRecall && tutorMode.playbackState === 'playing') {
+        tutorMode.playPause();
+        pausedForWordModuleRef.current = true;
+      }
+      return;
+    }
+    if (pausedForWordModuleRef.current) {
+      pausedForWordModuleRef.current = false;
+      if (tutorMode.playbackState === 'paused') {
+        tutorMode.playPause();
+      }
+    }
+    // Deliberately only re-runs on open/close transitions — see comment above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWordModuleOpen]);
+
   const handleDismissFeedback = useCallback(() => setFeedbackState(null), []);
 
   const handleStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
@@ -285,6 +313,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     onTogglePlayback: tutorMode.playPause,
     isPlaybackActive: tutorMode.playbackState === 'playing' || tutorMode.playbackState === 'paused',
     onStop: tutorMode.stop,
+    suppressPlayback: isWordModuleOpen && !tutorMode.isAwaitingRecall,
   });
 
   // Opens the settings surface straight on its Audio tab, anchored to the
