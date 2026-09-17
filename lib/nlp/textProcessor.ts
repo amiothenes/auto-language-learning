@@ -30,6 +30,7 @@ import type { LemmatizeResult } from '@/lib/nlp/types';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 import { calculateCompletionPercentage } from '@/lib/utils/textStats';
+import { ownedBy } from '@/lib/db/scope';
 
 // ============================================================================
 // Type Definitions
@@ -408,7 +409,7 @@ export async function processTextForImport(
     reportProgress(progressCallback, 'tokenizing', 0, 'Loading language configuration');
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.id, languageId),
+      where: ownedBy('languages', languageId, userId),
     });
 
     if (!language) {
@@ -741,7 +742,7 @@ export async function reprocessTextContent(
     reportProgress(progressCallback, 'tokenizing', 0, 'Loading text configuration');
 
     const text = await db.query.texts.findFirst({
-      where: eq(texts.id, textId),
+      where: ownedBy('texts', textId, userId),
     });
 
     if (!text) {
@@ -753,7 +754,7 @@ export async function reprocessTextContent(
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.id, text.languageId),
+      where: ownedBy('languages', text.languageId, userId),
     });
 
     if (!language) {
