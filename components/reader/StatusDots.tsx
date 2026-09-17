@@ -49,22 +49,13 @@ export function StatusDots({ status, className }: StatusDotsProps) {
           );
         }
 
-        // WELL_KNOWN has no reader highlight — render all 4 as hollow outlined circles
-        if (status === VocabularyStatus.WELL_KNOWN) {
-          return (
-            <span
-              key={i}
-              className="w-2 h-2 rounded-full shrink-0 border border-ink/70"
-            />
-          );
-        }
-
         return (
           <span
             key={i}
             className={cn(
               'w-2 h-2 rounded-full shrink-0',
-              !isFilled && 'bg-border'
+              !isFilled && 'bg-border',
+              isFilled && status === VocabularyStatus.WELL_KNOWN && 'border border-ink/40'
             )}
             style={isFilled ? { background: filledColor } : undefined}
           />

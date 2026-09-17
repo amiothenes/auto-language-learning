@@ -640,22 +640,18 @@ export async function processTextForImport(
         // Step 12: Calculate Known Percentage (92-95%)
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
-        // Query word statuses for all unique lemmas in this text — scoped to this user
-        const wordStatuses = await tx.query.words.findMany({
-          where: and(
-            eq(words.languageId, languageId),
-            inArray(words.lemma, uniqueLemmas),
-            eq(words.userId, userId),
-          ),
-          columns: {
-            lemma: true,
-            status: true,
-          },
-        });
+        // Completion % — see lib/utils/textStats.ts. Weighted by word instance
+        // (every occurrence counts, not just unique lemmas) to match the
+        // reader's own calculation and syncTextStatistics(). Unrounded; round
+        // at display time.
+        const knownPercentageRows = await tx
+          .select({ status: words.status })
+          .from(wordInstances)
+          .innerJoin(words, eq(wordInstances.wordId, words.id))
+          .where(eq(wordInstances.textId, textId));
 
-        // Completion % — see lib/utils/textStats.ts. Unrounded; round at display time.
         const knownPercentage = calculateCompletionPercentage(
-          wordStatuses.map((w) => w.status as VocabularyStatus)
+          knownPercentageRows.map((r) => r.status as VocabularyStatus)
         );
 
         // Update text with calculated percentage
@@ -914,18 +910,19 @@ export async function reprocessTextContent(
 
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
-        const wordStatuses = await tx.query.words.findMany({
-          where: and(
-            eq(words.languageId, language.id),
-            inArray(words.lemma, uniqueLemmas),
-            eq(words.userId, userId),
-          ),
-          columns: { lemma: true, status: true },
-        });
+        // Completion % — see lib/utils/textStats.ts. Weighted by word instance
+        // across the FULL text (not just uniqueLemmas from this reprocess's
+        // possibly-partial wordTokens), so partial reprocesses still reflect
+        // the untouched leading paragraphs. Matches the reader's calculation
+        // and syncTextStatistics(). Unrounded; round at display time.
+        const knownPercentageRows = await tx
+          .select({ status: words.status })
+          .from(wordInstances)
+          .innerJoin(words, eq(wordInstances.wordId, words.id))
+          .where(eq(wordInstances.textId, textId));
 
-        // Completion % — see lib/utils/textStats.ts. Unrounded; round at display time.
         const knownPercentage = calculateCompletionPercentage(
-          wordStatuses.map((w) => w.status as VocabularyStatus)
+          knownPercentageRows.map((r) => r.status as VocabularyStatus)
         );
 
         await tx

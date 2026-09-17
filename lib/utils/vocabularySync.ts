@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { words, texts, wordInstances } from '@/lib/db/schema';
-import { and, eq, ne } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { calculateCompletionPercentage } from '@/lib/utils/textStats';
 
@@ -9,13 +9,17 @@ import { calculateCompletionPercentage } from '@/lib/utils/textStats';
  * a single text and persists it to the DB. Returns the computed value so
  * callers (import/reprocess, after auto-ignoring proper nouns) can use it
  * without an extra round-trip query.
+ *
+ * Weighted by word instance (every occurrence counts), not unique lemma, so
+ * this matches the reader's own calculation (app/reader/[id]/page.tsx) — a
+ * word repeated often should count more than one seen once.
  */
 export async function syncTextStatistics(textId: string): Promise<number> {
   const rows = await db
-    .selectDistinct({ wordId: wordInstances.wordId, status: words.status })
+    .select({ status: words.status })
     .from(wordInstances)
     .innerJoin(words, eq(wordInstances.wordId, words.id))
-    .where(and(eq(wordInstances.textId, textId), ne(words.status, VocabularyStatus.IGNORE)));
+    .where(eq(wordInstances.textId, textId));
 
   const knownPercentage = calculateCompletionPercentage(
     rows.map((r) => r.status as VocabularyStatus)

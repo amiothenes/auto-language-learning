@@ -676,7 +676,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 </span>
                 <span className="flex flex-col gap-0.5">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0 border border-ink/70" />
+                    <span className="w-2 h-2 rounded-full shrink-0 border border-ink/40" style={{ background: 'hsl(150,40%,42%)' }} />
                     Well Known
                   </span>
                   <span className="text-[9px] text-muted pl-3.5 leading-tight">I know this perfectly</span>

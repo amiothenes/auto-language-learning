@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { X, ExternalLink, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { MORPH_PRIORITY, buildMorphSummary, buildMorphFull } from '@/lib/utils/morphology';
+import { posMatches } from '@/lib/utils/pos';
 
 interface WordTooltipProps {
   wordData: WordData;
@@ -65,8 +66,12 @@ export function WordTooltip({
   const [translationValue, setTranslationValue] = useState(wordData.translation ?? '');
   const { state: audioState, play: playAudio } = useWordAudioButton(wordData.wordId);
 
-  const showTranslation = !isFirstTest || translationRevealed;
-  const showTestPrompt = isFirstTest && !translationRevealed;
+  // Well-Known words skip the "Know this word?" gate entirely — re-quizzing
+  // an already-mastered word on session reload serves no one.
+  const effectiveFirstTest = isFirstTest && wordData.status !== VocabularyStatus.WELL_KNOWN;
+
+  const showTranslation = !effectiveFirstTest || translationRevealed;
+  const showTestPrompt = effectiveFirstTest && !translationRevealed;
 
   const handleTooltipClose = useCallback(() => {
     if (moreMenuAnchorEl) return;
@@ -81,7 +86,7 @@ export function WordTooltip({
       onStatusChange(wordData.wordId, newStatus);
     }
     onGraded?.(wordData.lemma);
-    if (isFirstTest && newStatus !== VocabularyStatus.IGNORE) {
+    if (effectiveFirstTest && newStatus !== VocabularyStatus.IGNORE) {
       setTranslationRevealed(true);
       setJustGraded(true);
       if (newStatus === VocabularyStatus.WELL_KNOWN) {
@@ -105,6 +110,22 @@ export function WordTooltip({
   const hasExtraMorph = wordData.inflectionData
     ? Object.keys(wordData.inflectionData).length > MORPH_PRIORITY.length
     : false;
+
+  // Best-guess sense for this occurrence: the meaning whose POS matches this
+  // word instance's spaCy tag. Surfaced in the tooltip so the user doesn't
+  // have to open the full panel just to see which sense is likely in play.
+  const meaningsCount = wordData.meanings?.length ?? 0;
+  const matchedMeaning = wordData.meanings?.find((m) => posMatches(wordData.pos, m.pos));
+  const showMeaningsBadge = meaningsCount > 1 && !!onMoreClick;
+  const meaningsBadgeLabel = matchedMeaning
+    ? matchedMeaning.definitions.slice(0, 2).join(', ') + (meaningsCount > 1 ? ` +${meaningsCount - 1}` : '')
+    : `${meaningsCount} meanings`;
+  const meaningsBadgeClassName = cn(
+    'font-sans text-[9.5px] rounded-sm px-1.5 py-0.5 shrink-0 cursor-pointer transition-colors',
+    matchedMeaning
+      ? 'font-semibold text-ink bg-primary/10 border border-primary/30 hover:bg-primary/15'
+      : 'text-muted/60 bg-desk border border-border hover:text-primary'
+  );
 
   return (
     <>
@@ -165,10 +186,14 @@ export function WordTooltip({
                         <span className="not-italic text-muted/40 text-base">No translation</span>
                       )}
                     </p>
-                    {wordData.meanings && wordData.meanings.length > 1 && (
-                      <span className="font-sans text-[9.5px] text-muted/60 bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0">
-                        {wordData.meanings.length} meanings
-                      </span>
+                    {showMeaningsBadge && (
+                      <button
+                        type="button"
+                        onClick={onMoreClick}
+                        className={meaningsBadgeClassName}
+                      >
+                        {meaningsBadgeLabel}
+                      </button>
                     )}
                   </div>
                 ) : !editingTranslation ? (
@@ -179,9 +204,24 @@ export function WordTooltip({
                           <span className="not-italic text-muted/50 font-sans text-sm">Add translation…</span>
                         )}
                       </p>
-                      {wordData.meanings && wordData.meanings.length > 1 && (
-                        <span className="font-sans text-[9.5px] text-muted/60 bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0">
-                          {wordData.meanings.length} meanings
+                      {showMeaningsBadge && onMoreClick && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMoreClick();
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onMoreClick();
+                            }
+                          }}
+                          className={meaningsBadgeClassName}
+                        >
+                          {meaningsBadgeLabel}
                         </span>
                       )}
                     </div>
