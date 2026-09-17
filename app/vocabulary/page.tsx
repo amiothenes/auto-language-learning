@@ -441,7 +441,7 @@ export default function VocabularyPage() {
           </div>
         </header>
 
-        {/* Vocabulary Distribution + Fluency */}
+        {/* Vocabulary Distribution + Reading Coverage */}
         {stats && (
           <VocabDistribution
             unknown={stats.vocabulary.unknown}
@@ -449,7 +449,15 @@ export default function VocabularyPage() {
             familiar={stats.vocabulary.familiar}
             known={stats.vocabulary.known}
             wellKnown={stats.vocabulary.wellKnown}
-            total={stats.vocabulary.total}
+            total={
+              stats.vocabulary.unknown +
+              stats.vocabulary.newlySeen +
+              stats.vocabulary.familiar +
+              stats.vocabulary.known +
+              stats.vocabulary.wellKnown
+            }
+            readingCoverage={stats.readingCoverage}
+            cefrBand={stats.cefrBand}
           />
         )}
 

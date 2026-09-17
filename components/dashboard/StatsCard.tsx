@@ -124,6 +124,8 @@ export function StatsCard({ isLoading: isLoadingProp = false }: StatsCardProps) 
               stats.vocabulary.known +
               stats.vocabulary.wellKnown
             }
+            readingCoverage={stats.readingCoverage}
+            cefrBand={stats.cefrBand}
           />
         )}
 

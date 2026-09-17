@@ -1,6 +1,9 @@
 'use client';
 
+import Link from 'next/link';
+import { Info } from 'lucide-react';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import type { CefrBand } from '@/lib/types/api';
 
 interface VocabDistributionProps {
   unknown: number;
@@ -9,6 +12,9 @@ interface VocabDistributionProps {
   known: number;
   wellKnown: number;
   total: number;
+  /** Zipf-weighted estimated reading coverage of the full language vocabulary (0-98) — from useStats(), not derived from the counts above */
+  readingCoverage: number;
+  cefrBand: CefrBand;
   compact?: boolean;
 }
 
@@ -22,12 +28,21 @@ const SEGMENTS = [
 
 type SegmentKey = typeof SEGMENTS[number]['key'];
 
-export function VocabDistribution({ unknown, newlySeen, familiar, known, wellKnown, total, compact = false }: VocabDistributionProps) {
+export function VocabDistribution({
+  unknown,
+  newlySeen,
+  familiar,
+  known,
+  wellKnown,
+  total,
+  readingCoverage,
+  cefrBand,
+  compact = false,
+}: VocabDistributionProps) {
   if (total === 0) return null;
 
   const counts: Record<SegmentKey, number> = { unknown, newlySeen, familiar, known, wellKnown };
   const pct = (n: number) => `${((n / total) * 100).toFixed(1)}%`;
-  const fluencyPct = ((known + wellKnown) / total) * 100;
 
   return (
     <div className="space-y-3">
@@ -54,18 +69,28 @@ export function VocabDistribution({ unknown, newlySeen, familiar, known, wellKno
         </div>
       </div>
 
-      {/* Fluency card */}
+      {/* Reading coverage card — whole-language estimate from useStats(), not the counts above */}
       {!compact && (
         <div className="bg-desk border border-border rounded-md p-2">
           <div className="flex items-baseline gap-2 mb-1.5 flex-wrap">
-            <span className="font-bold text-2xl text-primary font-sans">{fluencyPct.toFixed(1)}%</span>
-            <span className="text-muted text-ui-sm font-sans">reading fluency</span>
+            <span className="font-bold text-2xl text-primary font-sans">{readingCoverage.toFixed(1)}%</span>
+            <span className="text-muted text-ui-sm font-sans">reading coverage</span>
+            <span className="text-primary text-ui-xs font-sans font-semibold px-1.5 py-0.5 rounded bg-primary/10">
+              {cefrBand}
+            </span>
+            <Link
+              href="/coverage-info"
+              title="How is this calculated?"
+              className="text-muted hover:text-primary transition-colors"
+            >
+              <Info size={14} strokeWidth={1.5} />
+            </Link>
             <span className="text-muted text-ui-xs ml-auto font-sans hidden sm:block">
               95% = comfortable · 98% = fluent
             </span>
           </div>
           <div className="relative">
-            <ProgressBar value={fluencyPct} className="opacity-70" />
+            <ProgressBar value={readingCoverage} className="opacity-70" />
             <div className="absolute inset-y-0 w-px bg-muted opacity-50" style={{ left: '95%' }} />
             <div className="absolute inset-y-0 w-px bg-muted opacity-50" style={{ left: '98%' }} />
           </div>
