@@ -29,7 +29,16 @@ try {
   }
 }
 
-export type RateLimitName = 'import' | 'fetchUrl' | 'translationsProcess' | 'bulkUpdate' | 'textsBulk' | 'ttsWord' | 'ttsSentence';
+export type RateLimitName =
+  | 'import'
+  | 'fetchUrl'
+  | 'translationsProcess'
+  | 'bulkUpdate'
+  | 'textsBulk'
+  | 'ttsWord'
+  | 'ttsSentence'
+  | 'deleteAllData'
+  | 'cleanupOrphaned';
 
 const RATE_LIMIT_CONFIG: Record<RateLimitName, { limit: number; window: `${number} ${'s' | 'm' | 'h' | 'd'}` }> = {
   import: { limit: 5, window: '1 h' },
@@ -42,6 +51,10 @@ const RATE_LIMIT_CONFIG: Record<RateLimitName, { limit: number; window: `${numbe
   // already-cached audio never counts against these.
   ttsWord: { limit: 120, window: '1 h' },
   ttsSentence: { limit: 300, window: '1 h' },
+  // Full-account wipe — a legitimate user should essentially never need this
+  // more than once in a session.
+  deleteAllData: { limit: 3, window: '1 h' },
+  cleanupOrphaned: { limit: 20, window: '1 h' },
 };
 
 const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
@@ -52,6 +65,8 @@ const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
   textsBulk: 'bulk text actions',
   ttsWord: 'word pronunciation requests',
   ttsSentence: 'sentence narration requests',
+  deleteAllData: 'data deletion requests',
+  cleanupOrphaned: 'vocabulary cleanup requests',
 };
 
 const limiters = redis

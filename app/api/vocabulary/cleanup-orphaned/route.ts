@@ -5,6 +5,7 @@ import { eq, and, isNull, inArray } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // ============================================================================
 // POST /api/vocabulary/cleanup-orphaned — Permanently delete UNKNOWN words
@@ -20,6 +21,11 @@ import { requireUser } from '@/lib/auth/requireUser';
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await requireUser();
   if (authError) return authError;
+
+  const rateLimit = await checkRateLimit('cleanupOrphaned', user.id);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse('cleanupOrphaned', rateLimit);
+  }
 
   try {
     const body = await request.json();
@@ -62,6 +68,10 @@ export async function POST(request: NextRequest) {
 
     const orphanedIds = orphaned.map((w) => w.id);
     await db.delete(words).where(and(inArray(words.id, orphanedIds), eq(words.userId, user.id)));
+
+    console.log(
+      `[Vocabulary Cleanup Orphaned] User ${user.id} deleted ${orphanedIds.length} orphaned words for language "${languageCode}" at ${new Date().toISOString()}`
+    );
 
     return NextResponse.json({ deleted: orphanedIds.length });
   } catch (error) {

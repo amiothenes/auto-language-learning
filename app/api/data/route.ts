@@ -4,6 +4,7 @@ import { wordInstances, textTags, sentences, words, texts, series } from '@/lib/
 import { eq, inArray } from 'drizzle-orm';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 
 // ============================================================================
 // DELETE /api/data — Truncate all user-data tables
@@ -14,6 +15,11 @@ import { requireUser } from '@/lib/auth/requireUser';
 export async function DELETE() {
   const { user, error: authError } = await requireUser();
   if (authError) return authError;
+
+  const rateLimit = await checkRateLimit('deleteAllData', user.id);
+  if (!rateLimit.allowed) {
+    return rateLimitResponse('deleteAllData', rateLimit);
+  }
 
   try {
     // Fetch user's text and word IDs for cascading child-table deletes
@@ -35,6 +41,10 @@ export async function DELETE() {
       await db.delete(texts).where(eq(texts.userId, user.id));
     }
     await db.delete(series).where(eq(series.userId, user.id));
+
+    console.log(
+      `[Data] User ${user.id} deleted all data at ${new Date().toISOString()} — texts: ${textIds.length}, words: ${wordIds.length}`
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
