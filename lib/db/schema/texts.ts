@@ -39,6 +39,7 @@ export const texts = pgTable(
     seriesIdx: index('texts_series_id_idx').on(table.seriesId),
     lastViewedIdx: index('texts_last_viewed_at_idx').on(table.lastViewedAt),
     knownPctIdx: index('texts_known_percentage_idx').on(table.knownPercentage),
+    userIdx: index('texts_user_id_idx').on(table.userId),
   })
 );
 

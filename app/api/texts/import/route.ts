@@ -22,6 +22,7 @@ import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/
 import { requireUser } from '@/lib/auth/requireUser';
 import { ownedBy } from '@/lib/db/scope';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { checkQuota, quotaResponse } from '@/lib/quotas';
 
 // ============================================================================
 // POST /api/texts/import - Import text with NLP processing
@@ -91,6 +92,16 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse('import', rateLimit);
     }
 
+    const textsQuota = await checkQuota('texts', user.id);
+    if (!textsQuota.allowed) {
+      return quotaResponse('texts', textsQuota);
+    }
+
+    const wordsQuota = await checkQuota('words', user.id);
+    if (!wordsQuota.allowed) {
+      return quotaResponse('words', wordsQuota);
+    }
+
     console.log(`[Text Import] Starting import: "${title}" (${content.trim().length} chars)`);
 
     // ========================================================================
@@ -131,6 +142,11 @@ export async function POST(request: NextRequest) {
       resolvedSeriesId = seriesRecord.id;
       console.log(`[Text Import] Series verified: ${seriesRecord.name}`);
     } else {
+      const seriesQuota = await checkQuota('series', user.id);
+      if (!seriesQuota.allowed) {
+        return quotaResponse('series', seriesQuota);
+      }
+
       const [newSeries] = await db
         .insert(series)
         .values({ name: title.trim(), languageId: language.id, userId: user.id })

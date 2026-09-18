@@ -6,6 +6,7 @@ import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { checkQuota, quotaResponse } from '@/lib/quotas';
 import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 import { processTranslationsForWords } from '@/lib/translation/translationService';
 
@@ -69,6 +70,11 @@ export async function POST(request: NextRequest) {
   const rateLimit = await checkRateLimit('bulkUpdate', user.id);
   if (!rateLimit.allowed) {
     return rateLimitResponse('bulkUpdate', rateLimit);
+  }
+
+  const wordsQuota = await checkQuota('words', user.id);
+  if (!wordsQuota.allowed) {
+    return quotaResponse('words', wordsQuota);
   }
 
   const language = await db.query.languages.findFirst({

@@ -43,6 +43,7 @@ export const words = pgTable(
     languageIdx: index('words_language_id_idx').on(table.languageId),
     dictFreqIdx: index('words_dictionary_frequency_idx').on(table.dictionaryFrequency),
     userFreqIdx: index('words_user_frequency_idx').on(table.userFrequency),
+    userIdx: index('words_user_id_idx').on(table.userId),
 
     // Composite indexes for common query patterns (CRITICAL for performance)
     // Used by: textProcessor query existing words, update user frequency

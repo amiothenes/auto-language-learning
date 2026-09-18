@@ -3,6 +3,7 @@ import { reprocessTextContent, autoIgnoreProperNouns, TextProcessingError } from
 import { syncTextStatistics } from '@/lib/utils/vocabularySync';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { checkQuota, quotaResponse } from '@/lib/quotas';
 import { db } from '@/lib/db';
 import { texts } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -44,6 +45,18 @@ export async function POST(
         { error: 'Content must be at least 10 characters' },
         { status: 400 }
       );
+    }
+
+    if (body.content.trim().length > 50_000) {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'Content must be 50,000 characters or less' },
+        { status: 400 }
+      );
+    }
+
+    const wordsQuota = await checkQuota('words', user.id);
+    if (!wordsQuota.allowed) {
+      return quotaResponse('words', wordsQuota);
     }
 
     const firstChangedParagraphIndex =
