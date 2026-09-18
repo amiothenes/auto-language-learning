@@ -19,6 +19,7 @@ export * from './sentenceAudio';
 export * from './wordReviews';
 export * from './srsDailyStats';
 export * from './srsSettings';
+export * from './auditLog';
 
 // Relations
 export * from './relations';

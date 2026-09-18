@@ -6,6 +6,7 @@ import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 // ============================================================================
 // POST /api/vocabulary/cleanup-orphaned — Permanently delete UNKNOWN words
@@ -69,9 +70,13 @@ export async function POST(request: NextRequest) {
     const orphanedIds = orphaned.map((w) => w.id);
     await db.delete(words).where(and(inArray(words.id, orphanedIds), eq(words.userId, user.id)));
 
-    console.log(
-      `[Vocabulary Cleanup Orphaned] User ${user.id} deleted ${orphanedIds.length} orphaned words for language "${languageCode}" at ${new Date().toISOString()}`
-    );
+    await logAudit({
+      userId: user.id,
+      action: 'vocabulary.cleanup_orphaned',
+      targetType: 'language',
+      targetId: language.id,
+      metadata: { languageCode, deleted: orphanedIds.length },
+    });
 
     return NextResponse.json({ deleted: orphanedIds.length });
   } catch (error) {

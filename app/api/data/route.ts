@@ -5,6 +5,7 @@ import { eq, inArray } from 'drizzle-orm';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 // ============================================================================
 // DELETE /api/data — Truncate all user-data tables
@@ -42,9 +43,11 @@ export async function DELETE() {
     }
     await db.delete(series).where(eq(series.userId, user.id));
 
-    console.log(
-      `[Data] User ${user.id} deleted all data at ${new Date().toISOString()} — texts: ${textIds.length}, words: ${wordIds.length}`
-    );
+    await logAudit({
+      userId: user.id,
+      action: 'data.wipe',
+      metadata: { texts: textIds.length, words: wordIds.length },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -6,6 +6,7 @@ import { formatRelativeTime } from '@/lib/utils';
 import type { Text, SeriesDetail } from '@/lib/types/content';
 import type { SeriesDetailResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { logAudit } from '@/lib/audit';
 
 // ============================================================================
 // GET /api/series/[id] — Series detail with all its texts
@@ -208,6 +209,8 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    await logAudit({ userId: user.id, action: 'series.delete', targetType: 'series', targetId: id });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

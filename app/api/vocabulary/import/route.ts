@@ -7,6 +7,7 @@ import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { checkQuota, quotaResponse } from '@/lib/quotas';
+import { logAudit } from '@/lib/audit';
 import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 import { processTranslationsForWords } from '@/lib/translation/translationService';
 
@@ -234,6 +235,16 @@ export async function POST(request: NextRequest) {
       }
     }
   });
+
+  if (mergeStrategy === 'replace') {
+    await logAudit({
+      userId: user.id,
+      action: 'vocabulary.import_replace',
+      targetType: 'language',
+      targetId: language.id,
+      metadata: { languageCode, imported },
+    });
+  }
 
   if (wordIdsNeedingTranslation.length > 0 && language.defaultTranslationLangCode) {
     const targetLangCode = language.defaultTranslationLangCode;

@@ -6,6 +6,7 @@ import type { TextData } from '@/lib/types/content';
 import type { TextDetailResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { ownedBy } from '@/lib/db/scope';
+import { logAudit } from '@/lib/audit';
 
 // ============================================================================
 // GET /api/texts/[id] — Full text metadata + content for the reader
@@ -221,6 +222,8 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    await logAudit({ userId: user.id, action: 'text.delete', targetType: 'text', targetId: id });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
