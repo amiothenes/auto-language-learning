@@ -1,15 +1,32 @@
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import type { ApiErrorResponse } from '@/lib/types/api';
 
+// True only for a real production deploy (Vercel prod, or a self-hosted `next
+// start` prod build) — never local dev or a Vercel preview, both of which run
+// with Redis intentionally unconfigured.
+const isProduction = (process.env.VERCEL_ENV ?? process.env.NODE_ENV) === 'production';
+
 // Fails open: if Redis isn't configured or errors, requests are allowed through.
 // Availability matters more than strict cost enforcement at this app's scale.
+// Missing config in production should never happen — it means a deploy is
+// misconfigured — so it's reported to Sentry as fatal (see also the module
+// load doubling as a per-cold-start "startup check").
 let redis: Redis | null = null;
 try {
   redis = Redis.fromEnv();
-} catch {
+} catch (error) {
   redis = null;
+  if (isProduction) {
+    console.error('[rateLimit] UPSTASH_REDIS_* not configured — all rate limits are failing open');
+    Sentry.captureMessage('Rate limiting is not configured in production — all limits are failing open', {
+      level: 'fatal',
+      tags: { component: 'rateLimit' },
+      extra: { error },
+    });
+  }
 }
 
 export type RateLimitName = 'import' | 'fetchUrl' | 'translationsProcess' | 'bulkUpdate' | 'textsBulk' | 'ttsWord' | 'ttsSentence';
@@ -66,7 +83,11 @@ export async function checkRateLimit(name: RateLimitName, userId: string): Promi
     const retryAfterSeconds = Math.max(0, Math.ceil((reset - Date.now()) / 1000));
     return { allowed: success, retryAfterSeconds, remaining };
   } catch (error) {
-    console.warn(`Rate limit check failed for "${name}" — failing open`, error);
+    console.error(`[rateLimit] check failed for "${name}" — failing open`, error);
+    Sentry.captureException(error, {
+      level: 'warning',
+      tags: { component: 'rateLimit', limiter: name },
+    });
     return { allowed: true, retryAfterSeconds: 0, remaining: -1 };
   }
 }

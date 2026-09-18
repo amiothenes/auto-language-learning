@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -9,7 +10,9 @@ const csp = [
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self'`,
   `font-src 'self'`,
-  `connect-src 'self' ${supabaseUrl}`,
+  // https://*.sentry.io covers Sentry's error-report ingest endpoint across regions
+  // (client-side error reporting from instrumentation-client.ts).
+  `connect-src 'self' ${supabaseUrl} https://*.sentry.io`,
   // TTS audio (word/sentence pronunciation) is served from Supabase Storage,
   // a different origin than the app itself — <audio> playback falls back to
   // default-src ('self' only) without this, silently blocking all TTS audio.
@@ -35,4 +38,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  // Source maps are uploaded for stack traces but not served publicly.
+  widenClientFileUpload: true,
+  disableLogger: true,
+});
