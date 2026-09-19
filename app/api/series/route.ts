@@ -6,6 +6,7 @@ import { formatRelativeTime } from '@/lib/utils';
 import type { Series } from '@/lib/types/content';
 import type { SeriesListResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { checkQuota, quotaResponse } from '@/lib/quotas';
 
 // ============================================================================
 // POST /api/series — Create a new series
@@ -54,6 +55,11 @@ export async function POST(request: NextRequest) {
         { error: `Language not found with code: ${languageCode}` },
         { status: 404 }
       );
+    }
+
+    const seriesQuota = await checkQuota('series', user.id);
+    if (!seriesQuota.allowed) {
+      return quotaResponse('series', seriesQuota);
     }
 
     const [created] = await db

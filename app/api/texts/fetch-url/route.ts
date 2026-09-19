@@ -1,39 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
-import dns from 'dns/promises';
-import net from 'net';
 import type { FetchUrlRequest, FetchUrlResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { safeFetch, SafeFetchError, type SafeFetchResponse } from '@/lib/safeFetch';
 
 // ============================================================================
 // POST /api/texts/fetch-url — Fetch a URL and extract readable article text
 // ============================================================================
-
-function isPrivateIp(ip: string): boolean {
-  if (net.isIPv4(ip)) {
-    const parts = ip.split('.').map(Number);
-    const [a, b] = parts;
-    return (
-      a === 10 ||
-      a === 127 ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      (a === 169 && b === 254)
-    );
-  }
-  if (net.isIPv6(ip)) {
-    const lower = ip.toLowerCase();
-    return (
-      lower === '::1' ||
-      lower.startsWith('fe80:') ||
-      lower.startsWith('fc') ||
-      lower.startsWith('fd')
-    );
-  }
-  return false;
-}
 
 export async function POST(request: NextRequest) {
   const { user, error: authError } = await requireUser();
@@ -74,36 +49,34 @@ export async function POST(request: NextRequest) {
     return rateLimitResponse('fetchUrl', rateLimit);
   }
 
-  // SSRF protection: resolve hostname and block private/internal IPs
+  // Fetch the URL server-side (bypasses browser CORS). safeFetch blocks private/internal
+  // addresses at connect time (DNS-rebinding safe) and re-validates every redirect hop.
+  let response: SafeFetchResponse;
   try {
-    const addresses = await dns.lookup(parsedUrl.hostname, { all: true });
-    for (const { address } of addresses) {
-      if (isPrivateIp(address)) {
-        return NextResponse.json<ApiErrorResponse>(
-          { error: 'URL resolves to a private network address' },
-          { status: 403 }
-        );
-      }
-    }
-  } catch {
-    return NextResponse.json<ApiErrorResponse>(
-      { error: 'Could not resolve hostname' },
-      { status: 502 }
-    );
-  }
-
-  // Fetch the URL server-side (bypasses browser CORS)
-  let response: Response;
-  try {
-    response = await fetch(url.trim(), {
-      signal: AbortSignal.timeout(15_000),
+    response = await safeFetch(parsedUrl.href, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; Verbista/1.0)',
         Accept: 'text/html,application/xhtml+xml',
         'Accept-Language': '*',
+        'Accept-Encoding': 'gzip, deflate, br',
       },
     });
   } catch (err) {
+    if (err instanceof SafeFetchError) {
+      switch (err.code) {
+        case 'invalid_url':
+          return NextResponse.json<ApiErrorResponse>({ error: err.message }, { status: 400 });
+        case 'blocked':
+          return NextResponse.json<ApiErrorResponse>({ error: err.message }, { status: 403 });
+        case 'resolve':
+          return NextResponse.json<ApiErrorResponse>({ error: err.message }, { status: 502 });
+        default:
+          return NextResponse.json<ApiErrorResponse>(
+            { error: `Failed to fetch URL: ${err.message}` },
+            { status: 502 }
+          );
+      }
+    }
     const message = err instanceof Error ? err.message : 'Network error';
     return NextResponse.json<ApiErrorResponse>(
       { error: `Failed to fetch URL: ${message}` },
@@ -112,21 +85,38 @@ export async function POST(request: NextRequest) {
   }
 
   if (response.status >= 400) {
+    response.destroy();
     return NextResponse.json<ApiErrorResponse>(
       { error: `URL returned HTTP ${response.status}` },
       { status: 502 }
     );
   }
 
-  const contentType = response.headers.get('content-type') ?? '';
+  const contentType = response.headers['content-type'] ?? '';
   if (!contentType.includes('text/html')) {
+    response.destroy();
     return NextResponse.json<ApiErrorResponse>(
       { error: `URL does not appear to be an HTML page (got: ${contentType.split(';')[0].trim()})` },
       { status: 415 }
     );
   }
 
-  const html = await response.text();
+  let html: string;
+  try {
+    html = await response.text();
+  } catch (err) {
+    if (err instanceof SafeFetchError && err.code === 'too_large') {
+      return NextResponse.json<ApiErrorResponse>(
+        { error: 'Page is too large to import' },
+        { status: 413 }
+      );
+    }
+    const message = err instanceof Error ? err.message : 'Network error';
+    return NextResponse.json<ApiErrorResponse>(
+      { error: `Failed to fetch URL: ${message}` },
+      { status: 502 }
+    );
+  }
   const resolvedUrl = response.url;
 
   // Parse with jsdom — must read <html lang=""> BEFORE Readability runs
@@ -175,7 +165,8 @@ export async function GET() {
       200: 'Extraction successful — returns title, content, resolvedUrl, detectedLang',
       400: 'Invalid request or unsupported URL scheme',
       401: 'Unauthorized — not authenticated',
-      403: 'URL resolves to a private/internal IP address',
+      403: 'URL (or a redirect target) resolves to a private/internal IP address',
+      413: 'Page exceeds the 5 MB size limit',
       415: 'URL is not an HTML page',
       422: 'Content could not be extracted (paywall, JS-only, etc.)',
       429: 'Rate limit exceeded — see Retry-After header',

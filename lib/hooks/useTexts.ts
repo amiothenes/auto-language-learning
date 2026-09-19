@@ -6,11 +6,12 @@ interface UseTextsOptions {
   sortBy?: 'createdAt' | 'lastViewedAt';
   onlyRead?: boolean;
   staleTime?: number;
+  enabled?: boolean;
 }
 
 export function useTexts(limit?: number, options?: UseTextsOptions) {
   const { selectedLanguage } = useLanguage();
-  const { staleTime, ...queryOptions } = options ?? {};
+  const { staleTime, enabled, ...queryOptions } = options ?? {};
 
   return useQuery({
     queryKey: ['texts', { languageCode: selectedLanguage, limit, ...queryOptions }],
@@ -24,7 +25,7 @@ export function useTexts(limit?: number, options?: UseTextsOptions) {
       const data: TextsListResponse = await res.json();
       return data.texts as TextListItem[];
     },
-    enabled: !!selectedLanguage,
+    enabled: !!selectedLanguage && enabled !== false,
     ...(staleTime !== undefined ? { staleTime } : {}),
   });
 }

@@ -6,6 +6,7 @@ import type { WordInstanceItem, WordInstancesResponse, ApiErrorResponse } from '
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
 import { requireUser } from '@/lib/auth/requireUser';
+import { lookupFrequencyPercentile } from '@/lib/utils/wordFrequency';
 
 // ============================================================================
 // GET /api/texts/[id]/word-instances — Word instances for reader highlighting
@@ -47,9 +48,10 @@ export async function GET(
     // TODO(auth): derive targetLangCode from user.nativeLanguagCode when auth lands
     const language = await db.query.languages.findFirst({
       where: eq(languages.id, text.languageId),
-      columns: { defaultTranslationLangCode: true },
+      columns: { code: true, defaultTranslationLangCode: true },
     });
     const targetLangCode = language?.defaultTranslationLangCode ?? null;
+    const sourceLangCode = language?.code ?? null;
 
     // 3. Fetch all word instances with their lemma data
     const rows = await db.query.wordInstances.findMany({
@@ -89,6 +91,9 @@ export async function GET(
         translation: wt?.translation ?? instance.word.translation ?? null,
         romanization: instance.word.romanization ?? null,
         dictionaryFrequency: instance.word.dictionaryFrequency,
+        frequencyPercentile: sourceLangCode
+          ? lookupFrequencyPercentile(sourceLangCode, instance.word.dictionaryFrequency) ?? null
+          : null,
         userFrequency: instance.word.userFrequency,
         status: instance.word.status as VocabularyStatus,
         position: instance.position,

@@ -4,6 +4,7 @@ import { languages, texts, words, series } from '@/lib/db/schema';
 import { eq, count, and } from 'drizzle-orm';
 import type { ApiErrorResponse, LanguageItem, UpdateLanguageResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { logAudit } from '@/lib/audit';
 
 // ============================================================================
 // DELETE /api/languages/[id] — Delete a language by ID
@@ -53,6 +54,8 @@ export async function DELETE(
     }
 
     await db.delete(languages).where(and(eq(languages.id, id), eq(languages.userId, user.id)));
+
+    await logAudit({ userId: user.id, action: 'language.delete', targetType: 'language', targetId: id });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

@@ -19,6 +19,12 @@ export function useUpdateWordStatus(textId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['word-instances'] });
       queryClient.invalidateQueries({ queryKey: ['text', textId] });
+      // Word status changes shift knownPercentage for every text containing the
+      // word (see syncAllTextsForWord), so refresh series views too. The series
+      // a text belongs to isn't known here, so invalidate broadly rather than
+      // threading seriesId through this hook.
+      queryClient.invalidateQueries({ queryKey: ['series'] });
+      queryClient.invalidateQueries({ queryKey: ['series-list'] });
     },
   });
 }

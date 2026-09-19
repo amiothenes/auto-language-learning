@@ -104,7 +104,9 @@ export type MergeStrategy = 'skip' | 'update' | 'replace';
 export interface ImportedVocabularyData {
   /** Lemma (required) */
   lemma: string;
-  /** Translation (required) */
+  /** Translation — may be empty (e.g. LWT rows rated without ever typing a
+   *  gloss); an empty string is filled in later by the post-import Azure
+   *  lookup rather than blocking the row at parse time. */
   translation: string;
   /** Optional status (defaults to NEWLY_SEEN if not provided) */
   status?: VocabularyStatus;

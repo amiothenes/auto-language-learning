@@ -18,6 +18,7 @@ export const series = pgTable(
   },
   (table) => ({
     languageIdx: index('series_language_id_idx').on(table.languageId),
+    userIdx: index('series_user_id_idx').on(table.userId),
   })
 );
 

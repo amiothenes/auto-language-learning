@@ -30,6 +30,7 @@ import type { LemmatizeResult } from '@/lib/nlp/types';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 import { calculateCompletionPercentage } from '@/lib/utils/textStats';
+import { ownedBy } from '@/lib/db/scope';
 
 // ============================================================================
 // Type Definitions
@@ -408,7 +409,7 @@ export async function processTextForImport(
     reportProgress(progressCallback, 'tokenizing', 0, 'Loading language configuration');
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.id, languageId),
+      where: ownedBy('languages', languageId, userId),
     });
 
     if (!language) {
@@ -640,22 +641,18 @@ export async function processTextForImport(
         // Step 12: Calculate Known Percentage (92-95%)
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
-        // Query word statuses for all unique lemmas in this text — scoped to this user
-        const wordStatuses = await tx.query.words.findMany({
-          where: and(
-            eq(words.languageId, languageId),
-            inArray(words.lemma, uniqueLemmas),
-            eq(words.userId, userId),
-          ),
-          columns: {
-            lemma: true,
-            status: true,
-          },
-        });
+        // Completion % — see lib/utils/textStats.ts. Weighted by word instance
+        // (every occurrence counts, not just unique lemmas) to match the
+        // reader's own calculation and syncTextStatistics(). Unrounded; round
+        // at display time.
+        const knownPercentageRows = await tx
+          .select({ status: words.status })
+          .from(wordInstances)
+          .innerJoin(words, eq(wordInstances.wordId, words.id))
+          .where(eq(wordInstances.textId, textId));
 
-        // Completion % — see lib/utils/textStats.ts. Unrounded; round at display time.
         const knownPercentage = calculateCompletionPercentage(
-          wordStatuses.map((w) => w.status as VocabularyStatus)
+          knownPercentageRows.map((r) => r.status as VocabularyStatus)
         );
 
         // Update text with calculated percentage
@@ -745,7 +742,7 @@ export async function reprocessTextContent(
     reportProgress(progressCallback, 'tokenizing', 0, 'Loading text configuration');
 
     const text = await db.query.texts.findFirst({
-      where: eq(texts.id, textId),
+      where: ownedBy('texts', textId, userId),
     });
 
     if (!text) {
@@ -757,7 +754,7 @@ export async function reprocessTextContent(
     }
 
     const language = await db.query.languages.findFirst({
-      where: eq(languages.id, text.languageId),
+      where: ownedBy('languages', text.languageId, userId),
     });
 
     if (!language) {
@@ -914,18 +911,19 @@ export async function reprocessTextContent(
 
         reportProgress(progressCallback, 'inserting', 92, 'Calculating known percentage');
 
-        const wordStatuses = await tx.query.words.findMany({
-          where: and(
-            eq(words.languageId, language.id),
-            inArray(words.lemma, uniqueLemmas),
-            eq(words.userId, userId),
-          ),
-          columns: { lemma: true, status: true },
-        });
+        // Completion % — see lib/utils/textStats.ts. Weighted by word instance
+        // across the FULL text (not just uniqueLemmas from this reprocess's
+        // possibly-partial wordTokens), so partial reprocesses still reflect
+        // the untouched leading paragraphs. Matches the reader's calculation
+        // and syncTextStatistics(). Unrounded; round at display time.
+        const knownPercentageRows = await tx
+          .select({ status: words.status })
+          .from(wordInstances)
+          .innerJoin(words, eq(wordInstances.wordId, words.id))
+          .where(eq(wordInstances.textId, textId));
 
-        // Completion % — see lib/utils/textStats.ts. Unrounded; round at display time.
         const knownPercentage = calculateCompletionPercentage(
-          wordStatuses.map((w) => w.status as VocabularyStatus)
+          knownPercentageRows.map((r) => r.status as VocabularyStatus)
         );
 
         await tx

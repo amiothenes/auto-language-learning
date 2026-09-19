@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
-import { words, languages } from '@/lib/db/schema';
+import { words, languages, wordInstances } from '@/lib/db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { checkQuota, quotaResponse } from '@/lib/quotas';
+import { logAudit } from '@/lib/audit';
 import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
+import { processTranslationsForWords } from '@/lib/translation/translationService';
 
 // ============================================================================
 // POST /api/vocabulary/import — Bulk import vocabulary from the Vocabulary
@@ -70,6 +73,11 @@ export async function POST(request: NextRequest) {
     return rateLimitResponse('bulkUpdate', rateLimit);
   }
 
+  const wordsQuota = await checkQuota('words', user.id);
+  if (!wordsQuota.allowed) {
+    return quotaResponse('words', wordsQuota);
+  }
+
   const language = await db.query.languages.findFirst({
     where: and(eq(languages.code, languageCode), eq(languages.userId, user.id)),
   });
@@ -131,15 +139,55 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Collapse duplicate lemmas within this import (e.g. two source rows whose
+  // Term differs only in casing, both lowercasing to the same lemma) down to
+  // one row before batching. A single INSERT ... ON CONFLICT DO UPDATE
+  // statement throws ("ON CONFLICT DO UPDATE command cannot affect row a
+  // second time") if its VALUES list contains the same conflict key twice —
+  // last occurrence wins, same as a plain re-import overwriting the earlier one.
+  const dedupedRows = Array.from(new Map(rows.map((row) => [row.lemma, row])).values());
+
   let imported = 0;
+  // Word IDs that landed (inserted or updated) with no translation at all —
+  // an LWT export commonly rates a word without ever typing a gloss for it.
+  // Queued below for an async Azure lookup so those rows don't stay blank.
+  const wordIdsNeedingTranslation: string[] = [];
 
   await db.transaction(async (tx) => {
     if (mergeStrategy === 'replace') {
-      await tx.delete(words).where(and(eq(words.languageId, language.id), eq(words.userId, user.id)));
+      // A word that has ever appeared in an imported text has word_instances
+      // rows pointing at it via a RESTRICT foreign key, so it can't be
+      // hard-deleted — and cascading that delete would silently wipe out
+      // those texts' word-highlighting data. So "Replace All" hard-deletes
+      // only words nothing references (nothing to break), and resets every
+      // other existing word for this language back to a fresh/unknown
+      // state instead. Either way, no vocabulary data survives that isn't
+      // re-established by the import below — words present in the file get
+      // overwritten by the upsert loop right after this; words absent from
+      // it are left blank, matching "delete all existing vocabulary".
+      await tx.delete(words).where(
+        and(
+          eq(words.languageId, language.id),
+          eq(words.userId, user.id),
+          sql`NOT EXISTS (SELECT 1 FROM ${wordInstances} WHERE ${wordInstances.wordId} = ${words.id})`
+        )
+      );
+      await tx
+        .update(words)
+        .set({
+          status: 'UNKNOWN',
+          translation: null,
+          definition: null,
+          romanization: null,
+          exampleSentence: null,
+          dictionaryFrequency: 0,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(words.languageId, language.id), eq(words.userId, user.id)));
     }
 
-    for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
-      const batch = rows.slice(offset, offset + BATCH_SIZE);
+    for (let offset = 0; offset < dedupedRows.length; offset += BATCH_SIZE) {
+      const batch = dedupedRows.slice(offset, offset + BATCH_SIZE);
       const values = batch.map((row) => ({
         lemma: row.lemma,
         languageId: language.id,
@@ -157,13 +205,22 @@ export async function POST(request: NextRequest) {
           .insert(words)
           .values(values)
           .onConflictDoNothing({ target: [words.lemma, words.languageId, words.userId] })
-          .returning({ id: words.id });
+          .returning({ id: words.id, lemma: words.lemma });
         imported += inserted.length;
+
+        // Ignored words are deliberately never looked up — spending an Azure
+        // call on a word you've marked "don't care about this" is wasted cost.
+        const blankLemmas = new Set(
+          batch.filter((r) => !r.translation && r.status !== VocabularyStatus.IGNORE).map((r) => r.lemma)
+        );
+        for (const w of inserted) {
+          if (blankLemmas.has(w.lemma)) wordIdsNeedingTranslation.push(w.id);
+        }
       } else {
         // 'update', and 'replace' (table already cleared above, so this is
-        // effectively a plain insert — rows are already deduped by lemma
-        // above, which the upsert requires to avoid error 21000).
-        await tx
+        // effectively a plain insert — upsert here just tolerates duplicate
+        // lemmas within the same import file).
+        const upserted = await tx
           .insert(words)
           .values(values)
           .onConflictDoUpdate({
@@ -178,11 +235,41 @@ export async function POST(request: NextRequest) {
               romanization: sql`COALESCE(EXCLUDED.romanization, ${words.romanization})`,
               updatedAt: sql`now()`,
             },
-          });
+          })
+          .returning({ id: words.id, lemma: words.lemma, translation: words.translation, status: words.status });
         imported += batch.length;
+
+        // Ignored words are deliberately never looked up — spending an Azure
+        // call on a word you've marked "don't care about this" is wasted cost.
+        for (const w of upserted) {
+          if (!w.translation && w.status !== VocabularyStatus.IGNORE) wordIdsNeedingTranslation.push(w.id);
+        }
       }
     }
   });
 
-  return NextResponse.json({ imported, skipped: items.length - rows.length });
+  if (mergeStrategy === 'replace') {
+    await logAudit({
+      userId: user.id,
+      action: 'vocabulary.import_replace',
+      targetType: 'language',
+      targetId: language.id,
+      metadata: { languageCode, imported },
+    });
+  }
+
+  if (wordIdsNeedingTranslation.length > 0 && language.defaultTranslationLangCode) {
+    const targetLangCode = language.defaultTranslationLangCode;
+    // Fire-and-forget, same convention as the text-import route: runs after
+    // the response is sent so a large import isn't held up waiting on Azure.
+    after(async () => {
+      try {
+        await processTranslationsForWords(wordIdsNeedingTranslation, languageCode, targetLangCode);
+      } catch (err) {
+        console.error('[Vocabulary Import] Translation job failed:', err);
+      }
+    });
+  }
+
+  return NextResponse.json({ imported, skipped: items.length - dedupedRows.length });
 }

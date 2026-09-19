@@ -5,6 +5,7 @@ import { inArray, and, eq, asc, sql } from 'drizzle-orm';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 // ============================================================================
 // POST /api/texts/bulk-action — delete / tag / move many texts at once
@@ -48,6 +49,13 @@ export async function POST(request: NextRequest) {
         .delete(texts)
         .where(and(inArray(texts.id, textIds), eq(texts.userId, user.id)))
         .returning({ id: texts.id });
+
+      await logAudit({
+        userId: user.id,
+        action: 'text.bulk_delete',
+        targetType: 'text',
+        metadata: { requested: textIds.length, deleted: deleted.length, textIds: deleted.map((t) => t.id) },
+      });
 
       return NextResponse.json({ action: 'delete', deleted: deleted.length });
     }

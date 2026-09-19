@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Play, Square } from 'lucide-react';
 import { Word, WordData } from './Word';
+import { ReaderContentSkeleton } from './ReaderSkeleton';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { cn } from '@/lib/utils';
 import type { WordInstanceItem } from '@/lib/types/api';
@@ -83,6 +84,11 @@ interface ReaderContentProps {
   isLoading?: boolean;
   loadError?: string | null;
   seriesId?: string;
+  /** Whether a next text exists in the series (per the reader's current sort).
+   * The full "End" treatment only makes sense once there's nothing left to
+   * read — otherwise it sits right above the "next text →" link and reads
+   * as a contradiction. */
+  hasNextText?: boolean;
 }
 
 export function ReaderContent({
@@ -98,6 +104,7 @@ export function ReaderContent({
   isLoading,
   loadError,
   seriesId,
+  hasNextText,
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
 
@@ -161,21 +168,7 @@ export function ReaderContent({
   }[settings.fontSize];
 
   if (isLoading) {
-    return (
-      <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="space-y-3">
-            <div className="animate-shimmer h-5 rounded w-full" />
-            <div className="animate-shimmer h-5 rounded w-11/12" />
-            <div className="animate-shimmer h-5 rounded w-full" />
-            <div className="animate-shimmer h-5 rounded w-5/6" />
-          </div>
-        ))}
-        <p className="font-sans text-ui-sm text-center text-muted mt-6">
-          Loading word data...
-        </p>
-      </article>
-    );
+    return <ReaderContentSkeleton hint="Loading word data..." />;
   }
 
   if (loadError) {
@@ -259,25 +252,29 @@ export function ReaderContent({
         </p>
       ))}
 
-      {/* End-of-text marker */}
-      <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
-        <img
-          src="/illustrations/mountain.svg"
-          width={72}
-          height={72}
-          alt=""
-          className="opacity-60"
-        />
-        <p className="font-serif italic text-content-base text-muted">End</p>
-        {seriesId && (
-          <Link
-            href={`/series/${seriesId}`}
-            className="font-sans text-ui-sm text-primary hover:underline"
-          >
-            Back to series →
-          </Link>
-        )}
-      </div>
+      {/* End-of-series marker — only when there's no next text to read, so it
+          never contradicts the "next text →" link the page renders right
+          below this. A standalone (non-series) text always qualifies. */}
+      {!hasNextText && (
+        <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
+          <img
+            src="/illustrations/mountain.svg"
+            width={72}
+            height={72}
+            alt=""
+            className="opacity-60"
+          />
+          <p className="font-serif italic text-content-base text-muted">End</p>
+          {seriesId && (
+            <Link
+              href={`/series/${seriesId}`}
+              className="font-sans text-ui-sm text-primary hover:underline"
+            >
+              Back to series →
+            </Link>
+          )}
+        </div>
+      )}
     </article>
   );
 }

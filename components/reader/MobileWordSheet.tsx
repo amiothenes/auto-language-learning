@@ -6,8 +6,10 @@ import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
+import { posMatches } from '@/lib/utils/pos';
 
 const PEEK_HEIGHT = 264;
 
@@ -120,6 +122,13 @@ export function MobileWordSheet({
 
   if (!wordData) return null;
 
+  // Well-Known and Ignored words skip the "Know this word?" gate entirely — re-quizzing
+  // an already-mastered or deliberately-ignored word on session reload serves no one.
+  const effectiveFirstTest =
+    isFirstTest &&
+    wordData.status !== VocabularyStatus.WELL_KNOWN &&
+    wordData.status !== VocabularyStatus.IGNORE;
+
   const dismiss = () => {
     setDismissing(true);
     dismissTimerRef.current = setTimeout(onClose, 280);
@@ -135,7 +144,7 @@ export function MobileWordSheet({
     }
     onGraded?.(wordData.lemma);
 
-    if (isFirstTest && newStatus !== VocabularyStatus.IGNORE) {
+    if (effectiveFirstTest && newStatus !== VocabularyStatus.IGNORE) {
       setTranslationRevealed(true);
       setJustGraded(true);
       if (newStatus === VocabularyStatus.WELL_KNOWN) {
@@ -168,9 +177,28 @@ export function MobileWordSheet({
   const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wordData.lemma)}`;
   const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(cleanSurface)}`;
 
-  const showTranslation = !isFirstTest || translationRevealed;
+  const showTranslation = !effectiveFirstTest || translationRevealed;
   const isIgnored = wordData.status === VocabularyStatus.IGNORE;
-  const showTestPrompt = isFirstTest && !isIgnored && !translationRevealed;
+  const showTestPrompt = effectiveFirstTest && !isIgnored && !translationRevealed;
+
+  // Anki-style flip: tapping the prompt reveals the translation without grading,
+  // so the user can check recall before picking a grade.
+  const handleReveal = () => {
+    if (showTestPrompt) setTranslationRevealed(true);
+  };
+
+  // Best-guess sense for this occurrence — see WordTooltip for the desktop equivalent.
+  const meaningsCount = wordData.meanings?.length ?? 0;
+  const matchedMeaning = wordData.meanings?.find((m) => posMatches(wordData.pos, m.pos));
+  const meaningsBadgeLabel = matchedMeaning
+    ? matchedMeaning.definitions.slice(0, 2).join(', ') + (meaningsCount > 1 ? ` +${meaningsCount - 1}` : '')
+    : `${meaningsCount} meanings`;
+  const meaningsBadgeClassName = cn(
+    'font-sans text-[9.5px] rounded-sm px-1.5 py-0.5 mt-1.5 inline-block cursor-pointer transition-colors',
+    matchedMeaning
+      ? 'font-semibold text-ink bg-primary/10 border border-primary/30 hover:bg-primary/15'
+      : 'text-muted/60 bg-desk border border-border hover:text-primary'
+  );
 
   const sheetStyle: React.CSSProperties = {
     height: expanded ? 'calc(90dvh)' : `${PEEK_HEIGHT}px`,
@@ -266,16 +294,20 @@ export function MobileWordSheet({
                       <span className="not-italic text-muted/40 text-xl">No translation</span>
                     )}
                   </p>
-                  {wordData.meanings && wordData.meanings.length > 1 && (
-                    <span className="font-sans text-[9.5px] text-muted/60 bg-desk border border-border rounded-sm px-1.5 py-0.5 mt-1.5 inline-block">
-                      {wordData.meanings.length} meanings
-                    </span>
+                  {meaningsCount > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(true)}
+                      className={meaningsBadgeClassName}
+                    >
+                      {meaningsBadgeLabel}
+                    </button>
                   )}
                 </div>
               ) : !editingTranslation ? (
                 <button
-                  disabled={isFirstTest}
-                  onClick={() => { if (!isFirstTest) setEditingTranslation(true); }}
+                  disabled={effectiveFirstTest}
+                  onClick={() => { if (!effectiveFirstTest) setEditingTranslation(true); }}
                   className="w-full text-left group cursor-pointer disabled:cursor-not-allowed"
                 >
                   <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
@@ -283,7 +315,7 @@ export function MobileWordSheet({
                       <span className="not-italic font-sans font-normal text-muted/50">Add translation…</span>
                     )}
                   </p>
-                  {!isFirstTest && (
+                  {!effectiveFirstTest && (
                     <span className="font-sans text-[10px] text-muted/60 group-hover:text-primary transition-colors">
                       tap to edit
                     </span>
@@ -309,11 +341,16 @@ export function MobileWordSheet({
             </div>
           )}
 
-          {/* ④ "Know this word?" prompt — test mode only */}
+          {/* ④ "Know this word?" prompt — test mode only. Tap reveals the
+              translation without grading, Anki-style, before picking a grade. */}
           {showTestPrompt && (
-            <p className="font-sans text-[11px] text-muted text-center mb-2 tracking-wide">
-              Know this word?
-            </p>
+            <button
+              type="button"
+              onClick={handleReveal}
+              className="w-full font-sans text-[11px] text-muted text-center mb-2 tracking-wide cursor-pointer active:text-ink transition-colors"
+            >
+              Know this word? <span className="text-muted/60">(tap to reveal)</span>
+            </button>
           )}
 
           {/* ⑤ Grading buttons — hidden immediately after first-test grade */}
@@ -327,8 +364,9 @@ export function MobileWordSheet({
             </div>
           )}
 
-          {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only */}
-          {showTestPrompt && (
+          {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only. Stays available
+              after a reveal-without-grading — reveal only skips the quiz gate, not grading. */}
+          {effectiveFirstTest && !isIgnored && !justGraded && (
             <div className="flex justify-center mt-3 mb-2">
               <button
                 onClick={() => handleGrade(VocabularyStatus.IGNORE)}
@@ -367,14 +405,13 @@ export function MobileWordSheet({
                           isActive ? 'border-2 font-semibold' : 'border',
                         )}
                       >
-                        {status === VocabularyStatus.WELL_KNOWN ? (
-                          <span className="w-2 h-2 rounded-full shrink-0 border border-ink/70" />
-                        ) : (
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ background: color }}
-                          />
-                        )}
+                        <span
+                          className={cn(
+                            'w-2 h-2 rounded-full shrink-0',
+                            status === VocabularyStatus.WELL_KNOWN && 'border border-ink/40'
+                          )}
+                          style={{ background: color }}
+                        />
                         {label}
                       </button>
                     );
@@ -389,16 +426,26 @@ export function MobileWordSheet({
                     All meanings
                   </p>
                   <div className="space-y-2">
-                    {wordData.meanings.map((m, i) => (
-                      <div key={i} className="flex gap-2 items-start">
-                        <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5">
-                          {m.pos}
-                        </span>
-                        <span className="font-sans text-sm text-ink/80 leading-snug">
-                          {m.definitions.slice(0, 3).join(', ')}
-                        </span>
-                      </div>
-                    ))}
+                    {wordData.meanings.map((m, i) => {
+                      const isMatch = posMatches(wordData.pos, m.pos);
+                      return (
+                        <div key={i} className="flex gap-2 items-start">
+                          <span
+                            className={cn(
+                              'font-sans text-[9.5px] rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5',
+                              isMatch
+                                ? 'text-ink font-semibold bg-primary/10 border border-primary/30'
+                                : 'text-muted bg-desk border border-border'
+                            )}
+                          >
+                            {m.pos}
+                          </span>
+                          <span className={cn('font-sans text-sm leading-snug', isMatch ? 'text-ink font-semibold' : 'text-ink/80')}>
+                            {m.definitions.slice(0, 3).join(', ')}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                   {wordData.exampleSentence && (
                     <div className="mt-3 pl-2 border-l-2 border-border">
@@ -435,24 +482,13 @@ export function MobileWordSheet({
                 <p className="font-sans text-ui-xs text-muted uppercase tracking-[0.06em] mb-2.5">
                   Frequency & History
                 </p>
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <StatCard label="Dict. Freq" value={`${wordData.dictionaryFrequency}/100`} />
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <StatCard label="Encounters" value={`${wordData.userFrequency}×`} />
                   <StatCard label="First seen" value={wordData.firstSeen ?? '—'} />
                 </div>
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <span className="font-sans text-ui-xs text-muted">Dictionary Frequency</span>
-                    <span className="font-sans text-ui-xs text-ink font-medium">
-                      {wordData.dictionaryFrequency}/100
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-border rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-300"
-                      style={{ width: `${wordData.dictionaryFrequency}%` }}
-                    />
-                  </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-sans text-ui-xs text-muted">Dictionary Frequency</span>
+                  <FrequencyBadge score={wordData.dictionaryFrequency} percentile={wordData.frequencyPercentile} />
                 </div>
               </section>
 

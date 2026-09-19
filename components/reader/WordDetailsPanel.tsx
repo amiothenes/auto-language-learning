@@ -7,13 +7,14 @@ import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
 import { Muted } from '@/components/ui/Typography';
 import { Input } from '@/components/ui/Input';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { StatusDots } from './StatusDots';
 import { AdaptiveStepper } from './AdaptiveStepper';
 import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
+import { posMatches } from '@/lib/utils/pos';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -194,16 +195,26 @@ export function WordDetailsPanel({
               <div className="border-t border-border pt-4">
                 <Muted className="text-ui-xs mb-2.5">All meanings of &ldquo;{wordData.lemma}&rdquo;</Muted>
                 <div className="space-y-2">
-                  {wordData.meanings.map((m, i) => (
-                    <div key={i} className="flex gap-2 items-start">
-                      <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5">
-                        {m.pos}
-                      </span>
-                      <span className="font-sans text-sm text-ink/80 leading-snug">
-                        {m.definitions.slice(0, 3).join(', ')}
-                      </span>
-                    </div>
-                  ))}
+                  {wordData.meanings.map((m, i) => {
+                    const isMatch = posMatches(wordData.pos, m.pos);
+                    return (
+                      <div key={i} className="flex gap-2 items-start">
+                        <span
+                          className={cn(
+                            'font-sans text-[9.5px] rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5',
+                            isMatch
+                              ? 'text-ink font-semibold bg-primary/10 border border-primary/30'
+                              : 'text-muted bg-desk border border-border'
+                          )}
+                        >
+                          {m.pos}
+                        </span>
+                        <span className={cn('font-sans text-sm leading-snug', isMatch ? 'text-ink font-semibold' : 'text-ink/80')}>
+                          {m.definitions.slice(0, 3).join(', ')}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {wordData.exampleSentence && (
@@ -223,14 +234,9 @@ export function WordDetailsPanel({
 
             {/* Frequencies */}
             <div className="border-t border-border pt-4 space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <Muted className="text-ui-xs">Dictionary Frequency</Muted>
-                  <span className="font-sans text-ui-sm text-ink font-medium">
-                    {wordData.dictionaryFrequency}/100
-                  </span>
-                </div>
-                <ProgressBar value={wordData.dictionaryFrequency} max={100} />
+              <div className="flex justify-between items-center">
+                <Muted className="text-ui-xs">Dictionary Frequency</Muted>
+                <FrequencyBadge score={wordData.dictionaryFrequency} percentile={wordData.frequencyPercentile} size="md" />
               </div>
               <div className="flex justify-between items-center">
                 <Muted className="text-ui-xs">Your Encounters</Muted>

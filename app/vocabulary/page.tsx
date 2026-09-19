@@ -7,8 +7,10 @@ import { Heading, Muted } from '@/components/ui/Typography';
 import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
+import { STATUS_PROGRESSION } from '@/lib/vocabulary/statusProgression';
 import { VocabFilterBar, SortOption } from '@/components/vocabulary/VocabFilterBar';
 import { VocabDistribution } from '@/components/vocabulary/VocabDistribution';
+import { VocabDistributionSkeleton } from '@/components/vocabulary/VocabDistributionSkeleton';
 import { VocabTable } from '@/components/vocabulary/VocabTable';
 import { VocabCardList } from '@/components/vocabulary/VocabCard';
 import { VocabCardSkeleton } from '@/components/vocabulary/VocabCardSkeleton';
@@ -20,7 +22,7 @@ import { ImportVocabularyModal } from '@/components/vocabulary/ImportVocabularyM
 import { EditVocabularyModal } from '@/components/vocabulary/EditVocabularyModal';
 import { Toast, useToast } from '@/components/ui/Toast';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ChevronLeft, ChevronRight, Library, Plus, Upload, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Library, Plus, Upload, Download, Eraser } from 'lucide-react';
 import type { NewVocabularyData, ImportedVocabularyData, MergeStrategy } from '@/lib/types/forms';
 import type { VocabularyResponse } from '@/lib/hooks/useVocabulary';
 import { useVocabulary } from '@/lib/hooks/useVocabulary';
@@ -48,6 +50,7 @@ export default function VocabularyPage() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isMultiSelectActive, setIsMultiSelectActive] = useState(false);
+  const [isSelectingAllMatching, setIsSelectingAllMatching] = useState(false);
 
   // Modal state
   const [isAddVocabModalOpen, setIsAddVocabModalOpen] = useState(false);
@@ -59,6 +62,7 @@ export default function VocabularyPage() {
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<VocabularyItem | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showCleanupConfirm, setShowCleanupConfirm] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,12 +78,31 @@ export default function VocabularyPage() {
     page: currentPage,
     limit: itemsPerPage,
   });
-  const { data: stats } = useStats();
+  const { data: stats, isLoading: isStatsLoading } = useStats();
 
   const isLoading = vocabularyQuery.isLoading;
   const words = vocabularyQuery.data?.words ?? [];
   const total = vocabularyQuery.data?.total ?? 0;
   const totalPages = vocabularyQuery.data?.totalPages ?? 1;
+
+  // Whether the current page's items are fully selected — drives the
+  // table/card header checkbox. "Select all matching" (everything across
+  // all pages that matches the active filters) lives in the BulkActionsBar
+  // snackbar instead, shown whenever the selection could still grow.
+  const allOnPageSelected = words.length > 0 && words.every((item) => selectedIds.has(item.id));
+  const canSelectAllMatching = selectedIds.size < total;
+
+  // Whether stepping the current selection up/down would change anything —
+  // only words on the ladder (excludes IGNORE) and not already at an end.
+  const selectedItems = words.filter((item) => selectedIds.has(item.id));
+  const canStepUp = selectedItems.some(
+    (item) => (STATUS_PROGRESSION as readonly VocabularyStatus[]).includes(item.status) &&
+      item.status !== VocabularyStatus.WELL_KNOWN
+  );
+  const canStepDown = selectedItems.some(
+    (item) => (STATUS_PROGRESSION as readonly VocabularyStatus[]).includes(item.status) &&
+      item.status !== VocabularyStatus.UNKNOWN
+  );
 
   // Status counts from the stats API (total per-status, language-wide)
   const statusCounts: Record<VocabularyStatus, number> = {
@@ -101,19 +124,33 @@ export default function VocabularyPage() {
     setCurrentPage(1);
   }, [debouncedSearchQuery, activeStatuses, sortBy]);
 
-  // Bulk update mutation (mark as known, etc.)
+  // Bulk update mutation — set an exact status, or step everyone up/down one level.
+  // Chunked at the API's own 500-ids-per-request cap since "select all matching"
+  // can select far more than one page's worth of words.
+  const BULK_UPDATE_CHUNK_SIZE = 500;
   const bulkUpdateMutation = useMutation({
-    mutationFn: async ({ wordIds, status }: { wordIds: string[]; status: VocabularyStatus }) => {
-      const res = await fetch('/api/vocabulary/bulk-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wordIds, status }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw Object.assign(new Error(body.error || 'Failed to update words'), { status: res.status });
+    mutationFn: async (
+      payload:
+        | { wordIds: string[]; status: VocabularyStatus }
+        | { wordIds: string[]; direction: 'up' | 'down' }
+    ) => {
+      const { wordIds, ...rest } = payload;
+      let updated = 0;
+      for (let i = 0; i < wordIds.length; i += BULK_UPDATE_CHUNK_SIZE) {
+        const chunk = wordIds.slice(i, i + BULK_UPDATE_CHUNK_SIZE);
+        const res = await fetch('/api/vocabulary/bulk-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wordIds: chunk, ...rest }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw Object.assign(new Error(body.error || 'Failed to update words'), { status: res.status });
+        }
+        const data = (await res.json()) as { updated: number };
+        updated += data.updated;
       }
-      return res.json() as Promise<{ updated: number }>;
+      return { updated };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
@@ -171,6 +208,32 @@ export default function VocabularyPage() {
     },
   });
 
+  // Cleanup mutation — permanently deletes UNKNOWN words with no text instances
+  const cleanupOrphanedMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/vocabulary/cleanup-orphaned', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ languageCode: selectedLanguage }),
+      });
+      if (!res.ok) throw new Error('Failed to clean up vocabulary');
+      return res.json() as Promise<{ deleted: number }>;
+    },
+    onSuccess: ({ deleted }) => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      setShowCleanupConfirm(false);
+      showToast(
+        deleted === 0
+          ? 'No orphaned words to clean up'
+          : `Removed ${deleted} orphaned word${deleted === 1 ? '' : 's'}`
+      );
+    },
+    onError: () => {
+      showToast('Failed to clean up vocabulary', 'error');
+    },
+  });
+
   // Selection handlers
   const handleToggleSelection = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -184,7 +247,7 @@ export default function VocabularyPage() {
   };
 
   const handleToggleAll = () => {
-    if (selectedIds.size === words.length) {
+    if (allOnPageSelected) {
       setSelectedIds(new Set());
       setIsMultiSelectActive(false);
     } else {
@@ -195,6 +258,29 @@ export default function VocabularyPage() {
 
   const handleEnableMultiSelect = () => setIsMultiSelectActive(true);
   const handleClearSelection = () => setSelectedIds(new Set());
+
+  // Expands the current page's selection to every word matching the active
+  // filters, via the lightweight ids-only endpoint (no joins, no pagination —
+  // just the ids) rather than paging through the full word list.
+  const handleSelectAllMatching = async () => {
+    setIsSelectingAllMatching(true);
+    try {
+      const params = new URLSearchParams({ languageCode: selectedLanguage });
+      if (debouncedSearchQuery) params.set('search', debouncedSearchQuery);
+      if (activeStatusList) params.set('status', activeStatusList.join(','));
+
+      const res = await fetch(`/api/vocabulary/ids?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch vocabulary');
+      const data = (await res.json()) as { ids: string[] };
+
+      setSelectedIds(new Set(data.ids));
+      setIsMultiSelectActive(true);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to select all vocabulary', 'error');
+    } finally {
+      setIsSelectingAllMatching(false);
+    }
+  };
 
   // Status filter handlers
   const handleStatusToggle = (status: VocabularyStatus) => {
@@ -208,16 +294,25 @@ export default function VocabularyPage() {
   };
 
   // Bulk action handlers
-  const handleMarkAsKnown = () => {
+  const handleSetStatus = (status: VocabularyStatus) => {
     bulkUpdateMutation.mutate({
       wordIds: Array.from(selectedIds),
-      status: VocabularyStatus.KNOWN,
+      status,
     });
   };
 
-  const handleAddTag = () => {
-    showToast('Tag editing coming soon');
-    setSelectedIds(new Set());
+  const handleStepUp = () => {
+    bulkUpdateMutation.mutate({
+      wordIds: Array.from(selectedIds),
+      direction: 'up',
+    });
+  };
+
+  const handleStepDown = () => {
+    bulkUpdateMutation.mutate({
+      wordIds: Array.from(selectedIds),
+      direction: 'down',
+    });
   };
 
   const handleDelete = () => setShowBulkDeleteConfirm(true);
@@ -230,6 +325,10 @@ export default function VocabularyPage() {
     if (deleteTarget) {
       deleteMutation.mutate(deleteTarget.id);
     }
+  };
+
+  const handleConfirmCleanup = () => {
+    cleanupOrphanedMutation.mutate();
   };
 
   const handleEdit = (item: VocabularyItem) => setEditTarget(item);
@@ -403,7 +502,7 @@ export default function VocabularyPage() {
     <div className="min-h-screen p-4 md:p-8 pb-20 md:pb-8">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Page Header */}
-        <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <header className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div className="space-y-2">
             <Heading size="2xl" as="h1">
               Vocabulary
@@ -411,38 +510,104 @@ export default function VocabularyPage() {
             <Muted>Manage your learned words and track your progress</Muted>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              size="lg"
-              leftIcon={<Download size={18} strokeWidth={1.5} />}
-              onClick={handleExportTsv}
-              disabled={isExporting || total === 0}
-            >
-              {isExporting ? 'Exporting...' : 'Export'}
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              leftIcon={<Upload size={18} strokeWidth={1.5} />}
-              onClick={() => setIsImportVocabModalOpen(true)}
-            >
-              Import
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              leftIcon={<Plus size={18} strokeWidth={2} />}
-              onClick={() => setIsAddVocabModalOpen(true)}
-            >
-              Add Vocabulary
-            </Button>
+          {/* Action Buttons — icon-only on mobile, labeled from sm up, wraps rather than overflowing.
+              Responsive visibility lives on the wrapping span, not Button's className: Button already
+              renders its own `inline-flex` base class, and cn() here is a plain join with no
+              tailwind-merge dedup, so a conflicting display class passed as className would collide
+              with that base class instead of overriding it. */}
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <span className="sm:hidden">
+              <Button
+                variant="secondary"
+                size="md"
+                iconOnly
+                ariaLabel="Clean up orphaned words"
+                leftIcon={<Eraser size={18} strokeWidth={1.5} />}
+                onClick={() => setShowCleanupConfirm(true)}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="secondary"
+                size="md"
+                leftIcon={<Eraser size={18} strokeWidth={1.5} />}
+                onClick={() => setShowCleanupConfirm(true)}
+              >
+                Clean Up
+              </Button>
+            </span>
+
+            <span className="sm:hidden">
+              <Button
+                variant="secondary"
+                size="md"
+                iconOnly
+                ariaLabel={isExporting ? 'Exporting' : 'Export vocabulary'}
+                leftIcon={<Download size={18} strokeWidth={1.5} />}
+                onClick={handleExportTsv}
+                disabled={isExporting || total === 0}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="secondary"
+                size="md"
+                leftIcon={<Download size={18} strokeWidth={1.5} />}
+                onClick={handleExportTsv}
+                disabled={isExporting || total === 0}
+              >
+                {isExporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </span>
+
+            <span className="sm:hidden">
+              <Button
+                variant="secondary"
+                size="md"
+                iconOnly
+                ariaLabel="Import vocabulary"
+                leftIcon={<Upload size={18} strokeWidth={1.5} />}
+                onClick={() => setIsImportVocabModalOpen(true)}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="secondary"
+                size="md"
+                leftIcon={<Upload size={18} strokeWidth={1.5} />}
+                onClick={() => setIsImportVocabModalOpen(true)}
+              >
+                Import
+              </Button>
+            </span>
+
+            <span className="sm:hidden">
+              <Button
+                variant="primary"
+                size="md"
+                iconOnly
+                ariaLabel="Add vocabulary"
+                leftIcon={<Plus size={18} strokeWidth={2} />}
+                onClick={() => setIsAddVocabModalOpen(true)}
+              />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Plus size={18} strokeWidth={2} />}
+                onClick={() => setIsAddVocabModalOpen(true)}
+              >
+                Add Vocabulary
+              </Button>
+            </span>
           </div>
         </header>
 
         {/* Vocabulary Distribution + Reading Coverage */}
-        {stats && (
+        {isStatsLoading ? (
+          <VocabDistributionSkeleton />
+        ) : stats && (
           <VocabDistribution
             unknown={stats.vocabulary.unknown}
             newlySeen={stats.vocabulary.newlySeen}
@@ -502,23 +667,23 @@ export default function VocabularyPage() {
                 <table className="w-full">
                   <thead className="bg-desk border-b border-border">
                     <tr>
-                      <th className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Lemma</span>
+                      <th className="w-9 md:w-11 px-2 md:px-3 py-2 md:py-2.5"></th>
+                      <th className="px-2 md:px-3 py-2 md:py-2.5 text-left">
+                        <span className="font-sans font-semibold text-ui-sm text-ink">Lemma</span>
                       </th>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Status</span>
+                      <th className="px-2 md:px-3 py-2 md:py-2.5 text-left">
+                        <span className="font-sans font-semibold text-ui-sm text-ink">Status</span>
                       </th>
-                      <th className="px-2 md:px-3 py-2 md:py-3 text-left">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Rarity</span>
+                      <th className="px-2 md:px-3 py-2 md:py-2.5 text-left">
+                        <span className="font-sans font-semibold text-ui-sm text-ink">Rarity</span>
                       </th>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Translation</span>
+                      <th className="px-2 md:px-3 py-2 md:py-2.5 text-left hidden lg:table-cell">
+                        <span className="font-sans font-semibold text-ui-sm text-ink">Translation</span>
                       </th>
-                      <th className="px-2 md:px-4 py-2 md:py-3 text-left hidden lg:table-cell">
-                        <span className="font-sans font-semibold text-ui-sm md:text-ui-base text-ink">Seen in</span>
+                      <th className="px-2 md:px-3 py-2 md:py-2.5 text-left hidden lg:table-cell">
+                        <span className="font-sans font-semibold text-ui-sm text-ink">Seen in</span>
                       </th>
-                      <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
+                      <th className="w-9 md:w-11 px-2 md:px-3 py-2 md:py-2.5"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -621,8 +786,15 @@ export default function VocabularyPage() {
         {/* Bulk Actions Bar */}
         <BulkActionsBar
           selectedCount={selectedIds.size}
-          onMarkAsKnown={handleMarkAsKnown}
-          onAddTag={handleAddTag}
+          totalCount={total}
+          canSelectAllMatching={canSelectAllMatching}
+          isSelectingAllMatching={isSelectingAllMatching}
+          onSelectAllMatching={handleSelectAllMatching}
+          onSetStatus={handleSetStatus}
+          onStepUp={handleStepUp}
+          onStepDown={handleStepDown}
+          canStepUp={canStepUp}
+          canStepDown={canStepDown}
           onDelete={handleDelete}
           onClearSelection={handleClearSelection}
         />
@@ -634,7 +806,7 @@ export default function VocabularyPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmSingleDelete}
         title="Delete Word"
-        message={`Are you sure you want to delete "${deleteTarget?.lemma}" from your vocabulary? This action cannot be undone.`}
+        message={`This will reset "${deleteTarget?.lemma}" to unreviewed. It stays in your vocabulary and any texts it appears in.`}
         confirmLabel="Delete"
         variant="danger"
       />
@@ -645,8 +817,19 @@ export default function VocabularyPage() {
         onClose={() => setShowBulkDeleteConfirm(false)}
         onConfirm={handleConfirmBulkDelete}
         title="Delete Selected Words"
-        message={`Are you sure you want to delete ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} from your vocabulary? This action cannot be undone.`}
+        message={`This will reset ${selectedIds.size} selected word${selectedIds.size === 1 ? '' : 's'} to unreviewed. They stay in your vocabulary and any texts they appear in.`}
         confirmLabel="Delete All"
+        variant="danger"
+      />
+
+      {/* Cleanup orphaned words confirmation */}
+      <ConfirmDialog
+        isOpen={showCleanupConfirm}
+        onClose={() => setShowCleanupConfirm(false)}
+        onConfirm={handleConfirmCleanup}
+        title="Clean Up Orphaned Words"
+        message="This permanently deletes unreviewed words that don't appear in any text, such as leftover typos or import mistakes. Words you're tracking from a text are never touched. This cannot be undone."
+        confirmLabel="Clean Up"
         variant="danger"
       />
 

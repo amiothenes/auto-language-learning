@@ -271,7 +271,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                 </p>
                 {changedParaCount !== null && totalParaCount !== null && (
                   <p className="font-sans text-ui-xs text-muted mt-2">
-                    {changedParaCount} of {totalParaCount} paragraph{totalParaCount !== 1 ? 's' : ''} changed
+                    Re-scanning {changedParaCount} of {totalParaCount} paragraph{totalParaCount !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>

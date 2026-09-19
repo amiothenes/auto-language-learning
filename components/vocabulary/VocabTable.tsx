@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
-import { Content, Muted } from '@/components/ui/Typography';
+import { Muted } from '@/components/ui/Typography';
+import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
+import { cn } from '@/lib/utils';
 
 // Re-export for backward compatibility
 export type { VocabularyItem };
@@ -31,13 +34,6 @@ const STATUS_CONFIG = {
   [VocabularyStatus.WELL_KNOWN]: { label: 'Well Known', bgColor: 'hsla(145,60%,40%,.15)', textColor: 'hsl(145,60%,22%)' },
   [VocabularyStatus.IGNORE]:     { label: 'Ignored',    bgColor: 'hsla(0,0%,50%,.12)',    textColor: '#6E6D6A' },
 };
-
-function rarityLabel(freq: number): string {
-  if (freq >= 75) return 'Very common';
-  if (freq >= 50) return 'Common';
-  if (freq >= 25) return 'Uncommon';
-  return 'Rare';
-}
 
 // ============================================================================
 // Status Badge Component
@@ -78,14 +74,30 @@ function TableRow({
 }) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Menu is portaled to document.body (see below) so it isn't clipped by the
+  // table's own scroll wrapper / rounded-card overflow-hidden — position it
+  // from the trigger button's own rect once it opens.
+  const MENU_WIDTH = 160;
+  useLayoutEffect(() => {
+    if (!isMenuOpen) return;
+    const button = menuButtonRef.current;
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const margin = 8;
+    const left = Math.max(margin, Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH - margin));
+    setMenuPosition({ top: rect.bottom + 4, left });
+  }, [isMenuOpen]);
+
+  // Close dropdown when clicking outside (button or the portaled menu)
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
+      const target = event.target as Node;
+      if (menuButtonRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setIsMenuOpen(false);
     }
 
     if (isMenuOpen) {
@@ -107,74 +119,80 @@ function TableRow({
   return (
     <tr className="border-b border-border hover:bg-desk transition-colors group">
       {/* Checkbox */}
-      <td className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3">
-        <label className="inline-flex items-center justify-center p-2 cursor-pointer">
+      <td className="w-9 md:w-11 px-2 md:px-3 py-1.5 md:py-2">
+        <label className="inline-flex items-center justify-center p-1.5 cursor-pointer">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onToggle}
-            className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+            className="w-[18px] h-[18px] rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
             aria-label={`Select ${item.lemma}`}
           />
         </label>
       </td>
 
       {/* Lemma */}
-      <td className="px-2 md:px-4 py-2 md:py-3">
-        <Content size="base" weight="semibold" className="line-clamp-1 text-ui-sm md:text-content-base">
+      <td className="px-2 md:px-3 py-1.5 md:py-2">
+        <p className="font-serif text-ink font-semibold leading-normal line-clamp-1 text-ui-base md:text-base">
           {item.lemma}
-        </Content>
+        </p>
       </td>
 
       {/* Status */}
-      <td className="px-2 md:px-4 py-2 md:py-3">
+      <td className="px-2 md:px-3 py-1.5 md:py-2">
         <StatusBadge status={item.status} />
       </td>
 
-      {/* Rarity */}
-      <td className="px-2 md:px-3 py-2 md:py-3" title={String(item.dictionaryFrequency)}>
-        <Muted size="xs" className="font-sans text-ui-xs">
-          {rarityLabel(item.dictionaryFrequency)}
-        </Muted>
+      {/* Frequency tier */}
+      <td className="px-2 md:px-3 py-1.5 md:py-2">
+        <FrequencyBadge score={item.dictionaryFrequency} percentile={item.frequencyPercentile} />
       </td>
 
       {/* Translation */}
-      <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
-        <Content size="base" className="text-ink opacity-80 line-clamp-1">
+      <td className="px-2 md:px-3 py-1.5 md:py-2 hidden lg:table-cell">
+        <p className="font-serif text-ink opacity-80 leading-normal line-clamp-1 text-base">
           {item.translation}
-        </Content>
+        </p>
       </td>
 
       {/* Seen In */}
-      <td className="px-2 md:px-4 py-2 md:py-3 hidden lg:table-cell">
+      <td className="px-2 md:px-3 py-1.5 md:py-2 hidden lg:table-cell">
         {item.textCount > 0 ? (
           <button
             onClick={() => router.push(`/vocabulary/${item.id}/contexts`)}
-            className="font-sans text-ui-xs font-semibold text-primary hover:underline cursor-pointer"
+            className="font-sans text-ui-sm font-semibold text-primary hover:underline cursor-pointer"
           >
             {item.textCount} text{item.textCount !== 1 ? 's' : ''} →
           </button>
         ) : (
-          <Muted size="xs">—</Muted>
+          <Muted size="sm">—</Muted>
         )}
       </td>
 
       {/* Actions */}
-      <td className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3">
-        <div ref={menuRef} className="relative">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsMenuOpen(!isMenuOpen);
-            }}
-            className="p-1 md:p-1.5 rounded hover:bg-paper transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-            aria-label="Options"
-          >
-            <MoreVertical size={16} className="text-ink md:w-[18px] md:h-[18px]" strokeWidth={2} />
-          </button>
+      <td className="w-9 md:w-11 px-2 md:px-3 py-1.5 md:py-2">
+        <button
+          ref={menuButtonRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen(!isMenuOpen);
+          }}
+          className="p-1 md:p-1.5 rounded hover:bg-paper transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+          aria-label="Options"
+        >
+          <MoreVertical size={16} className="text-ink md:w-[18px] md:h-[18px]" strokeWidth={2} />
+        </button>
 
-          {isMenuOpen && (
-            <div className="absolute top-full right-0 mt-1 w-40 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-10">
+        {isMenuOpen &&
+          createPortal(
+            <div
+              ref={menuRef}
+              className={cn(
+                'fixed w-40 bg-paper border border-border rounded-card shadow-modal overflow-hidden z-50',
+                menuPosition === null && 'opacity-0'
+              )}
+              style={menuPosition ? { top: menuPosition.top, left: menuPosition.left } : { top: 0, left: 0 }}
+            >
               <button
                 onClick={(e) => handleMenuAction(e, 'edit')}
                 className="w-full px-4 py-2.5 text-left font-sans text-ui-sm text-ink hover:bg-desk transition-colors flex items-center gap-2 cursor-pointer"
@@ -189,9 +207,9 @@ function TableRow({
                 <Trash2 size={14} className="text-muted" strokeWidth={1.5} />
                 Delete
               </button>
-            </div>
+            </div>,
+            document.body
           )}
-        </div>
       </td>
     </tr>
   );
@@ -219,8 +237,8 @@ export function VocabTable({
           {/* Table Header */}
           <thead className="bg-desk border-b border-border sticky top-0">
             <tr>
-              <th className="w-10 md:w-12 px-2 md:px-4 py-2 md:py-3">
-                <label className="inline-flex items-center justify-center p-2 cursor-pointer">
+              <th className="w-9 md:w-11 px-2 md:px-3 py-2 md:py-2.5">
+                <label className="inline-flex items-center justify-center p-1.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -228,27 +246,27 @@ export function VocabTable({
                       if (el) el.indeterminate = someSelected;
                     }}
                     onChange={onToggleAll}
-                    className="w-5 h-5 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                    className="w-[18px] h-[18px] rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
                     aria-label="Select all"
                   />
                 </label>
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink">
                 Lemma
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink">
                 Status
               </th>
-              <th className="px-2 md:px-3 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink">
-                Rarity
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink">
+                Frequency
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink hidden lg:table-cell">
                 Translation
               </th>
-              <th className="px-2 md:px-4 py-2 md:py-3 text-left font-sans text-ui-xs md:text-ui-sm font-semibold text-ink hidden lg:table-cell">
+              <th className="px-2 md:px-3 py-2 md:py-2.5 text-left font-sans text-ui-sm font-semibold text-ink hidden lg:table-cell">
                 Seen in
               </th>
-              <th className="w-8 md:w-12 px-2 md:px-4 py-2 md:py-3"></th>
+              <th className="w-9 md:w-11 px-2 md:px-3 py-2 md:py-2.5"></th>
             </tr>
           </thead>
 
