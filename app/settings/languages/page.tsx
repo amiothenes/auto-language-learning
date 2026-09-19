@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Select, SelectOption } from '@/components/settings/Select';
@@ -45,27 +45,19 @@ export default function LanguagesSettingsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Per-language settings drafts — populated from DB data
-  const [settingsDraft, setSettingsDraft] = useState<Record<string, LanguageSettingsDraft>>({});
+  // Only the fields the user has changed, per language. The form values shown
+  // are derived during render (DB row + these edits) instead of being copied
+  // into state from an effect, so there's no second render after languages load.
+  const [draftEdits, setDraftEdits] = useState<Record<string, Partial<LanguageSettingsDraft>>>({});
 
-  // Populate drafts from DB when languages load (only for unseen languages)
-  useEffect(() => {
-    setSettingsDraft((prev) => {
-      const next = { ...prev };
-      for (const lang of languages) {
-        if (!next[lang.id]) {
-          next[lang.id] = {
-            dictURI: lang.dictURI ?? '',
-            googleTTSCode: lang.googleTTSCode ?? '',
-            isRTL: lang.isRTL,
-            includeForeignScript: lang.includeForeignScript,
-            translationTarget: resolveTranslationTarget(lang) ?? NO_TRANSLATION,
-          };
-        }
-      }
-      return next;
-    });
-  }, [languages]);
+  const getDraft = (lang: LanguageItem): LanguageSettingsDraft => ({
+    dictURI: lang.dictURI ?? '',
+    googleTTSCode: lang.googleTTSCode ?? '',
+    isRTL: lang.isRTL,
+    includeForeignScript: lang.includeForeignScript,
+    translationTarget: resolveTranslationTarget(lang) ?? NO_TRANSLATION,
+    ...draftEdits[lang.id],
+  });
 
   const languageOptions: SelectOption[] = languages.map((lang) => ({
     value: lang.id,
@@ -110,8 +102,9 @@ export default function LanguagesSettingsPage() {
   };
 
   const handleSaveSettings = (languageId: string) => {
-    const draft = settingsDraft[languageId];
-    if (!draft) return;
+    const language = languages.find((l) => l.id === languageId);
+    if (!language) return;
+    const draft = getDraft(language);
     const { translationTarget, ...rest } = draft;
     updateLanguage.mutate(
       {
@@ -126,7 +119,7 @@ export default function LanguagesSettingsPage() {
   };
 
   const patchDraft = (languageId: string, patch: Partial<LanguageSettingsDraft>) => {
-    setSettingsDraft((prev) => ({
+    setDraftEdits((prev) => ({
       ...prev,
       [languageId]: { ...prev[languageId], ...patch },
     }));
@@ -170,7 +163,7 @@ export default function LanguagesSettingsPage() {
           {languages.map((language) => {
             const isExpanded = expandedLanguageId === language.id;
             const isActive = language.id === activeLanguageId;
-            const draft = settingsDraft[language.id];
+            const draft = getDraft(language);
             const isOnlyLanguage = languages.length === 1;
 
             return (
@@ -251,7 +244,7 @@ export default function LanguagesSettingsPage() {
                           <input
                             type="text"
                             placeholder="https://dictionary.example.com/{word}"
-                            value={draft?.dictURI ?? ''}
+                            value={draft.dictURI}
                             onChange={(e) => patchDraft(language.id, { dictURI: e.target.value })}
                             className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                           />
@@ -268,7 +261,7 @@ export default function LanguagesSettingsPage() {
                           <input
                             type="text"
                             placeholder="es-ES"
-                            value={draft?.googleTTSCode ?? ''}
+                            value={draft.googleTTSCode}
                             onChange={(e) => patchDraft(language.id, { googleTTSCode: e.target.value })}
                             className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
                           />
@@ -288,7 +281,7 @@ export default function LanguagesSettingsPage() {
                                 label: t.name,
                               })),
                             ]}
-                            value={draft?.translationTarget ?? NO_TRANSLATION}
+                            value={draft.translationTarget}
                             onChange={(value) => patchDraft(language.id, { translationTarget: value })}
                           />
                           <p className="font-sans text-ui-xs text-muted mt-1">
@@ -299,7 +292,7 @@ export default function LanguagesSettingsPage() {
                         {/* RTL Toggle */}
                         <div className="md:col-span-2">
                           <Toggle
-                            checked={draft?.isRTL ?? language.isRTL}
+                            checked={draft.isRTL}
                             onChange={(checked) => patchDraft(language.id, { isRTL: checked })}
                             label="Right-to-Left (RTL)"
                             description="Enable for Arabic, Hebrew, Farsi…"
@@ -309,7 +302,7 @@ export default function LanguagesSettingsPage() {
                         {/* Foreign Script Toggle */}
                         <div className="md:col-span-2">
                           <Toggle
-                            checked={draft?.includeForeignScript ?? language.includeForeignScript}
+                            checked={draft.includeForeignScript}
                             onChange={(checked) => patchDraft(language.id, { includeForeignScript: checked })}
                             label="Include foreign-script words in parsing"
                             description="When off, words in other scripts (e.g. Latin in Russian) are skipped at import time."
