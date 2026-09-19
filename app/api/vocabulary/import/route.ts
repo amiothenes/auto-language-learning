@@ -10,6 +10,7 @@ import { checkQuota, quotaResponse } from '@/lib/quotas';
 import { logAudit } from '@/lib/audit';
 import { lookupDictionaryFrequency } from '@/lib/utils/wordFrequency';
 import { processTranslationsForWords } from '@/lib/translation/translationService';
+import { resolveTranslationTarget } from '@/lib/languages/presets';
 
 // ============================================================================
 // POST /api/vocabulary/import — Bulk import vocabulary from the Vocabulary
@@ -18,6 +19,11 @@ import { processTranslationsForWords } from '@/lib/translation/translationServic
 // files — both arrive here already normalized into ImportedVocabularyData[],
 // so this route doesn't need to know which shape the source file was.
 // ============================================================================
+
+// The after() translation job counts toward this limit. Even at 300s a large
+// import can't translate everything; the job stops at its own time budget and
+// the Reader retries the remainder when a text is opened.
+export const maxDuration = 300;
 
 const BATCH_SIZE = 500;
 const MAX_ITEMS = 10000;
@@ -258,8 +264,8 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (wordIdsNeedingTranslation.length > 0 && language.defaultTranslationLangCode) {
-    const targetLangCode = language.defaultTranslationLangCode;
+  const targetLangCode = resolveTranslationTarget(language);
+  if (wordIdsNeedingTranslation.length > 0 && targetLangCode) {
     // Fire-and-forget, same convention as the text-import route: runs after
     // the response is sent so a large import isn't held up waiting on Azure.
     after(async () => {

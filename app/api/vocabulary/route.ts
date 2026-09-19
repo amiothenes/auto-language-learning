@@ -7,6 +7,7 @@ import type { VocabularyItem } from '@/lib/types/vocabulary';
 import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { resolveTranslationTarget } from '@/lib/languages/presets';
 import { lookupFrequencyPercentile } from '@/lib/utils/wordFrequency';
 import { buildVocabularyWhereClause } from '@/lib/vocabulary/vocabularyFilter';
 
@@ -133,7 +134,8 @@ export async function GET(request: NextRequest) {
     // the legacy words.translation column — same precedence as the Reader's
     // /api/texts/[id]/word-instances route.
     const wordTranslationMap = new Map<string, WordTranslation>();
-    if (language.defaultTranslationLangCode && rows.length > 0) {
+    const targetLangCode = resolveTranslationTarget(language);
+    if (targetLangCode && rows.length > 0) {
       const wordIds = rows.map((r) => r.id);
       const translations = await db
         .select()
@@ -141,7 +143,7 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             inArray(wordTranslations.wordId, wordIds),
-            eq(wordTranslations.targetLangCode, language.defaultTranslationLangCode)
+            eq(wordTranslations.targetLangCode, targetLangCode)
           )
         );
       for (const t of translations) {

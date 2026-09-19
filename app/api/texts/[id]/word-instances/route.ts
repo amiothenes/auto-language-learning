@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
+import { processTranslationsForText, claimTranslationRetry } from '@/lib/translation/translationService';
 import { db } from '@/lib/db';
 import { texts, languages, wordInstances, wordTranslations } from '@/lib/db/schema';
 import { eq, asc, and, inArray } from 'drizzle-orm';
@@ -6,11 +7,15 @@ import type { WordInstanceItem, WordInstancesResponse, ApiErrorResponse } from '
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { WordTranslation } from '@/lib/db/schema/wordTranslations';
 import { requireUser } from '@/lib/auth/requireUser';
+import { resolveTranslationTarget } from '@/lib/languages/presets';
 import { lookupFrequencyPercentile } from '@/lib/utils/wordFrequency';
 
 // ============================================================================
 // GET /api/texts/[id]/word-instances — Word instances for reader highlighting
 // ============================================================================
+
+// The retry job queued via after() below counts toward this limit.
+export const maxDuration = 300;
 
 export async function GET(
   _request: NextRequest,
@@ -50,7 +55,7 @@ export async function GET(
       where: eq(languages.id, text.languageId),
       columns: { code: true, defaultTranslationLangCode: true },
     });
-    const targetLangCode = language?.defaultTranslationLangCode ?? null;
+    const targetLangCode = language ? resolveTranslationTarget(language) : null;
     const sourceLangCode = language?.code ?? null;
 
     // 3. Fetch all word instances with their lemma data
@@ -76,6 +81,20 @@ export async function GET(
         );
       for (const t of translations) {
         wordTranslationMap.set(t.wordId, t);
+      }
+
+      // Some words have no row at all: the import-time job was cut off (time
+      // budget / timeout) or Azure failed transiently. Words Azure definitively
+      // couldn't translate have a placeholder row, so they aren't in this set
+      // and aren't retried. Queue a background pass after the response is sent.
+      if (wordTranslationMap.size < wordIds.length && claimTranslationRetry(id)) {
+        after(async () => {
+          try {
+            await processTranslationsForText(id);
+          } catch (err) {
+            console.error(`[Word Instances] Translation retry failed for text ${id}:`, err);
+          }
+        });
       }
     }
 

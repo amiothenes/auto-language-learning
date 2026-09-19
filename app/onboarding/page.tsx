@@ -35,7 +35,8 @@ export default function OnboardingPage() {
           isRTL: lang.rtl,
           googleTTSCode: lang.ttsCode,
           includeForeignScript: lang.includeForeignScript,
-          defaultTranslationLangCode: 'en',
+          // defaultTranslationLangCode omitted on purpose: the API applies the
+          // per-language default (and gives English none, since en→en is pointless).
         }),
       });
 

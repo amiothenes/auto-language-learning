@@ -89,11 +89,12 @@ export async function PATCH(
       return NextResponse.json<ApiErrorResponse>({ error: 'Request body must be valid JSON' }, { status: 400 });
     }
 
-    const { dictURI, googleTTSCode, isRTL, includeForeignScript } = body as {
+    const { dictURI, googleTTSCode, isRTL, includeForeignScript, defaultTranslationLangCode } = body as {
       dictURI?: string | null;
       googleTTSCode?: string | null;
       isRTL?: boolean;
       includeForeignScript?: boolean;
+      defaultTranslationLangCode?: string | null;
     };
 
     const updates: Partial<typeof languages.$inferInsert> = { updatedAt: new Date() };
@@ -101,6 +102,17 @@ export async function PATCH(
     if (googleTTSCode !== undefined) updates.googleTTSCode = googleTTSCode?.trim() || null;
     if (isRTL !== undefined) updates.isRTL = isRTL;
     if (includeForeignScript !== undefined) updates.includeForeignScript = includeForeignScript;
+    if (defaultTranslationLangCode !== undefined) {
+      // null / empty string = translation disabled for this language.
+      const target = defaultTranslationLangCode?.trim().toLowerCase() || null;
+      if (target !== null && !/^[a-z]{2,3}$/.test(target)) {
+        return NextResponse.json<ApiErrorResponse>(
+          { error: 'defaultTranslationLangCode must be a 2-3 letter language code' },
+          { status: 400 }
+        );
+      }
+      updates.defaultTranslationLangCode = target;
+    }
 
     const [row] = await db
       .update(languages)
@@ -120,6 +132,7 @@ export async function PATCH(
       dictURI: row.dictURI ?? null,
       googleTTSCode: row.googleTTSCode ?? null,
       includeForeignScript: row.includeForeignScript,
+      defaultTranslationLangCode: row.defaultTranslationLangCode ?? null,
     };
 
     return NextResponse.json<UpdateLanguageResponse>({ language });

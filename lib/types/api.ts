@@ -94,6 +94,7 @@ export interface LanguageItem {
   dictURI: string | null;
   googleTTSCode: string | null;
   includeForeignScript: boolean;
+  defaultTranslationLangCode: string | null;
 }
 
 export interface LanguagesListResponse {
@@ -118,6 +119,7 @@ export interface UpdateLanguageRequest {
   googleTTSCode?: string | null;
   isRTL?: boolean;
   includeForeignScript?: boolean;
+  defaultTranslationLangCode?: string | null;
 }
 
 export interface UpdateLanguageResponse {

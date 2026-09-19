@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats } from '@/lib/db/schema';
+import { resolveTranslationTarget } from '@/lib/languages/presets';
 import { eq, and, lte, inArray, isNull, notInArray, asc, count, sql } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { STATUS_PROGRESSION, stepStatusDown, stepStatusUp } from '@/lib/vocabulary/statusProgression';
@@ -174,11 +175,11 @@ async function buildSentenceForWord(
 async function buildCardForWord(wordId: string, userId: string, typeSwitchStatus: VocabularyStatus): Promise<SrsCard | null> {
   const word = await db.query.words.findFirst({
     where: and(eq(words.id, wordId), eq(words.userId, userId)),
-    with: { language: { columns: { defaultTranslationLangCode: true } } },
+    with: { language: { columns: { code: true, defaultTranslationLangCode: true } } },
   });
   if (!word) return null;
 
-  const targetLangCode = word.language?.defaultTranslationLangCode ?? null;
+  const targetLangCode = word.language ? resolveTranslationTarget(word.language) : null;
   const translationRow = targetLangCode
     ? await db.query.wordTranslations.findFirst({
         where: and(eq(wordTranslations.wordId, wordId), eq(wordTranslations.targetLangCode, targetLangCode)),

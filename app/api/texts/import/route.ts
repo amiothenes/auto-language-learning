@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from 'next/server';
-import { processTranslationsForText } from '@/lib/translation/translationService';
+import { processTranslationsForText, TRANSLATION_TIME_BUDGET_MS } from '@/lib/translation/translationService';
 import { db } from '@/lib/db';
 import {
   languages,
@@ -23,6 +23,11 @@ import { requireUser } from '@/lib/auth/requireUser';
 import { ownedBy } from '@/lib/db/scope';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rateLimit';
 import { checkQuota, quotaResponse } from '@/lib/quotas';
+
+// The after() translation job below counts toward this limit, not just the
+// request itself. Raised from the platform default so a large text has time to
+// finish translating; the job also enforces its own time budget.
+export const maxDuration = 300;
 
 // ============================================================================
 // POST /api/texts/import - Import text with NLP processing
@@ -308,9 +313,11 @@ export async function POST(request: NextRequest) {
 
     // Trigger auto-translation after response is sent — does not block the client
     after(async () => {
+      // One shared deadline for all chunks, not one per chunk.
+      const deadline = Date.now() + TRANSLATION_TIME_BUDGET_MS;
       for (const id of textIds) {
         try {
-          await processTranslationsForText(id);
+          await processTranslationsForText(id, deadline);
         } catch (err) {
           console.error(`[Text Import] Translation job failed for text ${id}:`, err);
         }

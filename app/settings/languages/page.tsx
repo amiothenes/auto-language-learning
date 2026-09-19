@@ -14,6 +14,7 @@ import { useCreateLanguage } from '@/lib/hooks/useCreateLanguage';
 import { useDeleteLanguage } from '@/lib/hooks/useDeleteLanguage';
 import { useUpdateLanguage } from '@/lib/hooks/useUpdateLanguage';
 import { useAutoSaveToast } from '@/components/ui/AutoSaveToast';
+import { resolveTranslationTarget, TRANSLATION_TARGETS } from '@/lib/languages/presets';
 import type { LanguageItem } from '@/lib/types/api';
 
 interface LanguageSettingsDraft {
@@ -21,7 +22,13 @@ interface LanguageSettingsDraft {
   googleTTSCode: string;
   isRTL: boolean;
   includeForeignScript: boolean;
+  /** Language code to translate into, or NO_TRANSLATION when auto-translation is off. */
+  translationTarget: string;
 }
+
+// Select values must be strings, so "translation off" needs a sentinel that is
+// mapped back to null before it reaches the API.
+const NO_TRANSLATION = 'none';
 
 export default function LanguagesSettingsPage() {
   const { languages, selectedLanguage, setSelectedLanguage } = useLanguage();
@@ -52,6 +59,7 @@ export default function LanguagesSettingsPage() {
             googleTTSCode: lang.googleTTSCode ?? '',
             isRTL: lang.isRTL,
             includeForeignScript: lang.includeForeignScript,
+            translationTarget: resolveTranslationTarget(lang) ?? NO_TRANSLATION,
           };
         }
       }
@@ -104,8 +112,15 @@ export default function LanguagesSettingsPage() {
   const handleSaveSettings = (languageId: string) => {
     const draft = settingsDraft[languageId];
     if (!draft) return;
+    const { translationTarget, ...rest } = draft;
     updateLanguage.mutate(
-      { id: languageId, ...draft, dictURI: draft.dictURI || null, googleTTSCode: draft.googleTTSCode || null },
+      {
+        id: languageId,
+        ...rest,
+        dictURI: draft.dictURI || null,
+        googleTTSCode: draft.googleTTSCode || null,
+        defaultTranslationLangCode: translationTarget === NO_TRANSLATION ? null : translationTarget,
+      },
       { onSuccess: () => showSaved() }
     );
   };
@@ -259,6 +274,25 @@ export default function LanguagesSettingsPage() {
                           />
                           <p className="font-sans text-ui-xs text-muted mt-1">
                             e.g., es-ES, fr-FR, zh-CN
+                          </p>
+                        </div>
+
+                        {/* Translation target */}
+                        <div className="md:col-span-2">
+                          <Select
+                            label="Translate words to"
+                            options={[
+                              { value: NO_TRANSLATION, label: 'None (auto-translation off)' },
+                              ...TRANSLATION_TARGETS.filter((t) => t.code !== language.code).map((t) => ({
+                                value: t.code,
+                                label: t.name,
+                              })),
+                            ]}
+                            value={draft?.translationTarget ?? NO_TRANSLATION}
+                            onChange={(value) => patchDraft(language.id, { translationTarget: value })}
+                          />
+                          <p className="font-sans text-ui-xs text-muted mt-1">
+                            Word translations are fetched automatically into this language. Only English is available for now.
                           </p>
                         </div>
 

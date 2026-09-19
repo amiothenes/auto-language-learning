@@ -6,6 +6,7 @@ import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
 import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
 import { requireUser } from '@/lib/auth/requireUser';
+import { resolveTranslationTarget } from '@/lib/languages/presets';
 
 // ============================================================================
 // PATCH /api/words/[id] — Update word status and/or translation
@@ -58,9 +59,9 @@ export async function PATCH(
     if (translation !== undefined) {
       const language = await db.query.languages.findFirst({
         where: eq(languages.id, updated.languageId),
-        columns: { defaultTranslationLangCode: true },
+        columns: { code: true, defaultTranslationLangCode: true },
       });
-      const targetLangCode = language?.defaultTranslationLangCode;
+      const targetLangCode = language ? resolveTranslationTarget(language) : null;
       if (targetLangCode) {
         await db
           .insert(wordTranslations)

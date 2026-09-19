@@ -4,6 +4,7 @@ import { languages } from '@/lib/db/schema';
 import { asc, eq } from 'drizzle-orm';
 import type { LanguageItem, LanguagesListResponse, CreateLanguageResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
+import { defaultTranslationTargetFor } from '@/lib/languages/presets';
 
 // ============================================================================
 // GET /api/languages — List all available languages
@@ -27,6 +28,7 @@ export async function GET() {
       dictURI: lang.dictURI ?? null,
       googleTTSCode: lang.googleTTSCode ?? null,
       includeForeignScript: lang.includeForeignScript,
+      defaultTranslationLangCode: lang.defaultTranslationLangCode ?? null,
     }));
 
     return NextResponse.json<LanguagesListResponse>({ languages: result });
@@ -73,17 +75,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiErrorResponse>({ error: 'code is required' }, { status: 400 });
     }
 
+    const normalizedCode = code.trim().toLowerCase();
+
     const [row] = await db
       .insert(languages)
       .values({
         name: name.trim(),
-        code: code.trim().toLowerCase(),
+        code: normalizedCode,
         userId: user.id,
         isRTL: isRTL ?? false,
         dictURI: dictURI?.trim() || null,
         googleTTSCode: googleTTSCode?.trim() || null,
         includeForeignScript: includeForeignScript ?? false,
-        defaultTranslationLangCode: defaultTranslationLangCode?.trim() || null,
+        // Fall back to the per-language default so a client that omits the field
+        // (e.g. Settings → Add Language) can't create a language that silently
+        // skips auto-translation.
+        defaultTranslationLangCode:
+          defaultTranslationLangCode?.trim().toLowerCase() || defaultTranslationTargetFor(normalizedCode),
       })
       .returning();
 
@@ -95,6 +103,7 @@ export async function POST(request: NextRequest) {
       dictURI: row.dictURI ?? null,
       googleTTSCode: row.googleTTSCode ?? null,
       includeForeignScript: row.includeForeignScript,
+      defaultTranslationLangCode: row.defaultTranslationLangCode ?? null,
     };
 
     return NextResponse.json<CreateLanguageResponse>({ language }, { status: 201 });
