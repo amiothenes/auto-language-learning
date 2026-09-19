@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const rows = items
+  const parsedRows = items
     .map((item) => {
       const lemma = item.lemma?.trim().toLowerCase();
       if (!lemma) return null;
@@ -110,6 +110,19 @@ export async function POST(request: NextRequest) {
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  // Collapse duplicate lemmas (after trim + lowercase, so "Агент" and "агент"
+  // count as one). Postgres rejects an INSERT ... ON CONFLICT DO UPDATE that
+  // proposes the same conflict key twice in one statement (error 21000), so
+  // duplicates must be gone before batching. 'skip' keeps the first
+  // occurrence (matches its "existing wins" meaning); 'update'/'replace'
+  // keep the last (later rows in the file override earlier ones).
+  const dedupedByLemma = new Map<string, (typeof parsedRows)[number]>();
+  for (const row of parsedRows) {
+    if (mergeStrategy === 'skip' && dedupedByLemma.has(row.lemma)) continue;
+    dedupedByLemma.set(row.lemma, row);
+  }
+  const rows = Array.from(dedupedByLemma.values());
 
   if (rows.length === 0) {
     return NextResponse.json<ApiErrorResponse>(
@@ -148,8 +161,8 @@ export async function POST(request: NextRequest) {
         imported += inserted.length;
       } else {
         // 'update', and 'replace' (table already cleared above, so this is
-        // effectively a plain insert — upsert here just tolerates duplicate
-        // lemmas within the same import file).
+        // effectively a plain insert — rows are already deduped by lemma
+        // above, which the upsert requires to avoid error 21000).
         await tx
           .insert(words)
           .values(values)
