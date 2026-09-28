@@ -176,6 +176,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   const handleWordClick = (wordData: WordData, anchorRect: DOMRect) => {
     setSelectedWord(wordData);
+    tutorMode.syncReadingPosition(wordData.id);
 
     if (shouldShowTooltip) {
       if (tooltipWord?.id === wordData.id && !isTooltipExiting) {

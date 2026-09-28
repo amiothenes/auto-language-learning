@@ -7,6 +7,7 @@ import { Content, Muted } from '@/components/ui/Typography';
 import { Card } from '@/components/ui/Card';
 import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
+import { formatTranslationList } from '@/lib/utils/wordData';
 
 // ============================================================================
 // Status Badge Configuration
@@ -245,7 +246,7 @@ export function VocabCard({
 
           {/* Translation */}
           <Content size="sm" className="text-ink opacity-75 mb-1.5 md:mb-1 line-clamp-1 leading-snug">
-            {item.translation}
+            {formatTranslationList(item.translation, item.meanings)}
           </Content>
 
           {/* Bottom Row: Frequencies + Tags */}

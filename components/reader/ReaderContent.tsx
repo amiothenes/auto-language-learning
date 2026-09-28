@@ -167,13 +167,19 @@ export function ReaderContent({
     large: 'text-content-lg',
   }[settings.fontSize];
 
+  const contentWidthClass = {
+    narrow: 'max-w-140',
+    normal: 'max-w-180',
+    wide: 'max-w-220',
+  }[settings.contentWidth];
+
   if (isLoading) {
     return <ReaderContentSkeleton hint="Loading word data..." />;
   }
 
   if (loadError) {
     return (
-      <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
+      <article translate="no" className={cn('w-full space-y-6 transition-all duration-200', contentWidthClass, fontSizeClass)}>
         <div className="p-4 bg-paper rounded-lg border border-border">
           <p className="font-sans text-ui-sm text-ink font-medium mb-2">Failed to load word data</p>
           <p className="font-sans text-ui-xs text-muted">{loadError}</p>
@@ -186,7 +192,7 @@ export function ReaderContent({
   }
 
   return (
-    <article translate="no" className={cn('w-full max-w-180 space-y-6 transition-all duration-200', fontSizeClass)}>
+    <article translate="no" className={cn('w-full space-y-6 transition-all duration-200', contentWidthClass, fontSizeClass)}>
       {parsedContent.map((paragraph, paraIndex) => (
         <p
           key={paragraph.id}

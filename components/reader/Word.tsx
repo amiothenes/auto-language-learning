@@ -38,10 +38,14 @@ export function Word({
   const isUnderline = settings.highlightMode === 'underline';
 
   const getStatusColor = (status: VocabularyStatus, isHover: boolean): string | undefined => {
-    const baseOpacity = isHover ? 0.25 : (isSelected ? 0.2 : 0.15);
+    // Underline mode needs a much stronger opacity than the background wash —
+    // a thin decoration line at background-wash opacity is nearly invisible.
+    const baseOpacity = isUnderline
+      ? (isHover ? 0.85 : (isSelected ? 0.7 : 0.55))
+      : (isHover ? 0.25 : (isSelected ? 0.2 : 0.15));
     // Apply highlight intensity (0-100 -> 0.0-1.0 multiplier)
     const opacity = baseOpacity * (highlightIntensity / 100);
-    
+
     switch (status) {
       case VocabularyStatus.UNKNOWN:
         return `hsl(var(--color-status-unknown) / ${opacity})`;
@@ -96,7 +100,7 @@ export function Word({
         // Hover state / underline mode
         !isWellKnown && !isIgnored && (
           isUnderline
-            ? "underline decoration-2 underline-offset-2"
+            ? "underline decoration-[3px] underline-offset-2"
             : "hover:underline decoration-1 underline-offset-2"
         ),
         // Ignore styling - dashed underline only
@@ -108,15 +112,21 @@ export function Word({
       )}
       style={{
         backgroundColor: isUnderline ? undefined : getStatusColor(data.status, false),
-        textDecorationColor: isUnderline ? getStatusColor(data.status, true) : undefined,
+        textDecorationColor: isUnderline ? getStatusColor(data.status, false) : undefined,
       }}
       onMouseEnter={(e) => {
-        if (!isWellKnown && !isIgnored && !isUnderline) {
+        if (isWellKnown || isIgnored) return;
+        if (isUnderline) {
+          e.currentTarget.style.textDecorationColor = getStatusColor(data.status, true) || '';
+        } else {
           e.currentTarget.style.backgroundColor = getStatusColor(data.status, true) || '';
         }
       }}
       onMouseLeave={(e) => {
-        if (!isWellKnown && !isIgnored && !isUnderline) {
+        if (isWellKnown || isIgnored) return;
+        if (isUnderline) {
+          e.currentTarget.style.textDecorationColor = getStatusColor(data.status, false) || '';
+        } else {
           e.currentTarget.style.backgroundColor = getStatusColor(data.status, false) || '';
         }
       }}

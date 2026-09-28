@@ -15,6 +15,29 @@ export function formatInflection(inflectionData: Record<string, unknown>): strin
   return parts.length > 0 ? parts.join(', ') : 'base form';
 }
 
+/** Comma-joins every distinct definition across a word's meanings (capped, to
+ * keep compact list rows readable), falling back to the single pre-picked
+ * `translation` when no `meanings` are available yet. */
+export function formatTranslationList(
+  translation: string,
+  meanings: { definitions: string[] }[] | null | undefined,
+  maxDefinitions = 5
+): string {
+  if (!meanings || meanings.length === 0) return translation;
+  const seen = new Set<string>();
+  const definitions: string[] = [];
+  for (const meaning of meanings) {
+    for (const def of meaning.definitions) {
+      if (seen.has(def)) continue;
+      seen.add(def);
+      definitions.push(def);
+      if (definitions.length >= maxDefinitions) break;
+    }
+    if (definitions.length >= maxDefinitions) break;
+  }
+  return definitions.length > 0 ? definitions.join(', ') : translation;
+}
+
 /** Mirrors ReaderContent.tsx's per-token WordData construction — single
  * source of truth so Tutor Mode can build the same shape to programmatically
  * open the same tooltip/sheet a real tap would, without duplicating this. */

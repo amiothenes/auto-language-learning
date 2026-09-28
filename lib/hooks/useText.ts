@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import type { TextDetailResponse } from '@/lib/types/api';
 
 export function useText(textId: string) {
@@ -11,5 +11,6 @@ export function useText(textId: string) {
       return data.text;
     },
     enabled: !!textId,
+    placeholderData: keepPreviousData,
   });
 }

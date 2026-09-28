@@ -9,6 +9,7 @@ import type { VocabularyItem } from '@/lib/types';
 import { Muted } from '@/components/ui/Typography';
 import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
+import { formatTranslationList } from '@/lib/utils/wordData';
 
 // Re-export for backward compatibility
 export type { VocabularyItem };
@@ -151,7 +152,7 @@ function TableRow({
       {/* Translation */}
       <td className="px-2 md:px-3 py-1.5 md:py-2 hidden lg:table-cell">
         <p className="font-serif text-ink opacity-80 leading-normal line-clamp-1 text-base">
-          {item.translation}
+          {formatTranslationList(item.translation, item.meanings)}
         </p>
       </td>
 

@@ -74,6 +74,7 @@ export function MobileSettingsSheet({ onClose, initialTab = 'reading' }: MobileS
     updateFontSize,
     updateHighlightIntensity,
     updateHighlightMode,
+    updateContentWidth,
     updateShowWellKnownWords,
     updateColorScheme,
   } = useReaderSettings();
@@ -234,6 +235,20 @@ export function MobileSettingsSheet({ onClose, initialTab = 'reading' }: MobileS
               ]}
               value={settings.highlightMode}
               onChange={(v) => updateHighlightMode(v as 'highlight' | 'underline')}
+            />
+          </div>
+
+          {/* Margins */}
+          <div>
+            <p className="font-sans text-ui-xs text-muted mb-2">Margins</p>
+            <SegmentedControl
+              options={[
+                { label: 'Narrow', value: 'narrow' },
+                { label: 'Normal', value: 'normal' },
+                { label: 'Wide', value: 'wide' },
+              ]}
+              value={settings.contentWidth}
+              onChange={(v) => updateContentWidth(v as 'narrow' | 'normal' | 'wide')}
             />
           </div>
 

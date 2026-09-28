@@ -95,7 +95,6 @@ export function AudioSettingsSection() {
     updateTutorModeTiming,
     updateTutorModeThreshold,
     updateTutorModeMaxPerSentence,
-    updateTutorModeMaxInterrupts,
     updateTutorModeResume,
   } = useReaderSettings();
 
@@ -196,22 +195,6 @@ export function AudioSettingsSection() {
             ]}
             value={String(settings.tutorModeMaxPerSentence)}
             onChange={(v) => updateTutorModeMaxPerSentence(Number(v))}
-          />
-        </Row>
-
-        <Row
-          label={`Max per text — ${settings.tutorModeMaxInterrupts}`}
-          hint="After this many checks, narration plays straight through."
-        >
-          <input
-            type="range"
-            min={1}
-            max={30}
-            step={1}
-            value={settings.tutorModeMaxInterrupts}
-            onChange={(e) => updateTutorModeMaxInterrupts(Number(e.target.value))}
-            className="w-full accent-primary h-1.5 rounded-full appearance-none bg-border cursor-pointer"
-            aria-label="Maximum Tutor Mode checks per text"
           />
         </Row>
 

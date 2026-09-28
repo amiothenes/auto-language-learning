@@ -167,6 +167,8 @@ export type VocabularyItem = {
   userFrequency: number;
   /** Translation in user's native language */
   translation: string;
+  /** All possible meanings grouped by POS from auto-translation (lemma-level, not context-specific) */
+  meanings?: { pos: string; definitions: string[]; confidence: number }[] | null;
   /** User-defined tags for categorization */
   tags: string[];
   /** Number of distinct texts this lemma appears in */

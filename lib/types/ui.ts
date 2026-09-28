@@ -68,6 +68,8 @@ export interface ReaderSettings {
   colorScheme: ColorScheme;
   /** Whether status colors appear as background highlight or text underline */
   highlightMode: 'highlight' | 'underline';
+  /** Reading column width / side margins */
+  contentWidth: 'narrow' | 'normal' | 'wide';
   /** Whether immersion mode is active (hides the left sidebar) */
   isImmersionMode: boolean;
   /** TTS playback speed, 0.5-1.25 (default 0.9 — a gentle rate reduction for learners) */
@@ -85,8 +87,6 @@ export interface ReaderSettings {
   tutorModeThreshold: TutorModeThreshold;
   /** Max checks within a single sentence (0 = no per-sentence limit) */
   tutorModeMaxPerSentence: number;
-  /** Max Tutor Mode interrupts per text before it silently degrades to passive autoplay */
-  tutorModeMaxInterrupts: number;
   /** Whether grading resumes playback, or the user dismissing the word does */
   tutorModeResume: TutorModeResume;
 }
@@ -135,6 +135,8 @@ export interface ReaderSettingsContextType {
   updateColorScheme: (scheme: ColorScheme) => void;
   /** Update highlight mode (background highlight vs text underline) */
   updateHighlightMode: (mode: 'highlight' | 'underline') => void;
+  /** Update reading column width / side margins */
+  updateContentWidth: (width: 'narrow' | 'normal' | 'wide') => void;
   /** Toggle immersion mode on/off (hides the left sidebar) */
   toggleImmersionMode: () => void;
   /** Update TTS playback speed (clamped to 0.5-1.25) */
@@ -143,8 +145,6 @@ export interface ReaderSettingsContextType {
   updatePreferredVoice: (languageCode: string, voiceId: string) => void;
   /** Toggle Tutor Mode on/off */
   toggleTutorMode: () => void;
-  /** Update the max Tutor Mode interrupts allowed per text */
-  updateTutorModeMaxInterrupts: (max: number) => void;
   /** Update when a Tutor Mode check fires relative to the sentence audio */
   updateTutorModeTiming: (timing: TutorModeTiming) => void;
   /** Update the highest status that still triggers a check */

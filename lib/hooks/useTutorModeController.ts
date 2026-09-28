@@ -89,21 +89,11 @@ export function useTutorModeController({
   const sentencesRef = useRef(sentences);
   sentencesRef.current = sentences;
 
-  const interruptsUsedRef = useRef(0);
-  const interruptTextIdRef = useRef<string | null>(null);
   const openedWordInstanceIdRef = useRef<string | null>(null);
   const pendingQueueRef = useRef<WordInstanceItem[]>([]);
   const queuePhaseRef = useRef<QueuePhase>(null);
   const currentIndexRef = useRef(-1);
   currentIndexRef.current = currentSentenceIndex;
-
-  // Reset the per-text interrupt budget whenever the text changes.
-  useEffect(() => {
-    if (interruptTextIdRef.current !== textId) {
-      interruptTextIdRef.current = textId;
-      interruptsUsedRef.current = 0;
-    }
-  }, [textId]);
 
   // sentenceId -> that sentence's word instances, position-ordered.
   const sentenceWordsMapRef = useRef<Map<string, WordInstanceItem[]>>(new Map());
@@ -125,16 +115,14 @@ export function useTutorModeController({
 
   /** Words in this sentence worth stopping on, de-duplicated by lemma so a
    * word repeated in one sentence is only ever asked about once. Respects the
-   * status threshold, the per-sentence cap and the remaining per-text budget. */
+   * status threshold and the per-sentence cap. */
   const selectInterruptWords = useCallback(
     (sentenceId: string): WordInstanceItem[] => {
-      const budgetLeft = settings.tutorModeMaxInterrupts - interruptsUsedRef.current;
-      if (!settings.tutorModeEnabled || budgetLeft <= 0) return [];
+      if (!settings.tutorModeEnabled) return [];
 
       const thresholdRank = TUTOR_THRESHOLD_RANK[settings.tutorModeThreshold] ?? 2;
-      const perSentenceCap =
+      const cap =
         settings.tutorModeMaxPerSentence > 0 ? settings.tutorModeMaxPerSentence : Infinity;
-      const cap = Math.min(perSentenceCap, budgetLeft);
 
       const words = sentenceWordsMapRef.current.get(sentenceId) ?? [];
       const picked: WordInstanceItem[] = [];
@@ -156,7 +144,6 @@ export function useTutorModeController({
       settings.tutorModeEnabled,
       settings.tutorModeThreshold,
       settings.tutorModeMaxPerSentence,
-      settings.tutorModeMaxInterrupts,
     ]
   );
 
@@ -167,7 +154,6 @@ export function useTutorModeController({
         `[data-word-instance-id="${inst.instanceId}"]`
       );
       if (!el) return false;
-      interruptsUsedRef.current += 1;
       openedWordInstanceIdRef.current = inst.instanceId;
       setIsAwaitingRecall(true);
       onOpenWord(buildWordDataFromInstance(inst), el.getBoundingClientRect());
@@ -388,6 +374,17 @@ export function useTutorModeController({
     [goToSentence]
   );
 
+  /**
+   * Follows a plain word click: moves the reading/highlight position to that
+   * word if it's in the currently-loaded sentence, but — unlike seekToWord —
+   * never falls back to loading/playing a different sentence. A plain click's
+   * primary job is opening the word's tooltip; it must never have the side
+   * effect of starting playback on its own.
+   */
+  const syncReadingPosition = useCallback((wordInstanceId: string) => {
+    karaokeSession.seekToTarget(wordInstanceId);
+  }, []);
+
   /** Starts narration at a given sentence index — used by "play from here". */
   const playFromSentence = useCallback(
     (index: number) => goToSentence(index),
@@ -428,6 +425,7 @@ export function useTutorModeController({
     nextSentence,
     previousSentence,
     seekToWord,
+    syncReadingPosition,
     playFromSentence,
     handleWordGraded,
     handleWordDismissed,

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import type { WordInstancesResponse } from '@/lib/types/api';
 
 export function useWordInstances(textId: string) {
@@ -11,5 +11,6 @@ export function useWordInstances(textId: string) {
       return data.instances;
     },
     enabled: !!textId,
+    placeholderData: keepPreviousData,
   });
 }

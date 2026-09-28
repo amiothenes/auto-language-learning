@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   showWellKnownWords: true,
   colorScheme: 'light',
   highlightMode: 'highlight',
+  contentWidth: 'normal',
   isImmersionMode: false,
   playbackSpeed: 0.9,
   preferredVoices: {},
@@ -29,7 +30,6 @@ const DEFAULT_SETTINGS: ReaderSettings = {
   tutorModeTiming: 'atWord',
   tutorModeThreshold: 'FAMILIAR',
   tutorModeMaxPerSentence: 2,
-  tutorModeMaxInterrupts: 8,
   tutorModeResume: 'onDismiss',
 };
 
@@ -102,6 +102,10 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, highlightMode: mode }));
   };
 
+  const updateContentWidth = (width: 'narrow' | 'normal' | 'wide') => {
+    setSettings((prev) => ({ ...prev, contentWidth: width }));
+  };
+
   const toggleImmersionMode = () => {
     setSettings((prev) => ({ ...prev, isImmersionMode: !prev.isImmersionMode }));
   };
@@ -119,10 +123,6 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
 
   const toggleTutorMode = () => {
     setSettings((prev) => ({ ...prev, tutorModeEnabled: !prev.tutorModeEnabled }));
-  };
-
-  const updateTutorModeMaxInterrupts = (max: number) => {
-    setSettings((prev) => ({ ...prev, tutorModeMaxInterrupts: Math.max(0, Math.round(max)) }));
   };
 
   const updateTutorModeTiming = (timing: TutorModeTiming) => {
@@ -152,11 +152,11 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     updateShowWellKnownWords,
     updateColorScheme,
     updateHighlightMode,
+    updateContentWidth,
     toggleImmersionMode,
     updatePlaybackSpeed,
     updatePreferredVoice,
     toggleTutorMode,
-    updateTutorModeMaxInterrupts,
     updateTutorModeTiming,
     updateTutorModeThreshold,
     updateTutorModeMaxPerSentence,

@@ -85,6 +85,7 @@ export function ReaderSettingsPanel({
     updateFontSize,
     updateHighlightIntensity,
     updateHighlightMode,
+    updateContentWidth,
     updateShowWellKnownWords,
     updateColorScheme,
   } = useReaderSettings();
@@ -209,6 +210,19 @@ export function ReaderSettingsPanel({
             ]}
             value={settings.highlightMode}
             onChange={(v) => updateHighlightMode(v as 'highlight' | 'underline')}
+          />
+        </Row>
+
+        {/* Margins */}
+        <Row label="Margins">
+          <SegmentedControl
+            options={[
+              { label: 'Narrow', value: 'narrow' },
+              { label: 'Normal', value: 'normal' },
+              { label: 'Wide', value: 'wide' },
+            ]}
+            value={settings.contentWidth}
+            onChange={(v) => updateContentWidth(v as 'narrow' | 'normal' | 'wide')}
           />
         </Row>
 

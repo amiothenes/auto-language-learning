@@ -159,6 +159,7 @@ export async function GET(request: NextRequest) {
       frequencyPercentile: lookupFrequencyPercentile(languageCode, r.dictionaryFrequency),
       userFrequency: r.userFrequency,
       translation: wordTranslationMap.get(r.id)?.translation ?? r.translation ?? '',
+      meanings: wordTranslationMap.get(r.id)?.meanings ?? null,
       tags: [],
       textCount: textCountMap[r.id] ?? 0,
     }));
