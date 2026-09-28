@@ -14,3 +14,13 @@ export function calculateCompletionPercentage(statuses: VocabularyStatus[]): num
   const seen = gradable.filter((s) => s !== VocabularyStatus.UNKNOWN);
   return (seen.length / gradable.length) * 100;
 }
+
+/**
+ * Rounds a completion % for display, never showing 100 unless it truly is —
+ * plain Math.round would round e.g. 99.6% up to "100%" while unknown words
+ * still remain.
+ */
+export function roundCompletionPercentage(pct: number): number {
+  if (pct >= 100) return 100;
+  return Math.min(99, Math.round(pct));
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { WordData, VocabularyStatus } from './Word';
 import { StatusDots } from './StatusDots';
@@ -22,6 +22,10 @@ interface WordTooltipProps {
   isFirstTest?: boolean;
   onGraded?: (lemma: string) => void;
   isExiting?: boolean;
+  /** Reports whether this word's translation is revealed (or never gated in
+   * the first place) — lets the Reader hold off routing Space to Tutor Mode's
+   * "advance" action until the reveal it's also bound to has happened. */
+  onRevealedChange?: (revealed: boolean) => void;
 }
 
 const STATUS_CONFIG: Record<VocabularyStatus, { label: string }> = {
@@ -43,6 +47,7 @@ export function WordTooltip({
   isFirstTest = false,
   onGraded,
   isExiting = false,
+  onRevealedChange,
 }: WordTooltipProps) {
   const [showFullMorph, setShowFullMorph] = useState(false);
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -75,6 +80,13 @@ export function WordTooltip({
 
   const showTranslation = !effectiveFirstTest || translationRevealed;
   const showTestPrompt = effectiveFirstTest && !translationRevealed;
+
+  // Runs before paint (not useEffect) so a Tutor Mode Space press can never
+  // land between "revealed" becoming true here and the Reader finding out —
+  // that race is what let one Space both reveal and advance past the check.
+  useLayoutEffect(() => {
+    onRevealedChange?.(!showTestPrompt);
+  }, [showTestPrompt, onRevealedChange]);
 
   // Anki-style flip: reveal the translation without grading, so the user can
   // check their recall before picking a grade. Space mirrors Anki's own binding.

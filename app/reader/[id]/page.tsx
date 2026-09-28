@@ -11,7 +11,7 @@ import { WordTooltip } from '@/components/reader/WordTooltip';
 import { TextInfoSkeleton, ReaderContentSkeleton } from '@/components/reader/ReaderSkeleton';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData, TextData } from '@/lib/types';
-import { calculateCompletionPercentage } from '@/lib/utils/textStats';
+import { calculateCompletionPercentage, roundCompletionPercentage } from '@/lib/utils/textStats';
 import type { WordInstanceItem } from '@/lib/types/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { StatusUpdateFeedback } from '@/components/reader/StatusUpdateFeedback';
@@ -104,6 +104,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   // ── UI state ──────────────────────────────────────────────────────────────
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [selectedWord, setSelectedWord] = useState<WordData | null>(null);
+  // Whether the currently-open word module's translation is revealed (or was
+  // never gated) — gates Space during a Tutor Mode check so one press can't
+  // both reveal the translation and advance past the check at once.
+  const [isCheckRevealed, setIsCheckRevealed] = useState(true);
   const [isTextInfoOpen, setIsTextInfoOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
   // Which settings tab to open on. The mini-player's gear deep-links to
@@ -267,8 +271,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
     const oldUnique = uniqueWordCompletion(prevInstances);
     const newUnique = uniqueWordCompletion(nextInstances);
-    const oldTextProgress = Math.round(calculateCompletionPercentage((prevInstances ?? []).map((i) => i.status)));
-    const newTextProgress = Math.round(calculateCompletionPercentage((nextInstances ?? []).map((i) => i.status)));
+    const oldTextProgress = roundCompletionPercentage(calculateCompletionPercentage((prevInstances ?? []).map((i) => i.status)));
+    const newTextProgress = roundCompletionPercentage(calculateCompletionPercentage((nextInstances ?? []).map((i) => i.status)));
     const knownWordsDelta = newUnique.known - oldUnique.known;
 
     // Optimistic update — patch cache so Word components re-render immediately
@@ -313,7 +317,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     onTogglePlayback: tutorMode.playPause,
     isPlaybackActive: tutorMode.playbackState === 'playing' || tutorMode.playbackState === 'paused',
     onStop: tutorMode.stop,
-    suppressPlayback: isWordModuleOpen && !tutorMode.isAwaitingRecall,
+    suppressPlayback: isWordModuleOpen && (!tutorMode.isAwaitingRecall || !isCheckRevealed),
   });
 
   // Opens the settings surface straight on its Audio tab, anchored to the
@@ -391,7 +395,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       if (paraInstances.length === 0) return { id: `p${index + 1}`, progress: 0 };
       return {
         id: `p${index + 1}`,
-        progress: Math.round(
+        progress: roundCompletionPercentage(
           calculateCompletionPercentage(paraInstances.map((inst) => inst.status))
         ),
       };
@@ -498,6 +502,64 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Scroll position persistence — remembers where in a text the reader left
+  // off, as a fraction of total scroll rather than a raw pixel offset, so
+  // "was at the very bottom" survives even if the rendered height differs
+  // slightly between visits (fonts, layout shifts). Restored once per text.
+  const scrollRestoredForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!textData) return;
+    if (scrollRestoredForRef.current === id) return;
+    scrollRestoredForRef.current = id;
+
+    // Double rAF: the first waits for this render's content to paint, the
+    // second for layout (fonts/reflow) to settle, so scrollHeight is final.
+    let raf2: number | null = null;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        const raw = localStorage.getItem(`verbista_reader_scroll_${id}`);
+        const ratio = raw ? parseFloat(raw) : NaN;
+        if (!Number.isFinite(ratio)) return;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (maxScroll <= 0) return;
+        window.scrollTo({ top: ratio * maxScroll });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2 !== null) cancelAnimationFrame(raf2);
+    };
+  }, [textData, id]);
+
+  useEffect(() => {
+    const save = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll <= 0) return;
+      const ratio = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      localStorage.setItem(`verbista_reader_scroll_${id}`, String(ratio));
+    };
+
+    let rafId: number | null = null;
+    const handleScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        save();
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('visibilitychange', save);
+    window.addEventListener('pagehide', save);
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      save();
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('visibilitychange', save);
+      window.removeEventListener('pagehide', save);
+    };
+  }, [id]);
 
   // Swipe-back gesture (mobile)
   useEffect(() => {
@@ -664,6 +726,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
                 tags={textData.tags}
                 wordInstances={wordInstances}
                 sentences={sentencesQuery.data}
+                onTextSaved={tutorMode.stop}
               />
             )
           )}
@@ -841,6 +904,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onClose={handleCloseWordDetails}
           onStatusChange={handleStatusChange}
           isFirstTest={!testedLemmasThisSession.current.has(selectedWord.lemma)}
+          onRevealedChange={setIsCheckRevealed}
           onGraded={(lemma) => {
             testedLemmasThisSession.current.add(lemma);
           }}
@@ -914,6 +978,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             // WordTooltip manages close timing: stays open after first-test grade
           }}
           isFirstTest={!testedLemmasThisSession.current.has(tooltipWord.lemma)}
+          onRevealedChange={setIsCheckRevealed}
           onGraded={(lemma) => {
             testedLemmasThisSession.current.add(lemma);
           }}

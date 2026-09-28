@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { WordInstanceItem, SentenceListItem } from '@/lib/types/api';
 import { buildOneTCards, buildOneTCsv } from '@/lib/utils/oneTSentences';
+import { roundCompletionPercentage } from '@/lib/utils/textStats';
 
 // ============================================================================
 // TextInfo Component
@@ -36,6 +37,9 @@ interface TextInfoProps {
   tags: string[];
   wordInstances: WordInstanceItem[] | undefined;
   sentences: SentenceListItem[] | undefined;
+  /** Called after a text edit is saved and reprocessed — stops narration
+   * before it can keep playing against now-stale sentence/audio data. */
+  onTextSaved?: () => void;
 }
 
 export function TextInfo({
@@ -50,6 +54,7 @@ export function TextInfo({
   tags,
   wordInstances,
   sentences,
+  onTextSaved,
 }: TextInfoProps) {
   const queryClient = useQueryClient();
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -192,7 +197,7 @@ export function TextInfo({
         <div>
           <Muted className="text-ui-xs mb-1">Reading Progress</Muted>
           <Heading size="sm" as="h3" className="text-primary">
-            {Math.round(knownPercentage)}% Complete
+            {roundCompletionPercentage(knownPercentage)}% Complete
           </Heading>
           <ProgressBar 
             value={knownPercentage} 
@@ -303,6 +308,8 @@ export function TextInfo({
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ['text', textId] });
           queryClient.invalidateQueries({ queryKey: ['word-instances', textId] });
+          queryClient.invalidateQueries({ queryKey: ['sentences', textId] });
+          onTextSaved?.();
           setIsEditOpen(false);
         }}
       />

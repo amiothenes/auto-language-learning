@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { X, ExternalLink, Ban, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import type { WordData } from '@/lib/types';
@@ -85,6 +85,10 @@ interface MobileWordSheetProps {
   isFirstTest: boolean;
   /** Called after the user grades a word, so the caller can mark the lemma as tested */
   onGraded?: (lemma: string) => void;
+  /** Reports whether this word's translation is revealed (or never gated in
+   * the first place) — lets the Reader hold off routing Space to Tutor Mode's
+   * "advance" action until the reveal it's also bound to has happened. */
+  onRevealedChange?: (revealed: boolean) => void;
 }
 
 export function MobileWordSheet({
@@ -94,6 +98,7 @@ export function MobileWordSheet({
   onTranslationChange,
   isFirstTest,
   onGraded,
+  onRevealedChange,
 }: MobileWordSheetProps) {
   const [expanded, setExpanded] = useState(false);
   const [translation, setTranslation] = useState('');
@@ -119,6 +124,19 @@ export function MobileWordSheet({
     setJustGraded(false);
     setEditingTranslation(false);
   }, [wordData?.wordId]);
+
+  // Runs before paint (not useEffect) so a Tutor Mode Space press can never
+  // land between "revealed" becoming true here and the Reader finding out —
+  // that race is what let one Space both reveal and advance past the check.
+  const showsTestPromptNow =
+    !!wordData &&
+    isFirstTest &&
+    wordData.status !== VocabularyStatus.WELL_KNOWN &&
+    wordData.status !== VocabularyStatus.IGNORE &&
+    !translationRevealed;
+  useLayoutEffect(() => {
+    onRevealedChange?.(!showsTestPromptNow);
+  }, [showsTestPromptNow, onRevealedChange]);
 
   if (!wordData) return null;
 
