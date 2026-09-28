@@ -20,6 +20,11 @@ export const texts = pgTable(
       .references(() => series.id, { onDelete: 'cascade' }),
     order: integer('order').notNull().default(1),
     lastParagraphIndex: integer('last_paragraph_index').notNull().default(0),
+    // Narration resume point — index into the text's ordered `sentences`
+    // (matches `sentences.order`), and an offset in ms within that sentence's
+    // audio. Null until narration has ever played for this text.
+    lastSentenceIndex: integer('last_sentence_index'),
+    lastAudioPositionMs: integer('last_audio_position_ms'),
 
     audioURI: text('audio_uri'),
     sourceURI: text('source_uri'),

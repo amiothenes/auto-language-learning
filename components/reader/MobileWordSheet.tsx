@@ -412,7 +412,13 @@ export function MobileWordSheet({
                     return (
                       <button
                         key={status}
-                        onClick={() => { if (status !== wordData.status) onStatusChange(wordData.wordId, status); dismiss(); }}
+                        onClick={() => {
+                          if (status !== wordData.status) onStatusChange(wordData.wordId, status);
+                          // Grading from the expanded chip row only collapses
+                          // back to the peek view, mirroring desktop's More
+                          // menu — not a full dismiss.
+                          setExpanded(false);
+                        }}
                         style={{
                           borderColor: isActive ? color : 'var(--border)',
                           background: isActive ? `${color}22` : 'transparent',

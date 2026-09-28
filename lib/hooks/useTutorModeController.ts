@@ -50,6 +50,9 @@ interface UseTutorModeControllerArgs {
    * real tap would, anchored to the word's real on-screen position. */
   onOpenWord: (wordData: WordData, anchorRect: DOMRect) => void;
   textId: string;
+  /** Saved narration resume point (from the text's last session), applied
+   * once on the first-ever play — a later prop update doesn't re-seed it. */
+  initialPosition?: { sentenceIndex: number; audioPositionMs: number } | null;
 }
 
 /**
@@ -73,10 +76,20 @@ export function useTutorModeController({
   testedLemmasThisSession,
   onOpenWord,
   textId,
+  initialPosition,
 }: UseTutorModeControllerArgs) {
   const { settings } = useReaderSettings();
   const player = useSentencePlayer();
   const voiceId = useActiveVoice();
+
+  // Consumed exactly once, on the first-ever play — see playPause below.
+  const resumePositionRef = useRef(initialPosition ?? null);
+  const resumeConsumedRef = useRef(false);
+  useEffect(() => {
+    if (initialPosition && !resumeConsumedRef.current) {
+      resumePositionRef.current = initialPosition;
+    }
+  }, [initialPosition]);
 
   // Bulk-seeds the sentence audio cache for the whole text in one request.
   // Purely a warm-up — nothing here awaits it.
@@ -163,14 +176,14 @@ export function useTutorModeController({
   );
 
   const playSentence = useCallback(
-    (index: number) => {
+    (index: number, seekMs?: number) => {
       const sentence = sentencesRef.current?.[index];
       if (!sentence) return;
 
       const armed =
         settings.tutorModeTiming === 'atWord' ? selectInterruptWords(sentence.id) : [];
 
-      void player.play(sentence.id).then((result) => {
+      void player.play(sentence.id, seekMs).then((result) => {
         if (!result) return;
         // Armed after play() resolves, because that's when the sentence's
         // marks are loaded into the session — interrupts are matched against
@@ -211,7 +224,7 @@ export function useTutorModeController({
   );
 
   const processSentence = useCallback(
-    (index: number) => {
+    (index: number, seekMs?: number) => {
       const sentence = sentencesRef.current?.[index];
       if (!sentence) {
         setIsRunning(false);
@@ -228,11 +241,15 @@ export function useTutorModeController({
           queuePhaseRef.current = 'before';
           // Drain via the shared runner so a missing element skips rather
           // than stalling; it plays the sentence once the queue empties.
+          // A resume offset is dropped in this branch — rare (only the very
+          // first sentence played this session, and only when it also has
+          // 'before'-timing checks queued) — the sentence just plays from
+          // its own start once those checks are done.
           runQueueRef.current?.();
           return;
         }
       }
-      playSentence(index);
+      playSentence(index, seekMs);
     },
     [playSentence, selectInterruptWords, settings.tutorModeTiming]
   );
@@ -341,7 +358,17 @@ export function useTutorModeController({
       return;
     }
     setIsRunning(true);
-    processSentence(currentSentenceIndex >= 0 ? currentSentenceIndex : 0);
+    if (currentSentenceIndex >= 0) {
+      processSentence(currentSentenceIndex);
+      return;
+    }
+    // First-ever play this session — start from the saved resume point, if
+    // any, instead of sentence 0. Consumed once: an explicit stop() followed
+    // by play again starts over at 0, not back at the old saved position.
+    const resume = resumePositionRef.current;
+    resumePositionRef.current = null;
+    resumeConsumedRef.current = true;
+    processSentence(resume?.sentenceIndex ?? 0, resume?.audioPositionMs);
   }, [isAwaitingRecall, advancePastCheck, player, processSentence, currentSentenceIndex]);
 
   /** Jump straight to a sentence, abandoning any check in progress. */

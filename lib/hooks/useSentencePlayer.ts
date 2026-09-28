@@ -26,7 +26,7 @@ export function useSentencePlayer() {
   const isCurrent = (token: number) => token === playTokenRef.current;
 
   const play = useCallback(
-    async (sentenceId: string): Promise<{ durationMs: number } | null> => {
+    async (sentenceId: string, startAtMs?: number): Promise<{ durationMs: number } | null> => {
       const token = ++playTokenRef.current;
 
       setState('loading');
@@ -55,6 +55,9 @@ export function useSentencePlayer() {
         };
         await audio.play();
         if (!isCurrent(token)) return null;
+        // Resume position — applied after play() so it lands once metadata is
+        // definitely loaded, rather than racing a pre-load seek.
+        if (startAtMs) audio.currentTime = startAtMs / 1000;
         // Marks are handed to the session only once playback is actually
         // under way, so a highlight can never appear ahead of the audio.
         karaokeSession.setMarks(data.marks);

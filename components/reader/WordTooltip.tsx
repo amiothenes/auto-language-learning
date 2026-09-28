@@ -385,8 +385,9 @@ export function WordTooltip({
           currentStatus={wordData.status}
           onStatusChange={(newStatus) => {
             onStatusChange(wordData.wordId, newStatus);
+            // Grading from the More menu only closes the menu, back to the
+            // still-open tooltip underneath — not the whole module.
             setMoreMenuAnchorEl(null);
-            onClose(); // MoreMenu is a deliberate precision action — always close after
           }}
           onClose={() => setMoreMenuAnchorEl(null)}
         />

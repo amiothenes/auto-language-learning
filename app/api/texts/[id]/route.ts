@@ -73,6 +73,9 @@ export async function GET(
       knownPercentage: text.knownPercentage,
       tags: text.tags.map((tt) => tt.tag.name),
       content: text.content,
+      lastParagraphIndex: text.lastParagraphIndex,
+      lastSentenceIndex: text.lastSentenceIndex,
+      lastAudioPositionMs: text.lastAudioPositionMs,
     };
 
     return NextResponse.json<TextDetailResponse>({ text: textData });
@@ -181,6 +184,9 @@ export async function PATCH(
       knownPercentage: updated.knownPercentage,
       tags: updated.tags.map((tt) => tt.tag.name),
       content: updated.content,
+      lastParagraphIndex: updated.lastParagraphIndex,
+      lastSentenceIndex: updated.lastSentenceIndex,
+      lastAudioPositionMs: updated.lastAudioPositionMs,
     };
 
     return NextResponse.json<TextDetailResponse>({ text: textData });

@@ -159,6 +159,12 @@ export interface TextData {
   tags: string[];
   /** Full text content (plain text with paragraph breaks) */
   content: string;
+  /** Last paragraph index the reader scrolled/read to */
+  lastParagraphIndex: number;
+  /** Last narration sentence index (into the ordered sentences list), or null if narration never played */
+  lastSentenceIndex: number | null;
+  /** Offset in ms within that sentence's audio, or null if narration never played */
+  lastAudioPositionMs: number | null;
 }
 
 // ============================================================================

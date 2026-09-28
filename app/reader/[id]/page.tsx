@@ -31,6 +31,7 @@ import { MobileWordSheet } from '@/components/reader/MobileWordSheet';
 import { MobileSettingsSheet } from '@/components/reader/MobileSettingsSheet';
 import { useSentences } from '@/lib/hooks/useSentences';
 import { useTutorModeController } from '@/lib/hooks/useTutorModeController';
+import { getSharedAudioElement } from '@/lib/tts/sharedAudioElement';
 import { MiniPlayerDesktop } from '@/components/reader/MiniPlayerDesktop';
 import { MiniPlayerMobile } from '@/components/reader/MiniPlayerMobile';
 import { Toast, useToast } from '@/components/ui/Toast';
@@ -197,6 +198,13 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     setSelectedWord(null);
   };
 
+  // Saved narration resume point from a previous session, if any.
+  const initialPosition = useMemo(() => {
+    const text = textQuery.data;
+    if (!text || text.lastSentenceIndex == null || text.lastAudioPositionMs == null) return null;
+    return { sentenceIndex: text.lastSentenceIndex, audioPositionMs: text.lastAudioPositionMs };
+  }, [textQuery.data]);
+
   // handleWordClick above is defined as a plain (non-memoized) function, so
   // this reference is only resolved when useTutorModeController later CALLS
   // onOpenWord — by which time it's fully initialized. Only the eager
@@ -207,6 +215,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     testedLemmasThisSession,
     onOpenWord: handleWordClick,
     textId: id,
+    initialPosition,
   });
 
   // The mini-player's own icon already turns into a persistent error face
@@ -504,10 +513,25 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Follows narration: whenever the playing paragraph changes, scroll it back
+  // into view if the reader has scrolled away from it — so the reading
+  // viewport never drifts far from where the audio actually is.
+  useEffect(() => {
+    if (playingParagraphIndex < 0) return;
+    const el = paragraphRefs.current[playingParagraphIndex];
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 24;
+    const isInView = rect.top >= margin && rect.bottom <= window.innerHeight - margin;
+    if (isInView) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+  }, [playingParagraphIndex]);
+
   // Scroll position persistence — remembers where in a text the reader left
-  // off, as a fraction of total scroll rather than a raw pixel offset, so
-  // "was at the very bottom" survives even if the rendered height differs
-  // slightly between visits (fonts, layout shifts). Restored once per text.
+  // off. Prefers the backend-synced paragraph position (cross-device,
+  // paragraph-precise) over the localStorage scroll ratio, which remains as
+  // a same-device fallback for texts with no saved position yet. Restored
+  // once per text.
   const scrollRestoredForRef = useRef<string | null>(null);
   useEffect(() => {
     if (!textData) return;
@@ -519,6 +543,12 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     let raf2: number | null = null;
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
+        const savedParagraphEl =
+          textData.lastParagraphIndex > 0 ? paragraphRefs.current[textData.lastParagraphIndex] : null;
+        if (savedParagraphEl) {
+          savedParagraphEl.scrollIntoView({ block: 'start', inline: 'nearest' });
+          return;
+        }
         const raw = localStorage.getItem(`verbista_reader_scroll_${id}`);
         const ratio = raw ? parseFloat(raw) : NaN;
         if (!Number.isFinite(ratio)) return;
@@ -561,6 +591,60 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       window.removeEventListener('pagehide', save);
     };
   }, [id]);
+
+  // First paragraph whose bottom edge hasn't scrolled past the top of the
+  // viewport yet — used as "which paragraph is the reader at" when nothing
+  // is currently narrating (playingParagraphIndex is only meaningful during
+  // playback).
+  const getVisibleParagraphIndex = useCallback((): number => {
+    const refs = paragraphRefs.current;
+    for (let i = 0; i < refs.length; i++) {
+      const rect = refs[i]?.getBoundingClientRect();
+      if (rect && rect.bottom > 0) return i;
+    }
+    return 0;
+  }, []);
+
+  // Backend-synced position — separate from the localStorage scroll ratio
+  // above, this is paragraph + narration position, synced across devices.
+  const savePositionToBackend = useCallback(() => {
+    if (!textData) return;
+    const paragraphIndex = playingParagraphIndex >= 0 ? playingParagraphIndex : getVisibleParagraphIndex();
+    const sentenceIndex = tutorMode.currentSentenceIndex >= 0 ? tutorMode.currentSentenceIndex : null;
+    const audioPositionMs =
+      sentenceIndex !== null ? Math.round(getSharedAudioElement().currentTime * 1000) : null;
+    fetch(`/api/texts/${id}/position`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paragraphIndex, sentenceIndex, audioPositionMs }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [textData, id, playingParagraphIndex, tutorMode.currentSentenceIndex, getVisibleParagraphIndex]);
+
+  // Latest save fn via ref so the listener/interval effects below don't need
+  // to re-subscribe on every sentence/paragraph transition.
+  const savePositionRef = useRef(savePositionToBackend);
+  useEffect(() => {
+    savePositionRef.current = savePositionToBackend;
+  }, [savePositionToBackend]);
+
+  useEffect(() => {
+    const trigger = () => savePositionRef.current();
+    document.addEventListener('visibilitychange', trigger);
+    window.addEventListener('pagehide', trigger);
+    return () => {
+      document.removeEventListener('visibilitychange', trigger);
+      window.removeEventListener('pagehide', trigger);
+    };
+  }, []);
+
+  // Also save periodically while narrating — audio position keeps moving
+  // even when nothing else (scroll, visibility) would otherwise trigger a save.
+  useEffect(() => {
+    if (tutorMode.playbackState !== 'playing') return;
+    const intervalId = setInterval(() => savePositionRef.current(), 10000);
+    return () => clearInterval(intervalId);
+  }, [tutorMode.playbackState]);
 
   // Swipe-back gesture (mobile)
   useEffect(() => {
