@@ -10,6 +10,7 @@ import { useSrsReview } from '@/lib/hooks/useSrsReview';
 import { useSrsSettings } from '@/lib/hooks/useSrsSettings';
 import { useSrsForecast } from '@/lib/hooks/useSrsForecast';
 import { useSrsActivity } from '@/lib/hooks/useSrsActivity';
+import { useUpdateReviewCard } from '@/lib/hooks/useUpdateReviewCard';
 import { prefetchWordAudio } from '@/lib/tts/wordAudioCache';
 import { prefetchSentenceAudio } from '@/lib/tts/sentenceAudioCache';
 import { FlashcardView } from '@/components/review/FlashcardView';
@@ -21,6 +22,7 @@ import { Card } from '@/components/ui/Card';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { Heading, Muted } from '@/components/ui/Typography';
 import type { SrsCard, SrsGrade } from '@/lib/types/api';
+import type { TranslationMeaning } from '@/lib/db/schema/wordTranslations';
 
 const INSIGHTS_STORAGE_KEY = 'verbista_review_insights_open';
 
@@ -35,6 +37,7 @@ export default function ReviewPage() {
   const { data: forecastBuckets } = useSrsForecast(languageId);
   const { data: activityBuckets } = useSrsActivity(languageId);
   const reviewMutation = useSrsReview(languageId);
+  const editCardMutation = useUpdateReviewCard();
 
   // sessionCards is an immutable snapshot of the session as fetched at start
   // (drives the progress bar's segment colors); queue is the shrinking
@@ -109,17 +112,47 @@ export default function ReviewPage() {
     [currentCard, reviewMutation]
   );
 
-  // Keyboard shortcuts: Space reveals the answer, 1/2 grade it once revealed.
+  const handleEditCard = useCallback(
+    (wordId: string, data: { translation: string; meanings: TranslationMeaning[] }) => {
+      editCardMutation.mutate(
+        { wordId, ...data },
+        {
+          onSuccess: () => {
+            // queue/sessionCards are a local snapshot (see comment above), so
+            // the edit is applied directly rather than relying on a refetch.
+            const patch = (cards: SrsCard[]) =>
+              cards.map((c) => (c.wordId === wordId ? { ...c, translation: data.translation, meanings: data.meanings } : c));
+            setQueue(patch);
+            setSessionCards(patch);
+          },
+        }
+      );
+    },
+    [editCardMutation]
+  );
+
+  // Keyboard shortcuts: Space reveals the answer, then grades as "Did Know";
+  // 1/2 grade explicitly once revealed.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (!currentCard || reviewMutation.isPending) return;
-      if (!revealed) {
-        if (e.code === 'Space') {
-          e.preventDefault();
+      // Don't hijack Space/1/2 while the user is typing in the edit form.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (e.code === 'Space') {
+        // Always consumed, even post-reveal, so Space never falls through to
+        // scrolling the page.
+        e.preventDefault();
+        if (!revealed) {
           setRevealed(true);
+        } else {
+          handleGrade('KNEW');
         }
         return;
       }
+      if (!revealed) return;
       if (e.key === '1') {
         e.preventDefault();
         handleGrade('DIDNT_KNOW');
@@ -168,7 +201,7 @@ export default function ReviewPage() {
       </header>
 
       {insightsOpen && (forecastBuckets || activityBuckets) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {forecastBuckets && (
             <Card padding="sm">
               <p className="font-sans text-ui-sm font-medium text-ink mb-2">Upcoming</p>
@@ -202,6 +235,7 @@ export default function ReviewPage() {
           onReveal={() => setRevealed(true)}
           onGrade={handleGrade}
           grading={reviewMutation.isPending}
+          onEdit={handleEditCard}
         />
       )}
 

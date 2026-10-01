@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { words, languages, wordTranslations } from '@/lib/db/schema';
+import type { TranslationMeaning } from '@/lib/db/schema/wordTranslations';
 import { eq, and } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { ApiErrorResponse } from '@/lib/types/api';
@@ -22,7 +23,11 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status, translation } = body as { status?: string; translation?: string };
+    const { status, translation, meanings } = body as {
+      status?: string;
+      translation?: string;
+      meanings?: TranslationMeaning[];
+    };
 
     if (status !== undefined && !Object.values(VocabularyStatus).includes(status as VocabularyStatus)) {
       return NextResponse.json<ApiErrorResponse>(
@@ -54,26 +59,29 @@ export async function PATCH(
       );
     }
 
-    // Write user translation to word_translations as source:'user' — never overwritten by auto-translation
+    // Write user translation/meanings to word_translations as source:'user' — never overwritten by auto-translation
     // TODO(auth): add userId to wordTranslations table and scope by user.id (post-A sprint)
-    if (translation !== undefined) {
+    if (translation !== undefined || meanings !== undefined) {
       const language = await db.query.languages.findFirst({
         where: eq(languages.id, updated.languageId),
         columns: { code: true, defaultTranslationLangCode: true },
       });
       const targetLangCode = language ? resolveTranslationTarget(language) : null;
       if (targetLangCode) {
+        const fields: Record<string, unknown> = { source: 'user', updatedAt: new Date() };
+        if (translation !== undefined) fields.translation = translation;
+        if (meanings !== undefined) fields.meanings = meanings;
+
         await db
           .insert(wordTranslations)
           .values({
             wordId: id,
             targetLangCode,
-            translation,
-            source: 'user',
+            ...fields,
           })
           .onConflictDoUpdate({
             target: [wordTranslations.wordId, wordTranslations.targetLangCode],
-            set: { translation, source: 'user', updatedAt: new Date() },
+            set: fields,
           });
       }
     }
@@ -82,7 +90,12 @@ export async function PATCH(
       await syncAllTextsForWord(id);
     }
 
-    return NextResponse.json({ wordId: updated.id, status: updated.status, translation: updated.translation });
+    return NextResponse.json({
+      wordId: updated.id,
+      status: updated.status,
+      translation: updated.translation,
+      meanings: meanings ?? undefined,
+    });
   } catch (error) {
     console.error('[Word Update] Error:', error);
     return NextResponse.json<ApiErrorResponse>(

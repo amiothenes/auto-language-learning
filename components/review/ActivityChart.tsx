@@ -66,7 +66,7 @@ export function ActivityChart({ buckets }: ActivityChartProps) {
   );
 
   return (
-    <div className="h-40 w-full relative">
+    <div className="h-64 w-full relative">
       {hasData ? (
         <Bar data={chartData} options={chartOptions} />
       ) : (

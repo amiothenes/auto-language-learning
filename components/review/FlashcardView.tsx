@@ -1,15 +1,18 @@
 'use client';
 
-import { ExternalLink, LoaderCircle, Volume2, VolumeX } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink, LoaderCircle, Pencil, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Content, Heading } from '@/components/ui/Typography';
 import { StatusDots } from '@/components/reader/StatusDots';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { useSentenceAudioButton } from '@/lib/hooks/useSentenceAudioButton';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { SrsCard, SrsGrade } from '@/lib/types/api';
+import type { TranslationMeaning } from '@/lib/db/schema/wordTranslations';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -74,6 +77,7 @@ interface FlashcardViewProps {
   onReveal: () => void;
   onGrade: (grade: SrsGrade) => void;
   grading: boolean;
+  onEdit: (wordId: string, data: { translation: string; meanings: TranslationMeaning[] }) => void;
 }
 
 export function FlashcardView({
@@ -84,9 +88,27 @@ export function FlashcardView({
   onReveal,
   onGrade,
   grading,
+  onEdit,
 }: FlashcardViewProps) {
   const wordAudio = useWordAudioButton(card.wordId);
   const sentenceAudio = useSentenceAudioButton(card.sentence?.sentenceId);
+
+  // Reset when the FlashcardView remounts for a new card (it's keyed by wordId
+  // in app/review/page.tsx), so no sync effect is needed.
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTranslation, setEditTranslation] = useState(card.translation ?? '');
+  const [editMeanings, setEditMeanings] = useState<string[]>(
+    () => (card.meanings ?? []).map((m) => m.definitions.join(', '))
+  );
+
+  function handleEditSave() {
+    const updatedMeanings: TranslationMeaning[] = (card.meanings ?? []).map((m, i) => ({
+      ...m,
+      definitions: (editMeanings[i] ?? '').split(',').map((d) => d.trim()).filter(Boolean),
+    }));
+    onEdit(card.wordId, { translation: editTranslation, meanings: updatedMeanings });
+    setIsEditing(false);
+  }
 
   const morphData = card.inflectionData;
   const hasMorphology = morphData != null && MORPH_DISPLAY_KEYS.some((k) => Boolean(morphData[k]));
@@ -122,7 +144,7 @@ export function FlashcardView({
           <Button variant="primary" className="w-full" onClick={onReveal}>
             Show Answer
           </Button>
-          <p className="flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
+          <p className="hidden lg:flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
             Press <Kbd>Space</Kbd> to reveal
           </p>
         </div>
@@ -139,7 +161,31 @@ export function FlashcardView({
             )}
           </div>
 
-          {card.translation && <Content size="lg">{card.translation}</Content>}
+          {isEditing ? (
+            <Input
+              type="text"
+              value={editTranslation}
+              onChange={(e) => setEditTranslation(e.target.value)}
+              placeholder="Add translation…"
+              autoFocus
+            />
+          ) : (
+            <div className="flex items-start gap-2">
+              {card.translation ? (
+                <Content size="lg" className="flex-1">{card.translation}</Content>
+              ) : (
+                <Content size="lg" className="flex-1 text-muted">No translation</Content>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                aria-label="Edit translation and meanings"
+                className="text-muted hover:text-primary transition-colors p-1 shrink-0 cursor-pointer"
+              >
+                <Pencil size={14} strokeWidth={1.5} />
+              </button>
+            </div>
+          )}
 
           {/* POS / grammar */}
           {(card.pos || hasMorphology) && (
@@ -162,14 +208,41 @@ export function FlashcardView({
           {/* Meanings */}
           {card.meanings && card.meanings.length > 0 && (
             <div className="space-y-1.5">
-              {card.meanings.map((m, i) => (
-                <div key={i} className="flex gap-2 items-start">
-                  <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5">
-                    {m.pos}
-                  </span>
-                  <span className="font-sans text-sm text-ink/80 leading-snug">{m.definitions.slice(0, 3).join(', ')}</span>
-                </div>
-              ))}
+              {card.meanings.map((m, i) =>
+                isEditing ? (
+                  <div key={i} className="flex gap-2 items-center">
+                    <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide">
+                      {m.pos}
+                    </span>
+                    <Input
+                      type="text"
+                      value={editMeanings[i] ?? ''}
+                      onChange={(e) =>
+                        setEditMeanings((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))
+                      }
+                      className="text-sm"
+                    />
+                  </div>
+                ) : (
+                  <div key={i} className="flex gap-2 items-start">
+                    <span className="font-sans text-[9.5px] text-muted bg-desk border border-border rounded-sm px-1.5 py-0.5 shrink-0 uppercase tracking-wide mt-0.5">
+                      {m.pos}
+                    </span>
+                    <span className="font-sans text-sm text-ink/80 leading-snug">{m.definitions.slice(0, 3).join(', ')}</span>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+
+          {isEditing && (
+            <div className="flex gap-2">
+              <Button variant="primary" size="sm" onClick={handleEditSave}>
+                Save
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
             </div>
           )}
 
@@ -216,12 +289,12 @@ export function FlashcardView({
                 Did Know
               </Button>
             </div>
-            <div className="flex gap-3 text-center">
+            <div className="hidden lg:flex gap-3 text-center">
               <p className="flex-1 flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
                 <Kbd>1</Kbd> → {STATUS_LABELS[card.preview.didntKnow.status]} · {card.preview.didntKnow.intervalDays}d
               </p>
               <p className="flex-1 flex items-center justify-center gap-1.5 font-sans text-ui-xs text-muted">
-                <Kbd>2</Kbd> → {STATUS_LABELS[card.preview.knew.status]} · {card.preview.knew.intervalDays}d
+                <Kbd>2</Kbd> or <Kbd>Space</Kbd> → {STATUS_LABELS[card.preview.knew.status]} · {card.preview.knew.intervalDays}d
               </p>
             </div>
           </div>
