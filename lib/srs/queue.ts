@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats } from '@/lib/db/schema';
+import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats, languages } from '@/lib/db/schema';
 import { resolveTranslationTarget } from '@/lib/languages/presets';
 import { eq, and, lte, inArray, isNull, notInArray, asc, count, sql } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
@@ -64,16 +64,20 @@ interface QueueBudget {
   remainingReviews: number;
 }
 
-async function getQueueBudget(userId: string, languageId: string): Promise<QueueBudget> {
-  const settings = await getSrsSettings(userId, languageId);
-  const eligibleStatuses = eligibleStatusesFor(settings);
+async function getQueueBudget(
+  userId: string,
+  languageId: string,
+  settings?: SrsSettingsPayload
+): Promise<QueueBudget> {
+  const resolvedSettings = settings ?? (await getSrsSettings(userId, languageId));
+  const eligibleStatuses = eligibleStatusesFor(resolvedSettings);
   const stats = await getDailyStats(userId, languageId, todayDateString());
 
-  const remainingNew = Math.max(0, settings.newCardsPerDay - stats.newIntroducedCount);
+  const remainingNew = Math.max(0, resolvedSettings.newCardsPerDay - stats.newIntroducedCount);
   const remainingReviews =
-    settings.reviewsPerDay === null
+    resolvedSettings.reviewsPerDay === null
       ? 500
-      : Math.max(0, settings.reviewsPerDay - stats.reviewsCompletedCount);
+      : Math.max(0, resolvedSettings.reviewsPerDay - stats.reviewsCompletedCount);
 
   return { eligibleStatuses, remainingNew, remainingReviews: Math.min(remainingReviews, 500) };
 }
@@ -131,125 +135,194 @@ function pickRandom<T>(items: T[]): T | undefined {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-async function buildSentenceForWord(
-  wordId: string,
-  cardType: 'SENTENCE' | 'WORD'
-): Promise<SrsCardSentence | null> {
-  const instances = await db.query.wordInstances.findMany({
-    where: and(eq(wordInstances.wordId, wordId)),
-    columns: { id: true, surfaceForm: true, sentenceId: true },
-  });
-  const candidates = instances.filter((i): i is typeof i & { sentenceId: string } => i.sentenceId !== null);
-  if (candidates.length === 0) return null;
-
-  if (cardType === 'WORD') {
-    const chosen = pickRandom(candidates)!;
-    const sentence = await db.query.sentences.findFirst({ where: (s, { eq }) => eq(s.id, chosen.sentenceId) });
-    if (!sentence) return null;
-    return { sentenceId: sentence.id, content: sentence.content, targetSurface: chosen.surfaceForm, degraded: false };
-  }
-
-  // Type A ("1T"): find sentences where this is the only non-mastered target word.
-  const sentenceIds = [...new Set(candidates.map((c) => c.sentenceId))];
-  const rivalCounts = await db
-    .select({ sentenceId: wordInstances.sentenceId, cnt: count() })
-    .from(wordInstances)
-    .innerJoin(words, eq(wordInstances.wordId, words.id))
-    .where(and(inArray(wordInstances.sentenceId, sentenceIds), notInArray(words.status, NON_MASTERED)))
-    .groupBy(wordInstances.sentenceId);
-  const rivalMap = new Map(rivalCounts.map((r) => [r.sentenceId, Number(r.cnt)]));
-
-  const cleanCandidates = candidates.filter((c) => (rivalMap.get(c.sentenceId) ?? 1) === 1);
-  const chosen = pickRandom(cleanCandidates) ?? pickRandom(candidates)!;
-  const sentence = await db.query.sentences.findFirst({ where: (s, { eq }) => eq(s.id, chosen.sentenceId) });
-  if (!sentence) return null;
-  return {
-    sentenceId: sentence.id,
-    content: sentence.content,
-    targetSurface: chosen.surfaceForm,
-    degraded: cleanCandidates.length === 0,
-  };
+interface ChosenSentenceCandidate {
+  sentenceId: string;
+  surfaceForm: string;
+  pos: string | null;
+  inflectionData: Record<string, unknown> | null;
+  degraded: boolean;
 }
 
-async function buildCardForWord(wordId: string, userId: string, typeSwitchStatus: VocabularyStatus): Promise<SrsCard | null> {
-  const word = await db.query.words.findFirst({
-    where: and(eq(words.id, wordId), eq(words.userId, userId)),
-    with: { language: { columns: { code: true, defaultTranslationLangCode: true } } },
+/**
+ * Builds SrsCards for a batch of word ids in a small constant number of
+ * queries, instead of the 6-7 round trips per word this used to cost (words,
+ * translations, word instances fetched twice, sentences fetched twice,
+ * reviews — all `inArray`'d across the whole batch here instead). Assembly
+ * (sentence/rival-count selection, preview computation) happens in JS from
+ * the batch results, preserving the exact same per-word selection logic.
+ */
+async function buildCardsForWords(
+  orderedIds: string[],
+  userId: string,
+  languageId: string,
+  typeSwitchStatus: VocabularyStatus
+): Promise<SrsCard[]> {
+  if (orderedIds.length === 0) return [];
+
+  const language = await db.query.languages.findFirst({
+    where: eq(languages.id, languageId),
+    columns: { code: true, defaultTranslationLangCode: true },
   });
-  if (!word) return null;
+  const targetLangCode = language ? resolveTranslationTarget(language) : null;
 
-  const targetLangCode = word.language ? resolveTranslationTarget(word.language) : null;
-  const translationRow = targetLangCode
-    ? await db.query.wordTranslations.findFirst({
-        where: and(eq(wordTranslations.wordId, wordId), eq(wordTranslations.targetLangCode, targetLangCode)),
-      })
-    : undefined;
+  const [wordRows, translationRows, instanceRows, reviewRows] = await Promise.all([
+    db.query.words.findMany({ where: and(inArray(words.id, orderedIds), eq(words.userId, userId)) }),
+    targetLangCode
+      ? db.query.wordTranslations.findMany({
+          where: and(inArray(wordTranslations.wordId, orderedIds), eq(wordTranslations.targetLangCode, targetLangCode)),
+        })
+      : Promise.resolve([]),
+    db.query.wordInstances.findMany({
+      where: inArray(wordInstances.wordId, orderedIds),
+      columns: { wordId: true, surfaceForm: true, sentenceId: true, pos: true, inflectionData: true },
+    }),
+    db.query.wordReviews.findMany({ where: inArray(wordReviews.wordId, orderedIds) }),
+  ]);
 
-  const status = word.status as VocabularyStatus;
-  const switchIdx = STATUS_PROGRESSION.indexOf(typeSwitchStatus as (typeof STATUS_PROGRESSION)[number]);
-  const statusIdx = STATUS_PROGRESSION.indexOf(status as (typeof STATUS_PROGRESSION)[number]);
-  const cardType: 'SENTENCE' | 'WORD' = statusIdx < switchIdx ? 'SENTENCE' : 'WORD';
+  const wordMap = new Map(wordRows.map((w) => [w.id, w]));
+  const translationMap = new Map(translationRows.map((t) => [t.wordId, t]));
+  const reviewMap = new Map(reviewRows.map((r) => [r.wordId, r]));
 
-  const sentence = await buildSentenceForWord(wordId, cardType);
-
-  let pos: string | null = null;
-  let inflectionData: Record<string, unknown> | null = null;
-  if (sentence) {
-    const instance = await db.query.wordInstances.findFirst({
-      where: and(eq(wordInstances.wordId, wordId), eq(wordInstances.sentenceId, sentence.sentenceId)),
-      columns: { pos: true, inflectionData: true },
-    });
-    pos = instance?.pos ?? null;
-    inflectionData = instance?.inflectionData ?? null;
+  const instancesByWord = new Map<string, Array<(typeof instanceRows)[number] & { sentenceId: string }>>();
+  for (const instance of instanceRows) {
+    if (instance.sentenceId === null) continue;
+    const candidate = instance as (typeof instanceRows)[number] & { sentenceId: string };
+    const list = instancesByWord.get(instance.wordId);
+    if (list) list.push(candidate);
+    else instancesByWord.set(instance.wordId, [candidate]);
   }
 
-  let source: SrsCardSource | null = null;
-  if (sentence) {
-    const sentenceRow = await db.query.sentences.findFirst({
-      where: (s, { eq }) => eq(s.id, sentence.sentenceId),
-      with: { text: { with: { series: true } } },
-    });
-    if (sentenceRow?.text) {
-      source = {
-        textId: sentenceRow.text.id,
-        textTitle: sentenceRow.text.title,
-        seriesId: sentenceRow.text.series?.id ?? null,
-        seriesName: sentenceRow.text.series?.name ?? null,
-      };
+  const switchIdx = STATUS_PROGRESSION.indexOf(typeSwitchStatus as (typeof STATUS_PROGRESSION)[number]);
+  const cardTypeByWord = new Map<string, 'SENTENCE' | 'WORD'>();
+  const rivalCheckSentenceIds = new Set<string>();
+  for (const id of orderedIds) {
+    const word = wordMap.get(id);
+    if (!word) continue;
+    const statusIdx = STATUS_PROGRESSION.indexOf(word.status as (typeof STATUS_PROGRESSION)[number]);
+    const cardType: 'SENTENCE' | 'WORD' = statusIdx < switchIdx ? 'SENTENCE' : 'WORD';
+    cardTypeByWord.set(id, cardType);
+    if (cardType === 'SENTENCE') {
+      for (const instance of instancesByWord.get(id) ?? []) rivalCheckSentenceIds.add(instance.sentenceId);
     }
   }
 
-  const review = await db.query.wordReviews.findFirst({ where: eq(wordReviews.wordId, wordId) });
+  // Type A ("1T"): a sentence qualifies if this is its only non-mastered
+  // target word — computed once for every SENTENCE-type candidate sentence
+  // in the whole batch rather than once per word.
+  const rivalMap = new Map<string, number>();
+  if (rivalCheckSentenceIds.size > 0) {
+    const rivalCounts = await db
+      .select({ sentenceId: wordInstances.sentenceId, cnt: count() })
+      .from(wordInstances)
+      .innerJoin(words, eq(wordInstances.wordId, words.id))
+      .where(and(inArray(wordInstances.sentenceId, [...rivalCheckSentenceIds]), notInArray(words.status, NON_MASTERED)))
+      .groupBy(wordInstances.sentenceId);
+    for (const r of rivalCounts) {
+      if (r.sentenceId) rivalMap.set(r.sentenceId, Number(r.cnt));
+    }
+  }
 
-  // Same SM-2/status-step logic POST /api/srs/review applies on an actual
-  // grade — computed here purely as a preview so the button captions can
-  // never drift from what grading will really do.
-  const currentSm2 = {
-    easeFactor: review?.easeFactor ?? 2.5,
-    intervalDays: review?.intervalDays ?? 0,
-    repetitions: review?.repetitions ?? 0,
-  };
-  const knewSm2 = applySm2(currentSm2, 'KNEW');
-  const didntKnowSm2 = applySm2(currentSm2, 'DIDNT_KNOW');
+  const chosenByWord = new Map<string, ChosenSentenceCandidate>();
+  for (const id of orderedIds) {
+    const cardType = cardTypeByWord.get(id);
+    const candidates = instancesByWord.get(id) ?? [];
+    if (!cardType || candidates.length === 0) continue;
 
-  return {
-    wordId: word.id,
-    cardType,
-    lemma: word.lemma,
-    translation: translationRow?.translation ?? word.translation ?? null,
-    meanings: translationRow?.meanings ?? null,
-    pos,
-    inflectionData,
-    romanization: word.romanization,
-    sentence,
-    source,
-    isNew: !review,
-    status,
-    preview: {
-      knew: { status: stepStatusUp(status), intervalDays: knewSm2.intervalDays },
-      didntKnow: { status: stepStatusDown(status), intervalDays: didntKnowSm2.intervalDays },
-    },
-  };
+    if (cardType === 'WORD') {
+      const chosen = pickRandom(candidates)!;
+      chosenByWord.set(id, {
+        sentenceId: chosen.sentenceId,
+        surfaceForm: chosen.surfaceForm,
+        pos: chosen.pos,
+        inflectionData: chosen.inflectionData,
+        degraded: false,
+      });
+      continue;
+    }
+
+    const cleanCandidates = candidates.filter((c) => (rivalMap.get(c.sentenceId) ?? 1) === 1);
+    const chosen = pickRandom(cleanCandidates) ?? pickRandom(candidates)!;
+    chosenByWord.set(id, {
+      sentenceId: chosen.sentenceId,
+      surfaceForm: chosen.surfaceForm,
+      pos: chosen.pos,
+      inflectionData: chosen.inflectionData,
+      degraded: cleanCandidates.length === 0,
+    });
+  }
+
+  const chosenSentenceIds = [...new Set([...chosenByWord.values()].map((c) => c.sentenceId))];
+  const sentenceRows = chosenSentenceIds.length
+    ? await db.query.sentences.findMany({
+        where: (s, { inArray }) => inArray(s.id, chosenSentenceIds),
+        with: { text: { with: { series: true } } },
+      })
+    : [];
+  const sentenceMap = new Map(sentenceRows.map((s) => [s.id, s]));
+
+  const cards: SrsCard[] = [];
+  for (const id of orderedIds) {
+    const word = wordMap.get(id);
+    if (!word) continue;
+
+    const status = word.status as VocabularyStatus;
+    const cardType = cardTypeByWord.get(id)!;
+    const translationRow = translationMap.get(id);
+    const chosen = chosenByWord.get(id);
+    const sentenceRow = chosen ? sentenceMap.get(chosen.sentenceId) : undefined;
+
+    let sentence: SrsCardSentence | null = null;
+    let source: SrsCardSource | null = null;
+    if (chosen && sentenceRow) {
+      sentence = {
+        sentenceId: sentenceRow.id,
+        content: sentenceRow.content,
+        targetSurface: chosen.surfaceForm,
+        degraded: chosen.degraded,
+      };
+      if (sentenceRow.text) {
+        source = {
+          textId: sentenceRow.text.id,
+          textTitle: sentenceRow.text.title,
+          seriesId: sentenceRow.text.series?.id ?? null,
+          seriesName: sentenceRow.text.series?.name ?? null,
+        };
+      }
+    }
+
+    const review = reviewMap.get(id);
+    // Same SM-2/status-step logic POST /api/srs/review applies on an actual
+    // grade — computed here purely as a preview so the button captions can
+    // never drift from what grading will really do.
+    const currentSm2 = {
+      easeFactor: review?.easeFactor ?? 2.5,
+      intervalDays: review?.intervalDays ?? 0,
+      repetitions: review?.repetitions ?? 0,
+    };
+    const knewSm2 = applySm2(currentSm2, 'KNEW');
+    const didntKnowSm2 = applySm2(currentSm2, 'DIDNT_KNOW');
+
+    cards.push({
+      wordId: word.id,
+      cardType,
+      lemma: word.lemma,
+      translation: translationRow?.translation ?? word.translation ?? null,
+      meanings: translationRow?.meanings ?? null,
+      pos: chosen?.pos ?? null,
+      inflectionData: chosen?.inflectionData ?? null,
+      romanization: word.romanization,
+      sentence,
+      source,
+      isNew: !review,
+      status,
+      preview: {
+        knew: { status: stepStatusUp(status), intervalDays: knewSm2.intervalDays },
+        didntKnow: { status: stepStatusDown(status), intervalDays: didntKnowSm2.intervalDays },
+      },
+    });
+  }
+
+  return cards;
 }
 
 /** Inserts each `extra` item into `base` at evenly-spaced positions, preserving both orders. */
@@ -266,18 +339,16 @@ function interleaveEvenly<T>(base: T[], extra: T[]): T[] {
 }
 
 export async function buildSession(userId: string, languageId: string) {
-  const budget = await getQueueBudget(userId, languageId);
+  const settings = await getSrsSettings(userId, languageId);
+  const budget = await getQueueBudget(userId, languageId, settings);
   const [dueIds, newIds] = await Promise.all([
     findDueWordIds(userId, languageId, budget),
     findNewWordIds(userId, languageId, budget),
   ]);
 
-  const settings = await getSrsSettings(userId, languageId);
   const orderedIds =
     settings.newCardsPosition === 'interleaved' ? interleaveEvenly(dueIds, newIds) : [...dueIds, ...newIds];
-  const cards = (
-    await Promise.all(orderedIds.map((id) => buildCardForWord(id, userId, settings.typeSwitchStatus)))
-  ).filter((c): c is SrsCard => c !== null);
+  const cards = await buildCardsForWords(orderedIds, userId, languageId, settings.typeSwitchStatus);
 
   return { cards, dueCount: dueIds.length, newCount: newIds.length };
 }

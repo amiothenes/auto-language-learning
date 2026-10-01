@@ -51,6 +51,14 @@ export const words = pgTable(
 
     // Used by: textProcessor calculate known percentage query
     languageStatusIdx: index('words_language_status_idx').on(table.languageId, table.status),
+
+    // Used by: SRS new-card selection (lib/srs/queue.ts findNewWordIds) —
+    // filters by (userId, languageId, status) and orders by statusChangedAt.
+    newCardsIdx: index('words_user_language_status_changed_idx').on(
+      table.userId,
+      table.languageId,
+      table.statusChangedAt
+    ),
   })
 );
 

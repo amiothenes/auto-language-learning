@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, PartyPopper } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, PartyPopper, Settings } from 'lucide-react';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { useActiveVoice } from '@/lib/hooks/useActiveVoice';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import { useSrsSession } from '@/lib/hooks/useSrsSession';
 import { useSrsReview } from '@/lib/hooks/useSrsReview';
 import { useSrsSettings } from '@/lib/hooks/useSrsSettings';
@@ -19,6 +20,8 @@ import { FlashcardSkeleton } from '@/components/review/FlashcardSkeleton';
 import { SessionProgressBar } from '@/components/review/SessionProgressBar';
 import { ForecastChart } from '@/components/review/ForecastChart';
 import { ActivityChart } from '@/components/review/ActivityChart';
+import { ReviewSettingsPanel } from '@/components/review/ReviewSettingsPanel';
+import { MobileReviewSettingsSheet } from '@/components/review/MobileReviewSettingsSheet';
 import { Card } from '@/components/ui/Card';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { Heading, Muted } from '@/components/ui/Typography';
@@ -37,8 +40,11 @@ export default function ReviewPage() {
 
   const { data: session, isLoading } = useSrsSession(languageId);
   const { data: srsSettings } = useSrsSettings(languageId);
-  const { data: forecastBuckets } = useSrsForecast(languageId);
-  const { data: activityBuckets } = useSrsActivity(languageId);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  // Gated on insightsOpen (default closed) so these two extra API+DB round
+  // trips aren't paid on every page load for a panel most sessions never open.
+  const { data: forecastBuckets } = useSrsForecast(insightsOpen ? languageId : undefined);
+  const { data: activityBuckets } = useSrsActivity(insightsOpen ? languageId : undefined);
   const reviewMutation = useSrsReview(languageId);
   const editCardMutation = useUpdateReviewCard();
 
@@ -55,7 +61,8 @@ export default function ReviewPage() {
   const [sessionCards, setSessionCards] = useState<SrsCard[]>([]);
   const [queue, setQueue] = useState<SrsCard[]>([]);
   const [revealed, setRevealed] = useState(false);
-  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const isDesktop = useMediaQuery('(min-width: 1280px)');
   const seededForLanguage = useRef<string | undefined>(undefined);
 
   // Read the remembered open/closed state client-side only, to avoid an
@@ -224,16 +231,35 @@ export default function ReviewPage() {
             </Muted>
           </>
         )}
-        <button
-          type="button"
-          onClick={toggleInsights}
-          aria-expanded={insightsOpen}
-          className="inline-flex items-center gap-1 font-sans text-ui-xs text-muted hover:text-ink transition-colors cursor-pointer"
-        >
-          {insightsOpen ? <ChevronDown size={12} strokeWidth={2} /> : <ChevronRight size={12} strokeWidth={2} />}
-          Insights
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={toggleInsights}
+            aria-expanded={insightsOpen}
+            className="inline-flex items-center gap-1 font-sans text-ui-xs text-muted hover:text-ink transition-colors cursor-pointer"
+          >
+            {insightsOpen ? <ChevronDown size={12} strokeWidth={2} /> : <ChevronRight size={12} strokeWidth={2} />}
+            Insights
+          </button>
+          <button
+            type="button"
+            onClick={(e) => setSettingsAnchorEl(settingsAnchorEl ? null : e.currentTarget)}
+            aria-label="Review settings"
+            aria-expanded={!!settingsAnchorEl}
+            className="inline-flex items-center gap-1 font-sans text-ui-xs text-muted hover:text-ink transition-colors cursor-pointer"
+          >
+            <Settings size={13} strokeWidth={1.5} />
+            Settings
+          </button>
+        </div>
       </header>
+
+      {settingsAnchorEl && languageId && isDesktop && (
+        <ReviewSettingsPanel anchorEl={settingsAnchorEl} languageId={languageId} onClose={() => setSettingsAnchorEl(null)} />
+      )}
+      {settingsAnchorEl && languageId && !isDesktop && (
+        <MobileReviewSettingsSheet languageId={languageId} onClose={() => setSettingsAnchorEl(null)} />
+      )}
 
       {insightsOpen && (forecastBuckets || activityBuckets) && (
         <div className="space-y-4">

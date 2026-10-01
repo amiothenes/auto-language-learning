@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { words, wordReviews } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -109,7 +109,14 @@ export async function POST(request: NextRequest) {
     // Not part of the transaction above: this is a daily cap counter, not
     // state that needs atomicity with the SRS schedule/status update.
     await bumpDailyStats(user.id, word.languageId, isNew ? 'newIntroducedCount' : 'reviewsCompletedCount');
-    await syncAllTextsForWord(wordId);
+
+    // knownPercentage isn't read anywhere in the review flow, so this doesn't
+    // need to block the grading response — it can run after the response is
+    // sent (via Next's after(), not a bare un-awaited promise, since a plain
+    // fire-and-forget risks being killed once the function returns).
+    after(() =>
+      syncAllTextsForWord(wordId).catch((err) => console.error('[SRS Review] syncAllTextsForWord failed:', err))
+    );
 
     // Same SM-2/status-step formula buildCardForWord uses for its preview,
     // but based on the state just written — so a client requeuing this card
