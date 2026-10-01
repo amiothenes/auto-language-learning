@@ -454,6 +454,8 @@ export interface SrsReviewResponse {
   status: VocabularyStatus;
   dueAt: string;
   isNew: boolean;
+  /** What grading this word again right now would do — lets the client patch a requeued card's captions without drifting from the real outcome. */
+  preview: SrsCardPreview;
 }
 
 export type SrsNewCardsPosition = 'end' | 'interleaved';
@@ -462,6 +464,8 @@ export interface SrsSettingsPayload {
   newCardsPerDay: number;
   /** null = unlimited */
   reviewsPerDay: number | null;
+  /** Caps status step-downs per word per day, however many times it's missed that day. null = unlimited. */
+  maxDowngradesPerDay: number | null;
   minEligibleStatus: VocabularyStatus;
   maxEligibleStatus: VocabularyStatus;
   typeSwitchStatus: VocabularyStatus;

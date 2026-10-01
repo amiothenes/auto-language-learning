@@ -1,4 +1,4 @@
-import { pgTable, text, integer, real, timestamp, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, real, timestamp, date, unique, index } from 'drizzle-orm/pg-core';
 import { createId } from '@paralleldrive/cuid2';
 import { words } from './words';
 
@@ -23,6 +23,13 @@ export const wordReviews = pgTable(
 
     dueAt: timestamp('due_at').defaultNow().notNull(),
     lastReviewedAt: timestamp('last_reviewed_at'),
+
+    // How many times this word's status has been stepped down "today" (the
+    // date in downgradeCountDate), capped per srsSettings.maxDowngradesPerDay
+    // so repeated misses in one session (it keeps being requeued) can't
+    // cascade a word down multiple status rungs in a single day.
+    downgradeCount: integer('downgrade_count').default(0).notNull(),
+    downgradeCountDate: date('downgrade_count_date'),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

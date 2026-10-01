@@ -5,11 +5,13 @@ import { eq, and, lte, inArray, isNull, notInArray, asc, count, sql } from 'driz
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { STATUS_PROGRESSION, stepStatusDown, stepStatusUp } from '@/lib/vocabulary/statusProgression';
 import { applySm2 } from '@/lib/srs/sm2';
+import { todayDateString } from '@/lib/srs/today';
 import type { SrsCard, SrsCardSentence, SrsCardSource, SrsSettingsPayload } from '@/lib/types/api';
 
 export const DEFAULT_SRS_SETTINGS: SrsSettingsPayload = {
   newCardsPerDay: 20,
   reviewsPerDay: 100,
+  maxDowngradesPerDay: 1,
   minEligibleStatus: VocabularyStatus.NEWLY_SEEN,
   maxEligibleStatus: VocabularyStatus.KNOWN,
   typeSwitchStatus: VocabularyStatus.FAMILIAR,
@@ -20,10 +22,6 @@ export const DEFAULT_SRS_SETTINGS: SrsSettingsPayload = {
 
 const NON_MASTERED = [VocabularyStatus.WELL_KNOWN, VocabularyStatus.IGNORE];
 
-function todayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export async function getSrsSettings(userId: string, languageId: string): Promise<SrsSettingsPayload> {
   const row = await db.query.srsSettings.findFirst({
     where: and(eq(srsSettings.userId, userId), eq(srsSettings.languageId, languageId)),
@@ -32,6 +30,7 @@ export async function getSrsSettings(userId: string, languageId: string): Promis
   return {
     newCardsPerDay: row.newCardsPerDay,
     reviewsPerDay: row.reviewsPerDay,
+    maxDowngradesPerDay: row.maxDowngradesPerDay,
     minEligibleStatus: row.minEligibleStatus as VocabularyStatus,
     maxEligibleStatus: row.maxEligibleStatus as VocabularyStatus,
     typeSwitchStatus: row.typeSwitchStatus as VocabularyStatus,

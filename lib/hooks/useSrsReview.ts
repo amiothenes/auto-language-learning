@@ -22,6 +22,8 @@ export function useSrsReview(languageId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: ['srs-due-count', languageId] });
       queryClient.invalidateQueries({ queryKey: ['word-instances'] });
       queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['srs-forecast', languageId] });
+      queryClient.invalidateQueries({ queryKey: ['srs-activity', languageId] });
     },
   });
 }

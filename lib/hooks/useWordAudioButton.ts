@@ -19,6 +19,11 @@ export function useWordAudioButton(wordId: string) {
   const voiceId = useActiveVoice();
   const [state, setState] = useState<WordAudioButtonState>('idle');
   const playTokenRef = useRef(0);
+  // Word audio plays on a module-level singleton shared across every mount of
+  // this hook, so unmount cleanup must only pause it if THIS instance is the
+  // one actually playing — otherwise a different word's button unmounting
+  // elsewhere in the app could cut audio it never started.
+  const isPlayingRef = useRef(false);
 
   // This hook only ever mounts inside an open tooltip/sheet, so mounting IS
   // "the user is looking at this word" — the right moment to warm its audio,
@@ -30,6 +35,7 @@ export function useWordAudioButton(wordId: string) {
 
   const play = useCallback(async () => {
     const token = ++playTokenRef.current;
+    isPlayingRef.current = false;
     setState('loading');
     // Word audio has its own element, so narration is asked to pause rather
     // than being clobbered — its src, its end-of-sentence handler, its marks
@@ -44,10 +50,17 @@ export function useWordAudioButton(wordId: string) {
 
       const audio = getWordAudioElement();
       audio.src = data.audioUrl;
-      audio.onended = () => setState('idle');
-      audio.onerror = () => setState('error');
+      audio.onended = () => {
+        isPlayingRef.current = false;
+        setState('idle');
+      };
+      audio.onerror = () => {
+        isPlayingRef.current = false;
+        setState('error');
+      };
       await audio.play();
       if (token !== playTokenRef.current) return;
+      isPlayingRef.current = true;
       setState('playing');
     } catch (error) {
       if (token !== playTokenRef.current) return;
@@ -55,6 +68,18 @@ export function useWordAudioButton(wordId: string) {
       setState('error');
     }
   }, [wordId, settings.playbackSpeed, voiceId]);
+
+  // Stop playback this instance started when it unmounts (e.g. a flashcard
+  // being dismissed) so audio doesn't bleed into whatever's shown next.
+  useEffect(() => {
+    return () => {
+      playTokenRef.current++;
+      if (isPlayingRef.current) {
+        getWordAudioElement().pause();
+        isPlayingRef.current = false;
+      }
+    };
+  }, []);
 
   return { state, play };
 }

@@ -21,6 +21,10 @@ export const srsSettings = pgTable(
     newCardsPerDay: integer('new_cards_per_day').default(20).notNull(),
     // null = unlimited
     reviewsPerDay: integer('reviews_per_day').default(100),
+    // Caps how many times a single word's vocabulary status can step down per
+    // day, however many times it's missed that day (see wordReviews.downgradeCount).
+    // null = unlimited.
+    maxDowngradesPerDay: integer('max_downgrades_per_day').default(1),
 
     // Reviewable status range — words outside [minEligibleStatus, maxEligibleStatus]
     // (in the UNKNOWN < NEWLY_SEEN < FAMILIAR < KNOWN < WELL_KNOWN ladder) never

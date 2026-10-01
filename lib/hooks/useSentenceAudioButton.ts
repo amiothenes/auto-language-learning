@@ -48,5 +48,15 @@ export function useSentenceAudioButton(sentenceId: string | undefined) {
     }
   }, [sentenceId, settings.playbackSpeed, voiceId]);
 
+  // This hook's <audio> element is private to this instance (unlike word
+  // audio's shared singleton), so cleanup can unconditionally pause it —
+  // stops playback bleeding into whatever's shown after this unmounts.
+  useEffect(() => {
+    return () => {
+      playTokenRef.current++;
+      audioRef.current?.pause();
+    };
+  }, []);
+
   return { state, play };
 }

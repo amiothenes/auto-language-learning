@@ -6,9 +6,10 @@ import { requireUser } from '@/lib/auth/requireUser';
 import { syncAllTextsForWord } from '@/lib/utils/vocabularySync';
 import { applySm2, dueAtFromInterval } from '@/lib/srs/sm2';
 import { stepStatusDown, stepStatusUp } from '@/lib/vocabulary/statusProgression';
-import { bumpDailyStats } from '@/lib/srs/queue';
+import { bumpDailyStats, getSrsSettings } from '@/lib/srs/queue';
+import { todayDateString } from '@/lib/srs/today';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
-import type { ApiErrorResponse, SrsReviewRequest, SrsReviewResponse } from '@/lib/types/api';
+import type { ApiErrorResponse, SrsCardPreview, SrsReviewRequest, SrsReviewResponse } from '@/lib/types/api';
 
 // ============================================================================
 // POST /api/srs/review — Grade a card: advances SM-2 schedule + word status
@@ -53,7 +54,23 @@ export async function POST(request: NextRequest) {
     const dueAt = dueAtFromInterval(nextSm2.intervalDays);
 
     const currentStatus = word.status as VocabularyStatus;
-    const nextStatus = grade === 'KNEW' ? stepStatusUp(currentStatus) : stepStatusDown(currentStatus);
+
+    // A word can only be stepped down maxDowngradesPerDay times per day,
+    // however many times it's missed that day — it keeps reappearing in the
+    // session queue (requeued client-side on a miss) until graded "Knew", so
+    // without this cap one bad word could cascade down several status rungs
+    // in a single sitting.
+    const settings = await getSrsSettings(user.id, word.languageId);
+    const today = todayDateString();
+    const sameDay = existingReview?.downgradeCountDate === today;
+    const downgradesSoFar = sameDay ? existingReview?.downgradeCount ?? 0 : 0;
+    const maxDowngrades = settings.maxDowngradesPerDay;
+    const canDowngrade = maxDowngrades === null || downgradesSoFar < maxDowngrades;
+
+    const nextStatus =
+      grade === 'KNEW' ? stepStatusUp(currentStatus) : canDowngrade ? stepStatusDown(currentStatus) : currentStatus;
+    const nextDowngradeCount = grade === 'DIDNT_KNOW' && canDowngrade ? downgradesSoFar + 1 : downgradesSoFar;
+    const nextDowngradeCountDate = grade === 'DIDNT_KNOW' ? today : existingReview?.downgradeCountDate ?? null;
 
     await db.transaction(async (tx) => {
       await tx
@@ -66,6 +83,8 @@ export async function POST(request: NextRequest) {
           repetitions: nextSm2.repetitions,
           dueAt,
           lastReviewedAt: new Date(),
+          downgradeCount: nextDowngradeCount,
+          downgradeCountDate: nextDowngradeCountDate,
         })
         .onConflictDoUpdate({
           target: wordReviews.wordId,
@@ -75,6 +94,8 @@ export async function POST(request: NextRequest) {
             repetitions: nextSm2.repetitions,
             dueAt,
             lastReviewedAt: new Date(),
+            downgradeCount: nextDowngradeCount,
+            downgradeCountDate: nextDowngradeCountDate,
             updatedAt: new Date(),
           },
         });
@@ -90,11 +111,20 @@ export async function POST(request: NextRequest) {
     await bumpDailyStats(user.id, word.languageId, isNew ? 'newIntroducedCount' : 'reviewsCompletedCount');
     await syncAllTextsForWord(wordId);
 
+    // Same SM-2/status-step formula buildCardForWord uses for its preview,
+    // but based on the state just written — so a client requeuing this card
+    // after a miss can patch its captions without drifting from reality.
+    const preview: SrsCardPreview = {
+      knew: { status: stepStatusUp(nextStatus), intervalDays: applySm2(nextSm2, 'KNEW').intervalDays },
+      didntKnow: { status: stepStatusDown(nextStatus), intervalDays: applySm2(nextSm2, 'DIDNT_KNOW').intervalDays },
+    };
+
     return NextResponse.json<SrsReviewResponse>({
       wordId,
       status: nextStatus,
       dueAt: dueAt.toISOString(),
       isNew,
+      preview,
     });
   } catch (error) {
     console.error('[SRS Review] Error:', error);

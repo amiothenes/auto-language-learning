@@ -11,6 +11,7 @@ import { useSrsSettings } from '@/lib/hooks/useSrsSettings';
 import { useSrsForecast } from '@/lib/hooks/useSrsForecast';
 import { useSrsActivity } from '@/lib/hooks/useSrsActivity';
 import { useUpdateReviewCard } from '@/lib/hooks/useUpdateReviewCard';
+import { loadReviewSession, saveReviewSession } from '@/lib/review/sessionCache';
 import { prefetchWordAudio } from '@/lib/tts/wordAudioCache';
 import { prefetchSentenceAudio } from '@/lib/tts/sentenceAudioCache';
 import { FlashcardView } from '@/components/review/FlashcardView';
@@ -25,6 +26,8 @@ import type { SrsCard, SrsGrade } from '@/lib/types/api';
 import type { TranslationMeaning } from '@/lib/db/schema/wordTranslations';
 
 const INSIGHTS_STORAGE_KEY = 'verbista_review_insights_open';
+// How many cards later a missed card reappears in the queue (Anki's "Again" spacing, simplified).
+const REQUEUE_OFFSET = 3;
 
 export default function ReviewPage() {
   const { currentLanguage } = useLanguage();
@@ -40,12 +43,15 @@ export default function ReviewPage() {
   const editCardMutation = useUpdateReviewCard();
 
   // sessionCards is an immutable snapshot of the session as fetched at start
-  // (drives the progress bar's segment colors); queue is the shrinking
-  // working copy. Neither is a live view of the query: grading invalidates
-  // due-count/vocabulary but deliberately not the session query, so
-  // re-fetches elsewhere (e.g. window refocus) can't reshuffle an
-  // in-progress play-through. Seeded once per languageId when data first
-  // arrives; graded cards are then removed from `queue` locally.
+  // (drives the progress bar's segment colors); queue is the working copy —
+  // "Knew" drops a card for good, "Didn't Know" requeues it a few cards later
+  // (see handleGrade), so it can repeat a word within the session. Neither is
+  // a live view of the query: grading invalidates due-count/vocabulary but
+  // deliberately not the session query, so re-fetches elsewhere (e.g. window
+  // refocus) can't reshuffle an in-progress play-through. Seeded once per
+  // languageId when data first arrives (from localStorage if a session for
+  // today was already in progress, see lib/review/sessionCache), and mirrored
+  // back to localStorage as it changes so navigating away and back restores it.
   const [sessionCards, setSessionCards] = useState<SrsCard[]>([]);
   const [queue, setQueue] = useState<SrsCard[]>([]);
   const [revealed, setRevealed] = useState(false);
@@ -67,19 +73,38 @@ export default function ReviewPage() {
   }
 
   useEffect(() => {
-    if (session && seededForLanguage.current !== languageId) {
-      setSessionCards(session.cards);
-      setQueue(session.cards);
+    if (session && languageId && seededForLanguage.current !== languageId) {
+      const stored = loadReviewSession(languageId);
+      if (stored) {
+        setSessionCards(stored.sessionCards);
+        setQueue(stored.queue);
+      } else {
+        setSessionCards(session.cards);
+        setQueue(session.cards);
+      }
       setRevealed(false);
       seededForLanguage.current = languageId;
     }
   }, [session, languageId]);
+
+  // Mirrors sessionCards/queue into localStorage so navigating away from
+  // /review and back (or closing the tab) restores in-progress state instead
+  // of reseeding from scratch. Guarded on seededForLanguage so this never
+  // fires before the effect above has actually seeded this language.
+  useEffect(() => {
+    if (!languageId || seededForLanguage.current !== languageId || sessionCards.length === 0) return;
+    saveReviewSession(languageId, { sessionCards, queue });
+  }, [languageId, sessionCards, queue]);
 
   const currentCard = queue[0];
   const nextCard = queue[1];
   const totalCards = sessionCards.length;
   const dueCount = sessionCards.filter((c) => !c.isNew).length;
   const newCount = sessionCards.filter((c) => c.isNew).length;
+  // A card can now reappear in `queue` after a miss (see handleGrade), so
+  // "remaining" is the count of distinct words still owed, not raw queue length.
+  const uniqueRemaining = new Set(queue.map((c) => c.wordId)).size;
+  const completedCount = totalCards - uniqueRemaining;
 
   // Preload current + next card's audio so playback has no delay once the
   // user reaches them (same "warm ahead of time" approach the Reader uses).
@@ -102,8 +127,18 @@ export default function ReviewPage() {
       reviewMutation.mutate(
         { wordId: currentCard.wordId, grade },
         {
-          onSuccess: () => {
-            setQueue((q) => q.slice(1));
+          onSuccess: (data) => {
+            // Anki-style "again": a miss doesn't leave the session, it comes
+            // back a few cards later so it gets re-drilled today instead of
+            // just being rescheduled for tomorrow. Patched with the server's
+            // freshly-computed status/preview so captions never go stale.
+            setQueue((q) => {
+              const rest = q.slice(1);
+              if (grade === 'KNEW') return rest;
+              const updated: SrsCard = { ...currentCard, status: data.status, isNew: false, preview: data.preview };
+              const insertAt = Math.min(rest.length, REQUEUE_OFFSET);
+              return [...rest.slice(0, insertAt), updated, ...rest.slice(insertAt)];
+            });
             setRevealed(false);
           },
         }
@@ -183,9 +218,9 @@ export default function ReviewPage() {
         <Heading size="2xl" as="h1">Review</Heading>
         {totalCards > 0 && (
           <>
-            <SessionProgressBar cards={sessionCards} completedCount={totalCards - queue.length} />
+            <SessionProgressBar cards={sessionCards} completedCount={completedCount} />
             <Muted>
-              {queue.length} of {totalCards} remaining · {dueCount} due · {newCount} new
+              {uniqueRemaining} of {totalCards} remaining · {dueCount} due · {newCount} new
             </Muted>
           </>
         )}

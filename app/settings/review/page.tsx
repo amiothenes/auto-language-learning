@@ -21,6 +21,13 @@ const REVIEWS_OPTIONS: SelectOption[] = [
   { value: 'unlimited', label: 'Unlimited' },
 ];
 
+const MAX_DOWNGRADES_OPTIONS: SelectOption[] = [
+  { value: '1', label: '1 / day' },
+  { value: '2', label: '2 / day' },
+  { value: '3', label: '3 / day' },
+  { value: 'unlimited', label: 'Unlimited' },
+];
+
 const NEW_CARDS_POSITION_OPTIONS: SelectOption[] = [
   { value: 'end', label: 'After all reviews' },
   { value: 'interleaved', label: 'Interleaved with reviews' },
@@ -87,6 +94,14 @@ export default function ReviewSettingsPage() {
             options={NEW_CARDS_POSITION_OPTIONS}
             value={settings.newCardsPosition}
             onChange={(v) => patch({ newCardsPosition: v as SrsSettingsPayload['newCardsPosition'] })}
+          />
+        </SettingRow>
+
+        <SettingRow label="Max Downgrades" description="How many times a word's status can drop per day, however many times you miss it">
+          <Select
+            options={MAX_DOWNGRADES_OPTIONS}
+            value={settings.maxDowngradesPerDay === null ? 'unlimited' : String(settings.maxDowngradesPerDay)}
+            onChange={(v) => patch({ maxDowngradesPerDay: v === 'unlimited' ? null : Number(v) })}
           />
         </SettingRow>
       </SettingSection>

@@ -65,6 +65,7 @@ export async function PUT(request: NextRequest) {
       languageId,
       newCardsPerDay: merged.newCardsPerDay,
       reviewsPerDay: merged.reviewsPerDay,
+      maxDowngradesPerDay: merged.maxDowngradesPerDay,
       minEligibleStatus: merged.minEligibleStatus,
       maxEligibleStatus: merged.maxEligibleStatus,
       typeSwitchStatus: merged.typeSwitchStatus,
@@ -77,6 +78,7 @@ export async function PUT(request: NextRequest) {
       set: {
         newCardsPerDay: merged.newCardsPerDay,
         reviewsPerDay: merged.reviewsPerDay,
+        maxDowngradesPerDay: merged.maxDowngradesPerDay,
         minEligibleStatus: merged.minEligibleStatus,
         maxEligibleStatus: merged.maxEligibleStatus,
         typeSwitchStatus: merged.typeSwitchStatus,
