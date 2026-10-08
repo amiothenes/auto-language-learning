@@ -56,6 +56,7 @@ interface VocabCardProps {
   onToggle: () => void;
   onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
+  onOpenDetails?: (item: VocabularyItem) => void;
   isMultiSelectActive?: boolean;
   onEnableMultiSelect?: () => void;
 }
@@ -66,6 +67,7 @@ export function VocabCard({
   onToggle,
   onEdit,
   onDelete,
+  onOpenDetails,
   isMultiSelectActive = false,
   onEnableMultiSelect
 }: VocabCardProps) {
@@ -196,9 +198,18 @@ export function VocabCard({
           {/* Header Row: Lemma + Status + Menu */}
           <div className="flex items-start justify-between gap-2 mb-1 md:mb-0.5">
             <div className="flex-1 min-w-0">
-              <Content size="base" weight="semibold" className="line-clamp-1 leading-tight md:text-ui-base">
-                {item.lemma}
-              </Content>
+              <button
+                onClick={() => onOpenDetails?.(item)}
+                className="text-left w-full cursor-pointer"
+              >
+                <Content
+                  size="base"
+                  weight="semibold"
+                  className="line-clamp-1 leading-tight md:text-ui-base hover:text-primary hover:underline transition-colors"
+                >
+                  {item.lemma}
+                </Content>
+              </button>
             </div>
             <div className="flex items-center gap-1 md:gap-0.5 shrink-0">
               <span
@@ -295,6 +306,7 @@ interface VocabCardListProps {
   onToggleSelection: (id: string) => void;
   onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
+  onOpenDetails?: (item: VocabularyItem) => void;
   isMultiSelectActive?: boolean;
   onEnableMultiSelect?: () => void;
 }
@@ -305,6 +317,7 @@ export function VocabCardList({
   onToggleSelection,
   onEdit,
   onDelete,
+  onOpenDetails,
   isMultiSelectActive = false,
   onEnableMultiSelect,
 }: VocabCardListProps) {
@@ -326,6 +339,7 @@ export function VocabCardList({
           onToggle={() => onToggleSelection(item.id)}
           onEdit={onEdit}
           onDelete={onDelete}
+          onOpenDetails={onOpenDetails}
           isMultiSelectActive={isMultiSelectActive}
           onEnableMultiSelect={onEnableMultiSelect}
         />

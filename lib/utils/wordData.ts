@@ -1,5 +1,6 @@
 import type { WordData } from '@/lib/types';
 import type { WordInstanceItem } from '@/lib/types/api';
+import type { VocabularyItem } from '@/lib/types/vocabulary';
 
 export function formatInflection(inflectionData: Record<string, unknown>): string {
   const d = Object.fromEntries(Object.entries(inflectionData).map(([k, v]) => [k.toLowerCase(), v]));
@@ -58,5 +59,35 @@ export function buildWordDataFromInstance(inst: WordInstanceItem): WordData {
     meanings: inst.meanings ?? null,
     exampleSentence: inst.exampleSentence ?? null,
     exampleSentenceTranslation: inst.exampleSentenceTranslation ?? null,
+  };
+}
+
+/** Builds the same WordData shape from lemma-level VocabularyItem (the
+ * /vocabulary page's data), so the Reader's WordDetailsPanel can be reused
+ * there. No instance exists at this level, so surface = lemma and
+ * inflectionData is null — WordDetailsPanel already hides the
+ * surface-form and Morphology sections when those are absent. */
+export function buildWordDataFromVocabularyItem(item: VocabularyItem): WordData {
+  const topMeaning = item.meanings?.reduce(
+    (best, m) => (!best || m.confidence > best.confidence ? m : best),
+    undefined as { pos: string; definitions: string[]; confidence: number } | undefined
+  );
+
+  return {
+    id: item.id,
+    wordId: item.id,
+    surface: item.lemma,
+    lemma: item.lemma,
+    pos: topMeaning?.pos ?? 'UNKNOWN',
+    inflection: 'base form',
+    translation: item.translation ?? '—',
+    dictionaryFrequency: item.dictionaryFrequency,
+    frequencyPercentile: item.frequencyPercentile ?? null,
+    userFrequency: item.userFrequency,
+    status: item.status,
+    inflectionData: null,
+    meanings: item.meanings ?? null,
+    exampleSentence: null,
+    exampleSentenceTranslation: null,
   };
 }

@@ -22,6 +22,18 @@
   --color-status-new:       2 75% 60%;
   --color-status-familiar:  32 90% 56%;
   --color-status-known:     78 60% 48%;
+  --color-status-wellknown: 145 60% 40%;
+
+  /* Darkened companions of the tints above, for TEXT on a paper/desk surface.
+     The fill triples are tuned to sit behind ink at 15-25% alpha and are far
+     too light to pass WCAG AA as a foreground colour; these are the same hues
+     dropped to a ~20-30% lightness so a status-coloured numeral or label stays
+     readable. Never use a `--color-status-*` fill triple as a text colour. */
+  --color-status-unknown-ink:   205 80% 28%;
+  --color-status-new-ink:       2 75% 30%;
+  --color-status-familiar-ink:  32 90% 28%;
+  --color-status-known-ink:     78 60% 20%;
+  --color-status-wellknown-ink: 145 60% 22%;
 
   /* Animation durations */
   --dur-fast:   150ms;

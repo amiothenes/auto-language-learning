@@ -50,6 +50,22 @@ export function ProgressGraph({ history }: ProgressGraphProps) {
     };
   }, [history]);
 
+  // A vocabulary that is already in the thousands grows by a few dozen words a
+  // week, so a zero-based axis squeezes the entire trend into the top sliver of
+  // the plot and spends the other 80% of the card's height drawing empty space.
+  // Framing the axis around the data's own range makes the trend legible and
+  // buys back most of that height. The trade-off is real and worth knowing: a
+  // non-zero baseline exaggerates slope, so the axis labels are kept visible to
+  // show the actual scale rather than letting the shape speak alone.
+  const [yMin, yMax] = useMemo(() => {
+    if (history.length === 0) return [0, undefined] as const;
+    const values = history.map((p) => p.knownCount);
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    const pad = Math.max(Math.round((hi - lo) * 0.25), 5);
+    return [Math.max(0, lo - pad), hi + pad] as const;
+  }, [history]);
+
   const chartOptions = useMemo(
     () => ({
       responsive: true,
@@ -67,39 +83,49 @@ export function ProgressGraph({ history }: ProgressGraphProps) {
         x: {
           grid: { display: false },
           ticks: {
-            font: { size: 11 },
-            color: '#9ca3af',
-            maxTicksLimit: 6,
+            font: { size: 10 },
+            color: '#6E6D6A',
+            maxTicksLimit: 5,
           },
         },
         y: {
-          grid: { color: '#f3f4f6' },
+          grid: { color: '#E5E2DA' },
+          border: { display: false },
           ticks: {
-            font: { size: 11 },
-            color: '#9ca3af',
+            font: { size: 10 },
+            color: '#6E6D6A',
+            maxTicksLimit: 4,
             precision: 0,
+            // Chart.js formats ticks with the visitor's OS locale by default,
+            // which renders 4000 as "4.000" in de/es/ru and reads as a decimal.
+            // Same rule as the rest of the app: force en-US grouping.
+            callback: (value: string | number) => Number(value).toLocaleString('en-US'),
           },
-          beginAtZero: true,
+          min: yMin,
+          max: yMax,
         },
       },
     }),
-    []
+    [yMin, yMax]
   );
 
   return (
-    <div className="space-y-3">
+    <>
       {hasChart ? (
-        <div className="h-45 w-full relative">
+        // flex-1 + min-h-32: the plot fills whatever height the card has spare
+        // (so the column's bottom edge lines up with the right-hand column) but
+        // never collapses below a readable 128px when there is no spare height.
+        <div className="relative w-full min-h-32 flex-1">
           <Line data={chartData} options={chartOptions} />
         </div>
       ) : (
-        <div className="h-50 flex flex-col items-center justify-center gap-3">
-          <img src="/illustrations/leaf.svg" width={72} height={72} alt="" />
+        <div className="min-h-32 flex-1 flex flex-col items-center justify-center gap-2">
+          <img src="/illustrations/leaf.svg" width={56} height={56} alt="" />
           <p className="font-sans text-ui-sm text-muted text-center">
             Start reading to track your progress over time
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 }

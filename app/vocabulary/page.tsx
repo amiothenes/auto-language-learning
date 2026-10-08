@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { VocabularyStatus } from '@/lib/types';
 import type { VocabularyItem } from '@/lib/types';
 import { STATUS_PROGRESSION } from '@/lib/vocabulary/statusProgression';
+import { WordDetailsPanel } from '@/components/reader/WordDetailsPanel';
+import { buildWordDataFromVocabularyItem } from '@/lib/utils/wordData';
 import { VocabFilterBar, SortOption } from '@/components/vocabulary/VocabFilterBar';
 import { VocabDistribution } from '@/components/vocabulary/VocabDistribution';
 import { VocabDistributionSkeleton } from '@/components/vocabulary/VocabDistributionSkeleton';
@@ -58,6 +60,9 @@ export default function VocabularyPage() {
 
   // Edit state
   const [editTarget, setEditTarget] = useState<VocabularyItem | null>(null);
+
+  // Word details panel state (Reader-style popup, opened by clicking a lemma)
+  const [detailsTarget, setDetailsTarget] = useState<VocabularyItem | null>(null);
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<VocabularyItem | null>(null);
@@ -184,6 +189,42 @@ export default function VocabularyPage() {
       showToast('Failed to delete word', 'error');
     },
   });
+
+  // Single-word status/translation update for the Reader-style WordDetailsPanel
+  // (opened by clicking a lemma) — same endpoint/body shape EditVocabularyModal
+  // already uses, PATCHing just the field that changed.
+  const updateWordMutation = useMutation({
+    mutationFn: async (payload: { wordId: string; status?: VocabularyStatus; translation?: string }) => {
+      const { wordId, ...rest } = payload;
+      const res = await fetch(`/api/words/${wordId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rest),
+      });
+      if (!res.ok) throw new Error('Failed to update word');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vocabulary'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['word-instances'] });
+      queryClient.invalidateQueries({ queryKey: ['text'] });
+    },
+    onError: () => {
+      showToast('Failed to update word', 'error');
+    },
+  });
+
+  // Optimistically patch the open details panel's own state so status/translation
+  // changes feel immediate, before the mutation + refetch settle the word list.
+  const handleDetailsStatusChange = (wordId: string, newStatus: VocabularyStatus) => {
+    setDetailsTarget((prev) => (prev && prev.id === wordId ? { ...prev, status: newStatus } : prev));
+    updateWordMutation.mutate({ wordId, status: newStatus });
+  };
+
+  const handleDetailsTranslationChange = (wordId: string, newTranslation: string) => {
+    setDetailsTarget((prev) => (prev && prev.id === wordId ? { ...prev, translation: newTranslation } : prev));
+    updateWordMutation.mutate({ wordId, translation: newTranslation });
+  };
 
   // Bulk delete mutation (soft deletes all selected words in parallel)
   const bulkDeleteMutation = useMutation({
@@ -736,6 +777,7 @@ export default function VocabularyPage() {
                 onToggleAll={handleToggleAll}
                 onEdit={handleEdit}
                 onDelete={(item) => setDeleteTarget(item)}
+                onOpenDetails={setDetailsTarget}
               />
             </div>
 
@@ -747,6 +789,7 @@ export default function VocabularyPage() {
                 onToggleSelection={handleToggleSelection}
                 onEdit={handleEdit}
                 onDelete={(item) => setDeleteTarget(item)}
+                onOpenDetails={setDetailsTarget}
                 isMultiSelectActive={isMultiSelectActive}
                 onEnableMultiSelect={handleEnableMultiSelect}
               />
@@ -831,6 +874,14 @@ export default function VocabularyPage() {
         message="This permanently deletes unreviewed words that don't appear in any text, such as leftover typos or import mistakes. Words you're tracking from a text are never touched. This cannot be undone."
         confirmLabel="Clean Up"
         variant="danger"
+      />
+
+      {/* Word Details Panel — same Reader popup, opened by clicking a lemma */}
+      <WordDetailsPanel
+        wordData={detailsTarget ? buildWordDataFromVocabularyItem(detailsTarget) : null}
+        onClose={() => setDetailsTarget(null)}
+        onStatusChange={handleDetailsStatusChange}
+        onTranslationChange={handleDetailsTranslationChange}
       />
 
       {/* Edit Vocabulary Modal */}

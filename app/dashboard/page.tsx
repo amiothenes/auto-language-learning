@@ -96,12 +96,16 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts) */}
-        <div className="flex flex-col xl:grid xl:grid-cols-[35%_1fr] gap-6">
+        {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts).
+            Grid items stretch to the row height by default, but only the BOX
+            stretches - the content inside still sits at its natural height. So
+            StatsCard is the grid child directly (no wrapper div to swallow the
+            stretch) and takes h-full from here, letting its chart grow into
+            whatever height the right column sets. That is what keeps the two
+            columns' bottom edges flush without anyone hard-coding a height. */}
+        <div className="flex flex-col xl:grid xl:grid-cols-[35%_1fr] gap-6 xl:items-stretch">
           {/* LEFT COLUMN: Chart + Stats — first on mobile, left on desktop */}
-          <div className="space-y-6">
-            <StatsCard />
-          </div>
+          <StatsCard />
 
           {/* RIGHT COLUMN: Recent Texts — second on mobile, right on desktop */}
           <div className="space-y-6">

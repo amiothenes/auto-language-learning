@@ -21,6 +21,7 @@ interface VocabTableProps {
   onToggleAll: () => void;
   onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
+  onOpenDetails?: (item: VocabularyItem) => void;
 }
 
 // ============================================================================
@@ -66,12 +67,14 @@ function TableRow({
   onToggle,
   onEdit,
   onDelete,
+  onOpenDetails,
 }: {
   item: VocabularyItem;
   isSelected: boolean;
   onToggle: () => void;
   onEdit?: (item: VocabularyItem) => void;
   onDelete?: (item: VocabularyItem) => void;
+  onOpenDetails?: (item: VocabularyItem) => void;
 }) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -132,11 +135,14 @@ function TableRow({
         </label>
       </td>
 
-      {/* Lemma */}
+      {/* Lemma — opens the Reader-style word details panel */}
       <td className="px-2 md:px-3 py-1.5 md:py-2">
-        <p className="font-serif text-ink font-semibold leading-normal line-clamp-1 text-ui-base md:text-base">
+        <button
+          onClick={() => onOpenDetails?.(item)}
+          className="font-serif text-ink font-semibold leading-normal line-clamp-1 text-ui-base md:text-base hover:text-primary hover:underline transition-colors cursor-pointer text-left"
+        >
           {item.lemma}
-        </p>
+        </button>
       </td>
 
       {/* Status */}
@@ -227,6 +233,7 @@ export function VocabTable({
   onToggleAll,
   onEdit,
   onDelete,
+  onOpenDetails,
 }: VocabTableProps) {
   const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
   const someSelected = items.some((item) => selectedIds.has(item.id)) && !allSelected;
@@ -281,6 +288,7 @@ export function VocabTable({
                 onToggle={() => onToggleSelection(item.id)}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onOpenDetails={onOpenDetails}
               />
             ))}
           </tbody>

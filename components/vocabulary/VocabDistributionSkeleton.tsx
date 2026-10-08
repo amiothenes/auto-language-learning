@@ -7,29 +7,29 @@ import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 
 export function VocabDistributionSkeleton() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Distribution strip */}
       <div>
-        <Skeleton className="h-2.5 rounded-full mb-3" />
+        <Skeleton className="h-3 rounded-full mb-2.5" />
 
-        {/* Stat row */}
+        {/* Figures row — count, label, share */}
         <div className="grid grid-cols-5 gap-1">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
-              <SkeletonText width="w-8" className="h-5" />
+              <SkeletonText width="w-8" className="h-4" />
               <SkeletonText width="w-12" className="h-3" />
+              <SkeletonText width="w-8" className="h-2.5" />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Reading coverage card */}
-      <div className="bg-desk border border-border rounded-md p-2">
-        <div className="flex items-baseline gap-2 mb-1.5">
-          <SkeletonText width="w-16" className="h-6" />
-          <SkeletonText width="w-28" className="h-4" />
-        </div>
-        <Skeleton className="h-2 rounded-full" />
+      {/* Reading coverage card — eyebrow, headline, meter, CEFR label row */}
+      <div className="rounded-card border border-border bg-paper p-3 shadow-raised space-y-2">
+        <SkeletonText width="w-32" className="h-3" />
+        <SkeletonText width="w-28" className="h-6" />
+        <Skeleton className="h-2.5 rounded-full" />
+        <SkeletonText width="w-40" className="h-3" />
       </div>
     </div>
   );
