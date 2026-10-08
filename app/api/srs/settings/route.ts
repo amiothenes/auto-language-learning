@@ -54,6 +54,15 @@ export async function PUT(request: NextRequest) {
       { status: 400 }
     );
   }
+  if (
+    body.excludeSentencesFrom !== undefined &&
+    !['none', 'unopened', 'incomplete'].includes(body.excludeSentencesFrom)
+  ) {
+    return NextResponse.json<ApiErrorResponse>(
+      { error: `Invalid excludeSentencesFrom: ${body.excludeSentencesFrom}` },
+      { status: 400 }
+    );
+  }
 
   const current = await getSrsSettings(user.id, languageId);
   const merged: SrsSettingsPayload = { ...current, ...body };
@@ -72,6 +81,7 @@ export async function PUT(request: NextRequest) {
       sentenceAudioEnabled: merged.sentenceAudioEnabled,
       wordAudioEnabled: merged.wordAudioEnabled,
       newCardsPosition: merged.newCardsPosition,
+      excludeSentencesFrom: merged.excludeSentencesFrom,
     })
     .onConflictDoUpdate({
       target: [srsSettings.userId, srsSettings.languageId],
@@ -85,6 +95,7 @@ export async function PUT(request: NextRequest) {
         sentenceAudioEnabled: merged.sentenceAudioEnabled,
         wordAudioEnabled: merged.wordAudioEnabled,
         newCardsPosition: merged.newCardsPosition,
+        excludeSentencesFrom: merged.excludeSentencesFrom,
         updatedAt: new Date(),
       },
     });

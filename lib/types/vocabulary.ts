@@ -127,6 +127,8 @@ export type WordData = {
   exampleSentence?: string | null;
   /** Example sentence translated into the user's native language */
   exampleSentenceTranslation?: string | null;
+  /** Sentence this occurrence belongs to (nullable) — lets the tooltip offer "Translate sentence" */
+  sentenceId?: string | null;
 }
 
 // ============================================================================

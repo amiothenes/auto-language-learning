@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats, languages } from '@/lib/db/schema';
+import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats, languages, texts } from '@/lib/db/schema';
 import { resolveTranslationTarget } from '@/lib/languages/presets';
 import { eq, and, lte, inArray, isNull, notInArray, asc, count, sql } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
@@ -18,6 +18,7 @@ export const DEFAULT_SRS_SETTINGS: SrsSettingsPayload = {
   sentenceAudioEnabled: true,
   wordAudioEnabled: true,
   newCardsPosition: 'end',
+  excludeSentencesFrom: 'incomplete',
 };
 
 const NON_MASTERED = [VocabularyStatus.WELL_KNOWN, VocabularyStatus.IGNORE];
@@ -37,12 +38,23 @@ export async function getSrsSettings(userId: string, languageId: string): Promis
     sentenceAudioEnabled: row.sentenceAudioEnabled,
     wordAudioEnabled: row.wordAudioEnabled,
     newCardsPosition: row.newCardsPosition,
+    excludeSentencesFrom: row.excludeSentencesFrom,
   };
 }
 
+// WELL_KNOWN is never reviewable — mastered words are retired from review
+// rotation permanently. This caps maxIdx below WELL_KNOWN's position
+// regardless of what's stored in settings, so old rows that set
+// maxEligibleStatus to WELL_KNOWN are simply reinterpreted, not treated as
+// invalid.
+const WELL_KNOWN_IDX = STATUS_PROGRESSION.indexOf(VocabularyStatus.WELL_KNOWN);
+
 export function eligibleStatusesFor(settings: SrsSettingsPayload): VocabularyStatus[] {
   const minIdx = STATUS_PROGRESSION.indexOf(settings.minEligibleStatus as (typeof STATUS_PROGRESSION)[number]);
-  const maxIdx = STATUS_PROGRESSION.indexOf(settings.maxEligibleStatus as (typeof STATUS_PROGRESSION)[number]);
+  const maxIdx = Math.min(
+    STATUS_PROGRESSION.indexOf(settings.maxEligibleStatus as (typeof STATUS_PROGRESSION)[number]),
+    WELL_KNOWN_IDX - 1
+  );
   const lo = Math.max(0, Math.min(minIdx, maxIdx));
   const hi = Math.max(minIdx, maxIdx);
   return STATUS_PROGRESSION.slice(lo, hi + 1);
@@ -155,7 +167,8 @@ async function buildCardsForWords(
   orderedIds: string[],
   userId: string,
   languageId: string,
-  typeSwitchStatus: VocabularyStatus
+  typeSwitchStatus: VocabularyStatus,
+  excludeSentencesFrom: SrsSettingsPayload['excludeSentencesFrom']
 ): Promise<SrsCard[]> {
   if (orderedIds.length === 0) return [];
 
@@ -174,7 +187,7 @@ async function buildCardsForWords(
       : Promise.resolve([]),
     db.query.wordInstances.findMany({
       where: inArray(wordInstances.wordId, orderedIds),
-      columns: { wordId: true, surfaceForm: true, sentenceId: true, pos: true, inflectionData: true },
+      columns: { wordId: true, surfaceForm: true, sentenceId: true, pos: true, inflectionData: true, textId: true },
     }),
     db.query.wordReviews.findMany({ where: inArray(wordReviews.wordId, orderedIds) }),
   ]);
@@ -192,6 +205,32 @@ async function buildCardsForWords(
     else instancesByWord.set(instance.wordId, [candidate]);
   }
 
+  // Exclude sentence candidates belonging to texts the user hasn't engaged
+  // with yet, per excludeSentencesFrom. A word's every occurrence being in an
+  // excluded text must never cause that word to drop out of review entirely —
+  // fall back to the unfiltered pool for that word instead (same spirit as
+  // the rival-count "degraded" fallback below).
+  let effectiveInstancesByWord = instancesByWord;
+  if (excludeSentencesFrom !== 'none') {
+    const textIds = [...new Set(instanceRows.map((i) => i.textId))];
+    const textRows = textIds.length
+      ? await db
+          .select({ id: texts.id, viewCount: texts.viewCount, knownPercentage: texts.knownPercentage })
+          .from(texts)
+          .where(inArray(texts.id, textIds))
+      : [];
+    const excludedTextIds = new Set(
+      textRows
+        .filter((t) => (excludeSentencesFrom === 'unopened' ? t.viewCount === 0 : t.knownPercentage < 100))
+        .map((t) => t.id)
+    );
+    effectiveInstancesByWord = new Map();
+    for (const [wordId, instances] of instancesByWord) {
+      const filtered = instances.filter((inst) => !excludedTextIds.has(inst.textId));
+      effectiveInstancesByWord.set(wordId, filtered.length > 0 ? filtered : instances);
+    }
+  }
+
   const switchIdx = STATUS_PROGRESSION.indexOf(typeSwitchStatus as (typeof STATUS_PROGRESSION)[number]);
   const cardTypeByWord = new Map<string, 'SENTENCE' | 'WORD'>();
   const rivalCheckSentenceIds = new Set<string>();
@@ -202,7 +241,7 @@ async function buildCardsForWords(
     const cardType: 'SENTENCE' | 'WORD' = statusIdx < switchIdx ? 'SENTENCE' : 'WORD';
     cardTypeByWord.set(id, cardType);
     if (cardType === 'SENTENCE') {
-      for (const instance of instancesByWord.get(id) ?? []) rivalCheckSentenceIds.add(instance.sentenceId);
+      for (const instance of effectiveInstancesByWord.get(id) ?? []) rivalCheckSentenceIds.add(instance.sentenceId);
     }
   }
 
@@ -225,7 +264,7 @@ async function buildCardsForWords(
   const chosenByWord = new Map<string, ChosenSentenceCandidate>();
   for (const id of orderedIds) {
     const cardType = cardTypeByWord.get(id);
-    const candidates = instancesByWord.get(id) ?? [];
+    const candidates = effectiveInstancesByWord.get(id) ?? [];
     if (!cardType || candidates.length === 0) continue;
 
     if (cardType === 'WORD') {
@@ -348,7 +387,7 @@ export async function buildSession(userId: string, languageId: string) {
 
   const orderedIds =
     settings.newCardsPosition === 'interleaved' ? interleaveEvenly(dueIds, newIds) : [...dueIds, ...newIds];
-  const cards = await buildCardsForWords(orderedIds, userId, languageId, settings.typeSwitchStatus);
+  const cards = await buildCardsForWords(orderedIds, userId, languageId, settings.typeSwitchStatus, settings.excludeSentencesFrom);
 
   return { cards, dueCount: dueIds.length, newCount: newIds.length };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
 import { VocabularyStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,10 @@ interface AdaptiveStepperProps {
   onStatusChange: (newStatus: VocabularyStatus) => void;
   onMoreClick?: (anchorEl: HTMLButtonElement) => void;
   hideMore?: boolean;
+  /** Only meaningful when status === KNOWN — surfaces a scoped undo for a
+   * word the Reader tracked as flipped UNKNOWN→KNOWN earlier this session. */
+  showRevertToNewlySeen?: boolean;
+  onRevertToNewlySeen?: () => void;
 }
 
 const PROGRESSION = [
@@ -67,7 +71,14 @@ const BTN_PRIMARY = cn(BTN_BASE, 'bg-primary text-white border border-primary sh
 const BTN_SECONDARY = cn(BTN_BASE, 'border border-border-strong bg-paper hover:bg-desk text-ink');
 const BTN_MORE = cn(BTN_BASE, 'w-[34px] px-0 border border-border-strong bg-paper hover:bg-desk text-muted hover:text-ink');
 
-export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore = false }: AdaptiveStepperProps) {
+export function AdaptiveStepper({
+  status,
+  onStatusChange,
+  onMoreClick,
+  hideMore = false,
+  showRevertToNewlySeen = false,
+  onRevertToNewlySeen,
+}: AdaptiveStepperProps) {
   const level      = STATUS_LEVEL[status];
   const dotColor   = STATUS_DOT_COLOR[status];
   const label      = STATUS_LABEL[status];
@@ -127,39 +138,51 @@ export function AdaptiveStepper({ status, onStatusChange, onMoreClick, hideMore 
 
   // ── MID-TIER — ±1 nudge with status ladder ────────────────────────────────
   return (
-    <div className="flex items-center gap-1.5">
-      {stepDown && (
-        <button className={cn(BTN_SECONDARY, 'flex-1')} onClick={() => onStatusChange(stepDown)}>
-          <ChevronDown size={13} strokeWidth={2.5} />
-          Didn&apos;t
-        </button>
-      )}
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        {stepDown && (
+          <button className={cn(BTN_SECONDARY, 'flex-1')} onClick={() => onStatusChange(stepDown)}>
+            <ChevronDown size={13} strokeWidth={2.5} />
+            Didn&apos;t
+          </button>
+        )}
 
-      {/* 4-dot status ladder */}
-      <div className="flex items-center gap-1.5 px-1 shrink-0">
-        <div className="flex gap-1">
-          {[1, 2, 3, 4].map((i) => (
-            <span
-              key={i}
-              className={cn(
-                'block w-2 h-2 rounded-full transition-colors',
-                i <= level ? dotColor : 'bg-border',
-                status === VocabularyStatus.WELL_KNOWN && i <= level && 'border border-ink/40',
-              )}
-            />
-          ))}
+        {/* 4-dot status ladder */}
+        <div className="flex items-center gap-1.5 px-1 shrink-0">
+          <div className="flex gap-1">
+            {[1, 2, 3, 4].map((i) => (
+              <span
+                key={i}
+                className={cn(
+                  'block w-2 h-2 rounded-full transition-colors',
+                  i <= level ? dotColor : 'bg-border',
+                  status === VocabularyStatus.WELL_KNOWN && i <= level && 'border border-ink/40',
+                )}
+              />
+            ))}
+          </div>
+          <span className="font-sans text-[10px] font-semibold text-ink whitespace-nowrap">{label}</span>
         </div>
-        <span className="font-sans text-[10px] font-semibold text-ink whitespace-nowrap">{label}</span>
+
+        {stepUp && (
+          <button className={cn(BTN_PRIMARY, 'flex-1')} onClick={() => onStatusChange(stepUp)}>
+            Knew it
+            <ChevronUp size={13} strokeWidth={2.5} />
+          </button>
+        )}
+
+        {!hideMore && <MoreBtn />}
       </div>
 
-      {stepUp && (
-        <button className={cn(BTN_PRIMARY, 'flex-1')} onClick={() => onStatusChange(stepUp)}>
-          Knew it
-          <ChevronUp size={13} strokeWidth={2.5} />
+      {status === VocabularyStatus.KNOWN && showRevertToNewlySeen && onRevertToNewlySeen && (
+        <button
+          onClick={onRevertToNewlySeen}
+          className="w-full flex items-center justify-center gap-1 h-6 font-sans text-[10px] text-muted hover:text-ink transition-colors cursor-pointer"
+        >
+          <RotateCcw size={10} strokeWidth={2} />
+          Revert to Newly Seen (marked Known this session)
         </button>
       )}
-
-      {!hideMore && <MoreBtn />}
     </div>
   );
 }

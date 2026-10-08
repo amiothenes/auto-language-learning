@@ -41,6 +41,9 @@ interface WordDetailsPanelProps {
   onClose: () => void;
   onStatusChange?: (wordId: string, newStatus: VocabularyStatus) => void;
   onTranslationChange?: (wordId: string, newTranslation: string) => void;
+  /** Only meaningful when wordData.status === KNOWN — see AdaptiveStepper. */
+  showRevertToNewlySeen?: boolean;
+  onRevertToNewlySeen?: () => void;
 }
 
 export function WordDetailsPanel({
@@ -48,6 +51,8 @@ export function WordDetailsPanel({
   onClose,
   onStatusChange,
   onTranslationChange,
+  showRevertToNewlySeen,
+  onRevertToNewlySeen,
 }: WordDetailsPanelProps) {
   const [mounted, setMounted] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
@@ -173,6 +178,8 @@ export function WordDetailsPanel({
                 status={wordData.status}
                 onStatusChange={(newStatus) => { onStatusChange?.(wordData.wordId, newStatus); }}
                 onMoreClick={(el) => setMoreMenuAnchorEl(el)}
+                showRevertToNewlySeen={showRevertToNewlySeen}
+                onRevertToNewlySeen={onRevertToNewlySeen}
               />
             </div>
 

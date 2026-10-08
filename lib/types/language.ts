@@ -33,6 +33,8 @@ export interface LanguageContextType {
   currentLanguage: LanguageItem | undefined;
   /** All languages loaded from DB */
   languages: LanguageItem[];
+  /** True until localStorage has been read AND the DB languages list has loaded — distinguishes "still loading" from "genuinely no language set" */
+  isLoading: boolean;
   /** Set the selected language code */
   setSelectedLanguage: (code: string) => void;
   /** Language dropdown open state (for Sidebar) */

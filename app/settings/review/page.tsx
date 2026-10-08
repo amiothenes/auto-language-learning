@@ -33,6 +33,12 @@ const NEW_CARDS_POSITION_OPTIONS: SelectOption[] = [
   { value: 'interleaved', label: 'Interleaved with reviews' },
 ];
 
+const EXCLUDE_SENTENCES_OPTIONS: SelectOption[] = [
+  { value: 'none', label: 'Any text' },
+  { value: 'unopened', label: 'Skip never-opened texts' },
+  { value: 'incomplete', label: 'Skip unfinished texts' },
+];
+
 const STATUS_LABELS: Record<VocabularyStatus, string> = {
   [VocabularyStatus.UNKNOWN]: 'Unknown',
   [VocabularyStatus.NEWLY_SEEN]: 'Newly Seen',
@@ -42,11 +48,13 @@ const STATUS_LABELS: Record<VocabularyStatus, string> = {
   [VocabularyStatus.IGNORE]: 'Ignore',
 };
 
+// WELL_KNOWN is deliberately excluded — mastered words are retired from review
+// permanently, never selectable here. lib/srs/queue.ts's eligibleStatusesFor
+// enforces this server-side too, regardless of what's in stored settings.
 const REVIEWABLE_STATUS_OPTIONS: SelectOption[] = [
   VocabularyStatus.NEWLY_SEEN,
   VocabularyStatus.FAMILIAR,
   VocabularyStatus.KNOWN,
-  VocabularyStatus.WELL_KNOWN,
 ].map((s) => ({ value: s, label: STATUS_LABELS[s] }));
 
 export default function ReviewSettingsPage() {
@@ -131,6 +139,14 @@ export default function ReviewSettingsPage() {
             options={REVIEWABLE_STATUS_OPTIONS}
             value={settings.typeSwitchStatus}
             onChange={(v) => patch({ typeSwitchStatus: v as VocabularyStatus })}
+          />
+        </SettingRow>
+
+        <SettingRow label="Sentence Source" description="Skip example sentences from texts you haven't engaged with">
+          <Select
+            options={EXCLUDE_SENTENCES_OPTIONS}
+            value={settings.excludeSentencesFrom}
+            onChange={(v) => patch({ excludeSentencesFrom: v as SrsSettingsPayload['excludeSentencesFrom'] })}
           />
         </SettingRow>
       </SettingSection>

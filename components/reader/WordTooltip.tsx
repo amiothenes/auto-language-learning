@@ -9,6 +9,7 @@ import { MoreMenu } from './MoreMenu';
 import { cn } from '@/lib/utils';
 import { X, ExternalLink, Volume2, VolumeX, LoaderCircle } from 'lucide-react';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
+import { useSentenceTranslation } from '@/lib/hooks/useSentenceTranslation';
 import { MORPH_PRIORITY, buildMorphSummary, buildMorphFull } from '@/lib/utils/morphology';
 import { posMatches } from '@/lib/utils/pos';
 
@@ -26,6 +27,12 @@ interface WordTooltipProps {
    * the first place) — lets the Reader hold off routing Space to Tutor Mode's
    * "advance" action until the reveal it's also bound to has happened. */
   onRevealedChange?: (revealed: boolean) => void;
+  /** Only meaningful when wordData.status === KNOWN — see AdaptiveStepper. */
+  showRevertToNewlySeen?: boolean;
+  onRevertToNewlySeen?: () => void;
+  /** Full text of the sentence this word occurrence belongs to, resolved by
+   * the caller from wordData.sentenceId — powers "Translate sentence". */
+  sentenceContent?: string | null;
 }
 
 const STATUS_CONFIG: Record<VocabularyStatus, { label: string }> = {
@@ -48,8 +55,12 @@ export function WordTooltip({
   onGraded,
   isExiting = false,
   onRevealedChange,
+  showRevertToNewlySeen,
+  onRevertToNewlySeen,
+  sentenceContent,
 }: WordTooltipProps) {
   const [showFullMorph, setShowFullMorph] = useState(false);
+  const sentenceTranslationQuery = useSentenceTranslation(wordData.sentenceId ?? null);
   const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
   // SRS state: hidden until graded on first encounter
   const [translationRevealed, setTranslationRevealed] = useState(false);
@@ -340,6 +351,8 @@ export function WordTooltip({
                 status={wordData.status}
                 onStatusChange={handleGrade}
                 onMoreClick={(el) => setMoreMenuAnchorEl(el)}
+                showRevertToNewlySeen={showRevertToNewlySeen}
+                onRevertToNewlySeen={onRevertToNewlySeen}
               />
             </div>
           )}
@@ -375,6 +388,30 @@ export function WordTooltip({
               </button>
             )}
           </div>
+
+          {/* ⑦ Translate sentence — on-demand, ephemeral (no caching) */}
+          {wordData.sentenceId && sentenceContent && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => sentenceTranslationQuery.refetch()}
+                disabled={sentenceTranslationQuery.isFetching}
+                className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {sentenceTranslationQuery.isFetching ? 'Translating…' : 'Translate sentence'}
+              </button>
+              {sentenceTranslationQuery.data !== undefined && (
+                <p className="mt-1.5 font-serif text-sm text-ink/70 italic leading-snug">
+                  {sentenceTranslationQuery.data ?? (
+                    <span className="not-italic font-sans text-muted/50">No translation available</span>
+                  )}
+                </p>
+              )}
+              {sentenceTranslationQuery.isError && (
+                <p className="mt-1.5 font-sans text-ui-xs text-danger">Couldn&apos;t translate — try again.</p>
+              )}
+            </div>
+          )}
         </div>
       </Tooltip>
 

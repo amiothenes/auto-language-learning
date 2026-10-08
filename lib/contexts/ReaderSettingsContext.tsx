@@ -11,6 +11,8 @@ import {
   TutorModeResume,
 } from '@/lib/types';
 import { quantizeRate } from '@/lib/tts/rate';
+import { useReaderSyncSettings, useUpdateReaderSyncSettings } from '@/lib/hooks/useReaderSyncSettings';
+import type { ReaderSyncSettingsPayload } from '@/lib/types/api';
 
 // ============================================================================
 // Default Settings
@@ -49,6 +51,13 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Cross-device sync for the 10 audio/TTS/tutor-mode/highlighting fields
+  // below (NOT margin/font/text-display, which stay localStorage-only).
+  // localStorage remains the instant-read offline cache; the DB is the
+  // source of truth once it loads.
+  const syncQuery = useReaderSyncSettings();
+  const updateSync = useUpdateReaderSyncSettings();
+
   // Load settings from localStorage on mount
   useEffect(() => {
     try {
@@ -67,6 +76,15 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
       setIsInitialized(true);
     }
   }, []);
+
+  // Once the DB-synced settings load, they win over whatever localStorage/
+  // defaults had for these 10 fields — the DB is the cross-device source of
+  // truth, localStorage was only ever a same-device instant-read cache.
+  useEffect(() => {
+    if (syncQuery.data) {
+      setSettings((prev) => ({ ...prev, ...syncQuery.data }));
+    }
+  }, [syncQuery.data]);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -88,10 +106,12 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
     // Clamp value between 0 and 100
     const clamped = Math.max(0, Math.min(100, intensity));
     setSettings((prev) => ({ ...prev, highlightIntensity: clamped }));
+    updateSync.mutate({ highlightIntensity: clamped });
   };
 
   const updateShowWellKnownWords = (show: boolean) => {
     setSettings((prev) => ({ ...prev, showWellKnownWords: show }));
+    updateSync.mutate({ showWellKnownWords: show });
   };
 
   const updateColorScheme = (scheme: ColorScheme) => {
@@ -100,6 +120,7 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
 
   const updateHighlightMode = (mode: 'highlight' | 'underline') => {
     setSettings((prev) => ({ ...prev, highlightMode: mode }));
+    updateSync.mutate({ highlightMode: mode });
   };
 
   const updateContentWidth = (width: 'narrow' | 'normal' | 'wide') => {
@@ -111,38 +132,62 @@ export function ReaderSettingsProvider({ children }: { children: ReactNode }) {
   };
 
   const updatePlaybackSpeed = (rate: number) => {
-    setSettings((prev) => ({ ...prev, playbackSpeed: quantizeRate(rate) }));
+    const quantized = quantizeRate(rate);
+    setSettings((prev) => ({ ...prev, playbackSpeed: quantized }));
+    updateSync.mutate({ playbackSpeed: quantized });
   };
 
   const updatePreferredVoice = (languageCode: string, voiceId: string) => {
+    const nextPreferredVoices = { ...settings.preferredVoices, [languageCode]: voiceId };
     setSettings((prev) => ({
       ...prev,
       preferredVoices: { ...prev.preferredVoices, [languageCode]: voiceId },
     }));
+    updateSync.mutate({ preferredVoices: nextPreferredVoices });
   };
 
   const toggleTutorMode = () => {
-    setSettings((prev) => ({ ...prev, tutorModeEnabled: !prev.tutorModeEnabled }));
+    const next = !settings.tutorModeEnabled;
+    setSettings((prev) => ({ ...prev, tutorModeEnabled: next }));
+    updateSync.mutate({ tutorModeEnabled: next });
   };
 
   const updateTutorModeTiming = (timing: TutorModeTiming) => {
     setSettings((prev) => ({ ...prev, tutorModeTiming: timing }));
+    updateSync.mutate({ tutorModeTiming: timing });
   };
 
   const updateTutorModeThreshold = (threshold: TutorModeThreshold) => {
     setSettings((prev) => ({ ...prev, tutorModeThreshold: threshold }));
+    updateSync.mutate({ tutorModeThreshold: threshold });
   };
 
   const updateTutorModeMaxPerSentence = (max: number) => {
-    setSettings((prev) => ({ ...prev, tutorModeMaxPerSentence: Math.max(0, Math.round(max)) }));
+    const rounded = Math.max(0, Math.round(max));
+    setSettings((prev) => ({ ...prev, tutorModeMaxPerSentence: rounded }));
+    updateSync.mutate({ tutorModeMaxPerSentence: rounded });
   };
 
   const updateTutorModeResume = (resume: TutorModeResume) => {
     setSettings((prev) => ({ ...prev, tutorModeResume: resume }));
+    updateSync.mutate({ tutorModeResume: resume });
   };
 
   const resetToDefaults = () => {
     setSettings(DEFAULT_SETTINGS);
+    const syncDefaults: ReaderSyncSettingsPayload = {
+      highlightIntensity: DEFAULT_SETTINGS.highlightIntensity,
+      showWellKnownWords: DEFAULT_SETTINGS.showWellKnownWords,
+      highlightMode: DEFAULT_SETTINGS.highlightMode,
+      playbackSpeed: DEFAULT_SETTINGS.playbackSpeed,
+      preferredVoices: DEFAULT_SETTINGS.preferredVoices,
+      tutorModeEnabled: DEFAULT_SETTINGS.tutorModeEnabled,
+      tutorModeTiming: DEFAULT_SETTINGS.tutorModeTiming,
+      tutorModeThreshold: DEFAULT_SETTINGS.tutorModeThreshold,
+      tutorModeMaxPerSentence: DEFAULT_SETTINGS.tutorModeMaxPerSentence,
+      tutorModeResume: DEFAULT_SETTINGS.tutorModeResume,
+    };
+    updateSync.mutate(syncDefaults);
   };
 
   const value: ReaderSettingsContextType = {

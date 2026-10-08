@@ -149,10 +149,17 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const touchStartY = useRef(0);
   const touchEndX = useRef(0);
   const touchEndY = useRef(0);
+  const touchStartOnInteractive = useRef(false);
 
   // Tracks which lemmas the user has already graded this session so we don't
   // show the "Know this word?" test mode on re-taps of the same word.
   const testedLemmasThisSession = useRef(new Set<string>());
+
+  // Words flipped UNKNOWN→KNOWN during this Reader visit — in-memory only,
+  // resets on navigation/reload. Lets the status control offer a scoped
+  // "Revert to Newly Seen" for exactly these words, without a DB column or a
+  // permanent button on every KNOWN word.
+  const unknownToKnownThisSession = useRef(new Set<string>());
 
   // ── Helpers + Handlers (relocated here from below the loading/error gate) ──
   // These were previously declared after the `if (!isLoading && !textQuery.data)`
@@ -274,6 +281,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     if (!selectedWord) return;
 
     const prevWord = { ...selectedWord };
+    if (prevWord.status === VocabularyStatus.UNKNOWN && newStatus === VocabularyStatus.KNOWN) {
+      unknownToKnownThisSession.current.add(wordId);
+    }
     const prevInstances = queryClient.getQueryData<WordInstanceItem[]>(['word-instances', id]);
     const nextInstances = prevInstances?.map((inst) =>
       inst.wordId === wordId ? { ...inst, status: newStatus } : inst
@@ -447,6 +457,13 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     }
     return map;
   }, [wordInstances, textData]);
+
+  // Sentence content by id, for the tooltip's "Translate sentence" button —
+  // sentences are already fetched for TTS/Tutor Mode, so this is a lookup,
+  // not a new fetch.
+  const sentenceContentById = useMemo(() => {
+    return new Map((sentencesQuery.data ?? []).map((s) => [s.id, s.content]));
+  }, [sentencesQuery.data]);
 
   const playingParagraphIndex = useMemo(() => {
     const sentence = sentencesQuery.data?.[tutorMode.currentSentenceIndex];
@@ -651,12 +668,17 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     const handleTouchStart = (e: TouchEvent) => {
       touchStartX.current = e.touches[0].clientX;
       touchStartY.current = e.touches[0].clientY;
+      const target = e.target as HTMLElement | null;
+      touchStartOnInteractive.current = !!target?.closest(
+        'button, a, [role="button"], input, select, textarea'
+      );
     };
     const handleTouchMove = (e: TouchEvent) => {
       touchEndX.current = e.touches[0].clientX;
       touchEndY.current = e.touches[0].clientY;
     };
     const handleTouchEnd = () => {
+      if (touchStartOnInteractive.current) return;
       const deltaX = touchEndX.current - touchStartX.current;
       const deltaY = touchEndY.current - touchStartY.current;
       if (Math.abs(deltaX) > Math.abs(deltaY)) {
@@ -979,6 +1001,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onTranslationChange={(wordId, translation) => {
             updateWordTranslation.mutate({ wordId, translation });
           }}
+          showRevertToNewlySeen={unknownToKnownThisSession.current.has(selectedWord.wordId)}
+          onRevertToNewlySeen={() => handleStatusChange(selectedWord.wordId, VocabularyStatus.NEWLY_SEEN)}
         />
       )}
 
@@ -996,6 +1020,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onTranslationChange={(wordId, newTranslation) => {
             updateWordTranslation.mutate({ wordId, translation: newTranslation });
           }}
+          showRevertToNewlySeen={unknownToKnownThisSession.current.has(selectedWord.wordId)}
+          onRevertToNewlySeen={() => handleStatusChange(selectedWord.wordId, VocabularyStatus.NEWLY_SEEN)}
         />
       )}
 
@@ -1067,6 +1093,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onGraded={(lemma) => {
             testedLemmasThisSession.current.add(lemma);
           }}
+          showRevertToNewlySeen={unknownToKnownThisSession.current.has(tooltipWord.wordId)}
+          onRevertToNewlySeen={() => handleStatusChange(tooltipWord.wordId, VocabularyStatus.NEWLY_SEEN)}
+          sentenceContent={tooltipWord.sentenceId ? sentenceContentById.get(tooltipWord.sentenceId) ?? null : null}
           onTranslationChange={(wordId, translation) => {
             updateWordTranslation.mutate({ wordId, translation });
           }}

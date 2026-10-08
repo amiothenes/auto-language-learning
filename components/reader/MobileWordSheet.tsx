@@ -89,6 +89,9 @@ interface MobileWordSheetProps {
    * the first place) — lets the Reader hold off routing Space to Tutor Mode's
    * "advance" action until the reveal it's also bound to has happened. */
   onRevealedChange?: (revealed: boolean) => void;
+  /** Only meaningful when wordData.status === KNOWN — see AdaptiveStepper. */
+  showRevertToNewlySeen?: boolean;
+  onRevertToNewlySeen?: () => void;
 }
 
 export function MobileWordSheet({
@@ -99,6 +102,8 @@ export function MobileWordSheet({
   isFirstTest,
   onGraded,
   onRevealedChange,
+  showRevertToNewlySeen,
+  onRevertToNewlySeen,
 }: MobileWordSheetProps) {
   const [expanded, setExpanded] = useState(false);
   const [translation, setTranslation] = useState('');
@@ -254,8 +259,14 @@ export function MobileWordSheet({
           <div className="w-8 h-1 rounded-full bg-border" />
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-6 overscroll-contain">
+        {/* Scrollable content — tapping anywhere here also expands the sheet
+            (in addition to the drag handle/header's swipe gesture above), so
+            expansion doesn't depend on hitting a narrow strip. Interactive
+            children below stop propagation so they don't double-trigger it. */}
+        <div
+          className="flex-1 overflow-y-auto px-5 pb-6 overscroll-contain"
+          onClick={() => { if (!expanded) setExpanded(true); }}
+        >
 
           {/* ① Status header: dots · label · ✕ — also a swipe/tap target to expand */}
           <div
@@ -325,7 +336,7 @@ export function MobileWordSheet({
               ) : !editingTranslation ? (
                 <button
                   disabled={effectiveFirstTest}
-                  onClick={() => { if (!effectiveFirstTest) setEditingTranslation(true); }}
+                  onClick={(e) => { e.stopPropagation(); if (!effectiveFirstTest) setEditingTranslation(true); }}
                   className="w-full text-left group cursor-pointer disabled:cursor-not-allowed"
                 >
                   <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
@@ -344,6 +355,7 @@ export function MobileWordSheet({
                   type="text"
                   autoFocus
                   value={translation}
+                  onClick={(e) => e.stopPropagation()}
                   onChange={(e) => setTranslation(e.target.value)}
                   onBlur={() => {
                     onTranslationChange?.(wordData.wordId, translation);
@@ -364,7 +376,7 @@ export function MobileWordSheet({
           {showTestPrompt && (
             <button
               type="button"
-              onClick={handleReveal}
+              onClick={(e) => { e.stopPropagation(); handleReveal(); }}
               className="w-full font-sans text-[11px] text-muted text-center mb-2 tracking-wide cursor-pointer active:text-ink transition-colors"
             >
               Know this word? <span className="text-muted/60">(tap to reveal)</span>
@@ -373,11 +385,13 @@ export function MobileWordSheet({
 
           {/* ⑤ Grading buttons — hidden immediately after first-test grade */}
           {!justGraded && (
-            <div className="mb-1.5">
+            <div className="mb-1.5" onClick={(e) => e.stopPropagation()}>
               <AdaptiveStepper
                 status={wordData.status}
                 onStatusChange={handleGrade}
                 hideMore
+                showRevertToNewlySeen={showRevertToNewlySeen}
+                onRevertToNewlySeen={onRevertToNewlySeen}
               />
             </div>
           )}
@@ -385,7 +399,7 @@ export function MobileWordSheet({
           {/* ⑥ Ignore ghost link — test mode, non-IGNORE words only. Stays available
               after a reveal-without-grading — reveal only skips the quiz gate, not grading. */}
           {effectiveFirstTest && !isIgnored && !justGraded && (
-            <div className="flex justify-center mt-3 mb-2">
+            <div className="flex justify-center mt-3 mb-2" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => handleGrade(VocabularyStatus.IGNORE)}
                 className="flex items-center gap-1.5 font-sans text-ui-xs text-muted hover:text-ink transition-colors py-1 px-2 cursor-pointer"

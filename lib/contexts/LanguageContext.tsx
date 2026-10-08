@@ -9,7 +9,7 @@ const STORAGE_KEY = 'verbista_selected_language';
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const { data: dbLanguages = [] } = useLanguages();
+  const { data: dbLanguages = [], isLoading: languagesLoading } = useLanguages();
 
   const [selectedLanguage, setSelectedLanguageRaw] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
@@ -39,6 +39,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const currentLanguage = dbLanguages.find((lang) => lang.code === selectedLanguage);
+  const isLoading = !isInitialized || languagesLoading;
 
   return (
     <LanguageContext.Provider
@@ -46,6 +47,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         selectedLanguage,
         currentLanguage,
         languages: dbLanguages,
+        isLoading,
         setSelectedLanguage,
         isDropdownOpen,
         setIsDropdownOpen,

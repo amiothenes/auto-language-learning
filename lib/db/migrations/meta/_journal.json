@@ -113,6 +113,13 @@
       "when": 1790871591601,
       "tag": "0015_freezing_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791501045528,
+      "tag": "0016_burly_iron_patriot",
+      "breakpoints": true
     }
   ]
 }

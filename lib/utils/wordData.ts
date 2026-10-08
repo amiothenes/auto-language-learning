@@ -59,6 +59,7 @@ export function buildWordDataFromInstance(inst: WordInstanceItem): WordData {
     meanings: inst.meanings ?? null,
     exampleSentence: inst.exampleSentence ?? null,
     exampleSentenceTranslation: inst.exampleSentenceTranslation ?? null,
+    sentenceId: inst.sentenceId,
   };
 }
 
@@ -89,5 +90,6 @@ export function buildWordDataFromVocabularyItem(item: VocabularyItem): WordData 
     meanings: item.meanings ?? null,
     exampleSentence: null,
     exampleSentenceTranslation: null,
+    sentenceId: null,
   };
 }

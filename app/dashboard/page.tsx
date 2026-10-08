@@ -59,7 +59,11 @@ function ShareProgressButton({ languageCode }: { languageCode: string }) {
 
 export default function Dashboard() {
   const router = useRouter();
-  const { currentLanguage } = useLanguage();
+  const { currentLanguage, isLoading } = useLanguage();
+
+  if (isLoading) {
+    return <div className="min-h-screen" />;
+  }
 
   if (!currentLanguage) {
     return (

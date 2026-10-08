@@ -33,6 +33,7 @@ export type RateLimitName =
   | 'import'
   | 'fetchUrl'
   | 'translationsProcess'
+  | 'translateSentence'
   | 'bulkUpdate'
   | 'textsBulk'
   | 'ttsWord'
@@ -44,6 +45,9 @@ const RATE_LIMIT_CONFIG: Record<RateLimitName, { limit: number; window: `${numbe
   import: { limit: 5, window: '1 h' },
   fetchUrl: { limit: 10, window: '1 h' },
   translationsProcess: { limit: 10, window: '1 h' },
+  // Manual per-tap action from the Reader, not a batch job — more generous
+  // than translationsProcess's whole-text limit.
+  translateSentence: { limit: 30, window: '1 h' },
   bulkUpdate: { limit: 20, window: '1 h' },
   textsBulk: { limit: 20, window: '1 h' },
   // Only consumed on an actual cache-miss (real Azure synthesis) — see
@@ -61,6 +65,7 @@ const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
   import: 'imports',
   fetchUrl: 'URL fetches',
   translationsProcess: 'translation requests',
+  translateSentence: 'sentence translation requests',
   bulkUpdate: 'bulk vocabulary updates',
   textsBulk: 'bulk text actions',
   ttsWord: 'word pronunciation requests',

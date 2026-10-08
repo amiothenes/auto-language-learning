@@ -5,6 +5,7 @@
 import type { Series, SeriesDetail, TextData } from './content';
 import type { VocabularyStatus } from './vocabulary';
 import type { TranslationMeaning, TranslationSource } from '../db/schema/wordTranslations';
+import type { ReaderSettings } from './ui';
 
 // ============================================================================
 // Text Import API
@@ -335,6 +336,35 @@ export interface SentencesListResponse {
   sentences: SentenceListItem[];
 }
 
+// ============================================================================
+// Vocabulary Word Contexts API ("Seen In" — every occurrence of a lemma)
+// ============================================================================
+
+export interface VocabularyContextWord {
+  id: string;
+  lemma: string;
+  status: VocabularyStatus;
+  translation: string | null;
+}
+
+export interface VocabularyContextItem {
+  id: string;
+  surfaceForm: string;
+  position: number;
+  sentence: { id: string; content: string; order: number } | null;
+  text: {
+    id: string;
+    title: string;
+    seriesId: string;
+    series: { id: string; name: string };
+  };
+}
+
+export interface VocabularyContextsResponse {
+  word: VocabularyContextWord;
+  contexts: VocabularyContextItem[];
+}
+
 export interface SynthesizeWordAudioResponse {
   /** Null only for a `cachedOnly` probe that found nothing — meaning "not
    * synthesized yet", not an error. A normal request always returns a URL. */
@@ -460,6 +490,12 @@ export interface SrsReviewResponse {
 
 export type SrsNewCardsPosition = 'end' | 'interleaved';
 
+/** Which review-sentence candidates to skip based on the parent text's engagement.
+ * 'incomplete' is the stricter superset of 'unopened' (every unopened text is
+ * also incomplete). A word is never dropped from review entirely because of
+ * this filter — see buildCardsForWords's fallback. */
+export type SrsExcludeSentencesFrom = 'none' | 'unopened' | 'incomplete';
+
 export interface SrsSettingsPayload {
   newCardsPerDay: number;
   /** null = unlimited */
@@ -473,10 +509,37 @@ export interface SrsSettingsPayload {
   wordAudioEnabled: boolean;
   /** Where new cards fall in the session queue relative to due reviews. */
   newCardsPosition: SrsNewCardsPosition;
+  /** Skip example sentences from texts the user hasn't engaged with. */
+  excludeSentencesFrom: SrsExcludeSentencesFrom;
 }
 
 export interface SrsSettingsResponse {
   settings: SrsSettingsPayload;
+}
+
+// ============================================================================
+// Reader Sync Settings — GET/PUT /api/reader-settings
+// Audio/TTS + tutor-mode + highlighting toggles synced across devices, one
+// row per user (global, not per-language). Margin/font/text-display settings
+// stay localStorage-only — see ReaderSettingsContext — and never appear here.
+// ============================================================================
+
+export type ReaderSyncSettingsPayload = Pick<
+  ReaderSettings,
+  | 'highlightIntensity'
+  | 'showWellKnownWords'
+  | 'highlightMode'
+  | 'playbackSpeed'
+  | 'preferredVoices'
+  | 'tutorModeEnabled'
+  | 'tutorModeTiming'
+  | 'tutorModeThreshold'
+  | 'tutorModeMaxPerSentence'
+  | 'tutorModeResume'
+>;
+
+export interface ReaderSyncSettingsResponse {
+  settings: ReaderSyncSettingsPayload;
 }
 
 // ============================================================================
