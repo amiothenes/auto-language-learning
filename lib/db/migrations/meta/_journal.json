@@ -120,6 +120,20 @@
       "when": 1791501045528,
       "tag": "0016_burly_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793983571281,
+      "tag": "0017_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793985833740,
+      "tag": "0018_enable_rls",
+      "breakpoints": true
     }
   ]
 }

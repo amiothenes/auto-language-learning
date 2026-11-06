@@ -13,6 +13,8 @@ import { useSentenceAudioButton } from '@/lib/hooks/useSentenceAudioButton';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import type { SrsCard, SrsGrade } from '@/lib/types/api';
 import type { TranslationMeaning } from '@/lib/db/schema/wordTranslations';
+import { hasGlyph } from '@/components/riso/glyphs/Glyphs';
+import { WordPicture } from '@/components/riso/glyphs/WordPicture';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -150,6 +152,19 @@ export function FlashcardView({
         </div>
       ) : (
         <div className="space-y-4 border-t border-border pt-4">
+          {/* Starter-deck picture, on the back so it confirms the meaning rather than giving it away */}
+          {hasGlyph(card.glyph) && (
+            <div className="flex justify-center -mb-1">
+              <WordPicture
+                variant="inline"
+                conceptId={card.glyph}
+                word={card.lemma}
+                gloss={card.translation}
+                size={88}
+                className="[&_figcaption]:text-ui-lg [&_figcaption]:max-w-[14rem]"
+              />
+            </div>
+          )}
           {/* Root word + status + audio */}
           <div className="flex items-center gap-2">
             <Heading size="xl" as="h3" className="font-serif">

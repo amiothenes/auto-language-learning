@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { useBodyScrollLock } from '@/lib/hooks/useBodyScrollLock';
 import { posMatches } from '@/lib/utils/pos';
+import { WordPicture } from '@/components/riso/glyphs/WordPicture';
 
 const MORPH_DISPLAY_KEYS = ['tense', 'mood', 'person', 'number', 'gender', 'case', 'voice', 'aspect'] as const;
 const MORPH_LABELS: Record<string, string> = {
@@ -144,6 +145,7 @@ export function WordDetailsPanel({
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0 pt-1">
+              <WordPicture variant="inline" conceptId={wordData.glyph} word={wordData.lemma} size={44} />
               <StatusDots status={wordData.status} />
               <button
                 onClick={handleClose}

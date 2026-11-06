@@ -1,11 +1,12 @@
 import { db } from '@/lib/db';
 import { words, wordInstances, wordReviews, wordTranslations, srsSettings, srsDailyStats, languages, texts } from '@/lib/db/schema';
 import { resolveTranslationTarget } from '@/lib/languages/presets';
-import { eq, and, lte, inArray, isNull, notInArray, asc, count, sql } from 'drizzle-orm';
+import { eq, ne, and, or, lte, inArray, isNull, notInArray, asc, count, sql } from 'drizzle-orm';
 import { VocabularyStatus } from '@/lib/types/vocabulary';
 import { STATUS_PROGRESSION, stepStatusDown, stepStatusUp } from '@/lib/vocabulary/statusProgression';
 import { applySm2 } from '@/lib/srs/sm2';
 import { todayDateString } from '@/lib/srs/today';
+import { mergeAlternating } from '@/lib/srs/mergeAlternating';
 import type { SrsCard, SrsCardSentence, SrsCardSource, SrsSettingsPayload } from '@/lib/types/api';
 
 export const DEFAULT_SRS_SETTINGS: SrsSettingsPayload = {
@@ -94,6 +95,15 @@ async function getQueueBudget(
   return { eligibleStatuses, remainingNew, remainingReviews: Math.min(remainingReviews, 500) };
 }
 
+/**
+ * Starter-deck words (origin 'starter_deck', see lib/onboarding) are
+ * introduced while still UNKNOWN, outside the user's eligible statuses. A
+ * deck card graded "Didn't know" stays UNKNOWN (stepStatusDown clamps there),
+ * so the due query must also admit UNKNOWN deck words, or a missed card would
+ * never come back.
+ */
+const unknownDeckWord = () => and(eq(words.origin, 'starter_deck'), eq(words.status, VocabularyStatus.UNKNOWN));
+
 async function findDueWordIds(userId: string, languageId: string, budget: QueueBudget): Promise<string[]> {
   if (budget.remainingReviews <= 0) return [];
   const rows = await db
@@ -105,7 +115,7 @@ async function findDueWordIds(userId: string, languageId: string, budget: QueueB
         eq(wordReviews.userId, userId),
         eq(words.languageId, languageId),
         lte(wordReviews.dueAt, new Date()),
-        inArray(words.status, budget.eligibleStatuses)
+        or(inArray(words.status, budget.eligibleStatuses), unknownDeckWord())
       )
     )
     .orderBy(asc(wordReviews.dueAt))
@@ -113,23 +123,45 @@ async function findDueWordIds(userId: string, languageId: string, budget: QueueB
   return rows.map((r) => r.wordId);
 }
 
+/**
+ * New cards come from two sources, interleaved 1:1 within the daily budget:
+ *  - regular: never-reviewed words in an eligible status, oldest status change
+ *    first (words met while reading). Words pre-marked by onboarding placement
+ *    (origin 'placement') are excluded: the learner already knows them, and a
+ *    C1 placement can mark around 12k words, which would flood Review.
+ *  - starter deck: never-reviewed UNKNOWN deck words, in deck_order.
+ */
 async function findNewWordIds(userId: string, languageId: string, budget: QueueBudget): Promise<string[]> {
   if (budget.remainingNew <= 0) return [];
-  const rows = await db
-    .select({ id: words.id })
-    .from(words)
-    .leftJoin(wordReviews, eq(wordReviews.wordId, words.id))
-    .where(
-      and(
-        eq(words.userId, userId),
-        eq(words.languageId, languageId),
-        inArray(words.status, budget.eligibleStatuses),
-        isNull(wordReviews.id)
+  const [regular, deck] = await Promise.all([
+    db
+      .select({ id: words.id })
+      .from(words)
+      .leftJoin(wordReviews, eq(wordReviews.wordId, words.id))
+      .where(
+        and(
+          eq(words.userId, userId),
+          eq(words.languageId, languageId),
+          inArray(words.status, budget.eligibleStatuses),
+          ne(words.origin, 'placement'),
+          isNull(wordReviews.id)
+        )
       )
-    )
-    .orderBy(asc(words.statusChangedAt))
-    .limit(budget.remainingNew);
-  return rows.map((r) => r.id);
+      .orderBy(asc(words.statusChangedAt))
+      .limit(budget.remainingNew),
+    db
+      .select({ id: words.id })
+      .from(words)
+      .leftJoin(wordReviews, eq(wordReviews.wordId, words.id))
+      .where(and(eq(words.userId, userId), eq(words.languageId, languageId), unknownDeckWord(), isNull(wordReviews.id)))
+      .orderBy(asc(words.deckOrder))
+      .limit(budget.remainingNew),
+  ]);
+  return mergeAlternating(
+    regular.map((r) => r.id),
+    deck.map((r) => r.id),
+    budget.remainingNew
+  );
 }
 
 /** Cheap counts for the nav due-badge — same budget logic as the full session, no card assembly. */
@@ -345,6 +377,7 @@ async function buildCardsForWords(
       wordId: word.id,
       cardType,
       lemma: word.lemma,
+      glyph: word.glyph,
       translation: translationRow?.translation ?? word.translation ?? null,
       meanings: translationRow?.meanings ?? null,
       pos: chosen?.pos ?? null,

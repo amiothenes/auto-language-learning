@@ -51,6 +51,7 @@ import { useLanguage } from '@/lib/contexts/LanguageContext';
 import type { SeriesDetailSortOption } from '@/lib/types/ui';
 import { compareByRecentlyRead } from '@/lib/utils/textSort';
 import { buildOneTCards, buildOneTCsv, buildOneTCsvWithSource, type OneTCardWithSource } from '@/lib/utils/oneTSentences';
+import { FieldNote } from '@/components/teach/FieldNote';
 
 // Fetches one text's word instances + sentences and derives its qualifying 1T
 // cards — shared by the per-row export and the whole-series export below,
@@ -645,6 +646,12 @@ export default function SeriesDetailPage({ params }: SeriesDetailPageProps) {
             onDelete={setDeleteSeriesTarget}
           />
         ) : null}
+
+        {!isLoading && seriesData && (
+          <FieldNote hint="note-series-detail" title="Reading in order" illustration="pages" guideAnchor="series">
+            Each card shows how much of that text you already know. Green means ready to enjoy, red means a stretch. The reading map shows your path through the series, and Continue always picks up where you stopped.
+          </FieldNote>
+        )}
 
         {/* SD2: Series completion banner */}
         {!isLoading && seriesData && (() => {

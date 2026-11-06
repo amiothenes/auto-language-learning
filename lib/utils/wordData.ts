@@ -60,6 +60,7 @@ export function buildWordDataFromInstance(inst: WordInstanceItem): WordData {
     exampleSentence: inst.exampleSentence ?? null,
     exampleSentenceTranslation: inst.exampleSentenceTranslation ?? null,
     sentenceId: inst.sentenceId,
+    glyph: inst.glyph ?? null,
   };
 }
 
@@ -91,5 +92,6 @@ export function buildWordDataFromVocabularyItem(item: VocabularyItem): WordData 
     exampleSentence: null,
     exampleSentenceTranslation: null,
     sentenceId: null,
+    glyph: item.glyph ?? null,
   };
 }

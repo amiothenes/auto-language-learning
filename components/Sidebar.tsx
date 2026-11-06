@@ -9,37 +9,49 @@ import { useDropdownNavigation } from '@/lib/hooks/useDropdownNavigation';
 import { useSrsDueCount } from '@/lib/hooks/useSrsDueCount';
 import { createClient } from '@/lib/supabase/client';
 import {
+  TodayIcon,
+  LibraryIcon,
+  ReviewIcon,
+  VocabularyIcon,
+  ProgressIcon,
+  GuideIcon,
+  SettingsIcon,
+} from '@/components/riso/icons/RisoIcons';
+import {
   Globe,
-  LayoutDashboard,
-  Library,
-  ClipboardList,
-  BookOpenCheck,
-  Settings,
   ChevronUp,
   ChevronDown,
   LogOut,
   UserRound,
+  KeyRound,
 } from 'lucide-react';
+import { useIsGuest } from '@/lib/hooks/useIsGuest';
 
 // ============================================================================
 // Hardcoded Data
 // ============================================================================
 
+// `desktopOnly` items stay out of the 5-slot phone bottom bar (Progress is one
+// tap away from Today's header there).
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
-  { id: 'series', label: 'Series', href: '/series', icon: 'series' },
-  { id: 'review', label: 'Review', href: '/review', icon: 'review' },
-  { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary' },
-  { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings' },
+  { id: 'dashboard', label: 'Today', href: '/dashboard', icon: 'dashboard', desktopOnly: false },
+  { id: 'series', label: 'Series', href: '/series', icon: 'series', desktopOnly: false },
+  { id: 'review', label: 'Review', href: '/review', icon: 'review', desktopOnly: false },
+  { id: 'vocabulary', label: 'Vocabulary', href: '/vocabulary', icon: 'vocabulary', desktopOnly: false },
+  { id: 'progress', label: 'Progress', href: '/progress', icon: 'progress', desktopOnly: true },
+  { id: 'guide', label: 'Field Guide', href: '/guide', icon: 'guide', desktopOnly: true },
+  { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings', desktopOnly: false },
 ] as const;
 
 // Icon mapping
 const iconMap = {
-  dashboard: LayoutDashboard,
-  series: Library,
-  vocabulary: ClipboardList,
-  review: BookOpenCheck,
-  settings: Settings,
+  dashboard: TodayIcon,
+  series: LibraryIcon,
+  vocabulary: VocabularyIcon,
+  review: ReviewIcon,
+  progress: ProgressIcon,
+  guide: GuideIcon,
+  settings: SettingsIcon,
 };
 
 // ============================================================================
@@ -50,7 +62,17 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const isGuest = useIsGuest();
+
   async function handleSignOut() {
+    if (
+      isGuest &&
+      !window.confirm(
+        "You're reading as a guest. If you sign out now, your library and progress can't be recovered.\n\nSign out anyway? (Cancel, then choose \"Save your library\" to keep it.)"
+      )
+    ) {
+      return;
+    }
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/login');
@@ -178,6 +200,7 @@ export function Sidebar() {
                       size={20}
                       className={cn(isActive ? "text-primary" : "text-ink")}
                       strokeWidth={1.5}
+                      active={isActive}
                     />
                     {item.id === 'review' && reviewDueCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger" aria-hidden="true" />
@@ -193,6 +216,18 @@ export function Sidebar() {
 
           {/* Bottom Actions: Account + Sign Out */}
           <div className="mt-4 pt-4 border-t border-border space-y-1">
+            {isGuest && (
+              <Link
+                href="/signup"
+                className="w-full h-10 px-2 rounded bg-riso-coral/10 text-ink font-sans font-medium text-ui-base hover:bg-riso-coral/20 transition-all duration-200 flex items-center gap-2 overflow-hidden"
+                title="Save your library"
+              >
+                <KeyRound size={18} className="shrink-0 text-riso-coral" strokeWidth={1.75} />
+                <span className="whitespace-nowrap overflow-hidden w-0 group-hover:w-auto transition-all duration-200 text-ui-sm">
+                  Save your library
+                </span>
+              </Link>
+            )}
             <Link
               href="/settings/account"
               className={cn(
@@ -223,7 +258,7 @@ export function Sidebar() {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-paper border-t border-border z-50">
         <div className="flex items-center justify-around h-full px-2">
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.desktopOnly).map((item) => {
             const isActive = pathname === item.href;
             const IconComponent = iconMap[item.icon];
             
@@ -243,6 +278,7 @@ export function Sidebar() {
                     size={24}
                     className={isActive ? 'text-primary' : 'text-muted'}
                     strokeWidth={1.5}
+                    active={isActive}
                   />
                   {item.id === 'review' && reviewDueCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-danger" aria-hidden="true" />

@@ -1,7 +1,10 @@
 'use client';
 
 import { use, useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useSearchParams } from 'next/navigation';
+import { GuidedCoach } from '@/components/reader/GuidedCoach';
+import { StoryChapterHeader } from '@/components/reader/StoryChapterHeader';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { X, ChevronLeft, Info, Settings } from 'lucide-react';
 import { TextInfo } from '@/components/reader/TextInfo';
@@ -65,6 +68,12 @@ interface ReaderPageProps {
 export default function ReaderPage({ params }: ReaderPageProps) {
   const { id } = use(params);
   const router = useRouter();
+  // ?guide=1 (set by onboarding's reveal) runs the guided first read on this
+  // text; GuidedCoach itself checks the account's 'guided-read' hint.
+  const guideRequested = useSearchParams().get('guide') === '1';
+  const { currentLanguage } = useLanguage();
+  // Bumped on every status change, which is the guided read's "graded a word" signal.
+  const [statusChangeCount, setStatusChangeCount] = useState(0);
 
   // ── Data queries ──────────────────────────────────────────────────────────
   const queryClient = useQueryClient();
@@ -297,6 +306,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
     // Optimistic update — patch cache so Word components re-render immediately
     setSelectedWord({ ...selectedWord, status: newStatus });
+    setStatusChangeCount((n) => n + 1);
     queryClient.setQueryData<WordInstanceItem[]>(['word-instances', id], nextInstances ?? prevInstances);
 
     const isMilestone = knownWordsDelta > 0 && checkMilestone(newUnique.known);
@@ -844,7 +854,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           className="order-1 lg:order-1 xl:order-2 flex flex-col items-center px-4 md:px-6 lg:px-8 pt-21 pb-[50vh] xl:pt-12 xl:px-8"
         >
           {/* ── STATUS HINT BANNER — first visit only ── */}
-          {showHint && (
+          {showHint && !guideRequested && (
             <div className="relative w-full max-w-prose mb-4 bg-primary/5 border border-primary/20 rounded-card px-4 py-2.5 pr-9">
               <button
                 onClick={() => {
@@ -916,6 +926,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               ) : <span />}
             </nav>
           ) : null}
+
+          {!isLoading && textData && (
+            <StoryChapterHeader title={textData.title} seriesName={textData.seriesName} languageCode={currentLanguage?.code} />
+          )}
 
           {isLoading ? (
             <ReaderContentSkeleton />
@@ -1207,6 +1221,19 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           onDismiss={handleDismissFeedback}
         />
       )}
+
+      {/* ── GUIDED FIRST READ — onboarding's start chapter (?guide=1) ── */}
+      <GuidedCoach
+        enabled={guideRequested && !isLoading}
+        languageCode={currentLanguage?.code}
+        wordInstances={wordInstances}
+        isWordModuleOpen={isWordModuleOpen}
+        statusChangeCount={statusChangeCount}
+        playbackState={tutorMode.playbackState}
+        tutorModeEnabled={settings.tutorModeEnabled}
+        narrationAvailable={!!sentencesQuery.data && sentencesQuery.data.length > 0 && tutorMode.playbackState !== 'error'}
+        isLargeScreen={isLargeScreen}
+      />
 
       {/* ── TTS ERROR TOAST ── */}
       <Toast

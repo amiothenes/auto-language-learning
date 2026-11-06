@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { friendlyAuthError } from '@/lib/auth/authErrorMessages';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FormField } from '@/components/ui/FormField';
 import { AuthIllustration } from '@/components/illustrations/AuthIllustration';
+import { useTurnstile } from '@/components/auth/Turnstile';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -17,25 +18,59 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [confirmError, setConfirmError] = useState('');
   const [done, setDone] = useState(false);
+  // A guest (anonymous "Start reading" user) saving their library: we attach
+  // the email to the SAME user instead of creating a new account, so their
+  // words, texts and progress are kept. Supabase sets the password only after
+  // the email is verified, so the confirm link continues to /reset-password.
+  const [isGuest, setIsGuest] = useState(false);
 
   const supabase = createClient();
+  const { getToken, widget: captcha } = useTurnstile();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setIsGuest(data.user?.is_anonymous === true));
+  }, [supabase]);
+
+  async function handleSaveGuest() {
+    const { error } = await supabase.auth.updateUser(
+      { email },
+      // The "Change Email Address" template appends &token_hash=…&type=email_change
+      // to this URL, so `next` is encoded to keep its own "?" from breaking it.
+      { emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent('/reset-password?welcome=1')}` }
+    );
+    if (error) { setError(friendlyAuthError(error.message)); return; }
+    setDone(true);
+  }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setConfirmError('');
+    if (isGuest) {
+      setLoading(true);
+      try {
+        await handleSaveGuest();
+      } catch {
+        setError('Could not reach the server. Check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     if (password !== confirmPassword) {
       setConfirmError('Passwords do not match.');
       return;
     }
     setLoading(true);
     try {
+      const captchaToken = await getToken();
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { onboardingComplete: false },
           emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+          captchaToken,
         },
       });
       if (error) { setError(friendlyAuthError(error.message)); return; }
@@ -54,7 +89,10 @@ export default function SignupPage() {
           <p className="font-sans text-ui-xl font-semibold text-ink">Confirm your email</p>
           <p className="font-sans text-ui-sm text-muted">
             We sent a confirmation link to{' '}
-            <span className="text-ink font-medium">{email}</span>. Click it to activate your account.
+            <span className="text-ink font-medium">{email}</span>.{' '}
+            {isGuest
+              ? 'Click it to save your library, then choose a password. You can keep reading in the meantime.'
+              : 'Click it to activate your account.'}
           </p>
           <Link
             href="/login"
@@ -86,9 +124,14 @@ export default function SignupPage() {
           {/* Mobile wordmark */}
           <div className="text-center space-y-1 md:hidden">
             <p className="font-sans text-ui-2xl font-bold text-primary">Verbista</p>
-            <p className="font-sans text-ui-sm text-muted">Create your account</p>
+            <p className="font-sans text-ui-sm text-muted">{isGuest ? 'Save your library' : 'Create your account'}</p>
           </div>
-          <p className="hidden md:block font-sans text-ui-xl font-semibold text-ink">Create account</p>
+          <p className="hidden md:block font-sans text-ui-xl font-semibold text-ink">{isGuest ? 'Save your library' : 'Create account'}</p>
+          {isGuest && (
+            <p className="font-sans text-ui-sm text-muted -mt-3">
+              Everything you&apos;ve read and learned stays exactly where it is. Add your email so it&apos;s yours on any device.
+            </p>
+          )}
 
           <div className="bg-paper border border-border rounded-card shadow-modal p-8 space-y-4">
             <form onSubmit={handleSignup} className="space-y-4">
@@ -103,6 +146,7 @@ export default function SignupPage() {
                   required
                 />
               </FormField>
+              {!isGuest && (<>
               <FormField
                 label="Password"
                 fieldId="password"
@@ -138,13 +182,17 @@ export default function SignupPage() {
                   required
                 />
               </FormField>
+              </>)}
               {error && (
                 <p className="font-sans text-ui-sm text-danger" role="alert">{error}</p>
               )}
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Creating account...' : 'Create account'}
+                {loading
+                  ? isGuest ? 'Saving…' : 'Creating account...'
+                  : isGuest ? 'Save my library' : 'Create account'}
               </Button>
             </form>
+            {captcha}
           </div>
 
           <p className="font-sans text-ui-sm text-muted text-center">

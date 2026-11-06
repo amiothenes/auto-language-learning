@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
 import { formatTranslationList } from '@/lib/utils/wordData';
+import { Glyph, hasGlyph } from '@/components/riso/glyphs/Glyphs';
 
 // ============================================================================
 // Status Badge Configuration
@@ -192,6 +193,13 @@ export function VocabCard({
           className="hidden md:block w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer shrink-0"
           aria-label={`Select ${item.lemma}`}
         />
+
+        {/* Riso picture for starter-deck words (the translation sits beside it) */}
+        {hasGlyph(item.glyph) && (
+          <span className="shrink-0 rounded-card bg-desk border border-border p-0.5" aria-hidden="true">
+            <Glyph conceptId={item.glyph!} size={36} />
+          </span>
+        )}
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">

@@ -122,6 +122,7 @@ export async function GET(
         exampleSentence: wt?.exampleSentence ?? null,
         exampleSentenceTranslation: wt?.exampleSentenceTranslation ?? null,
         translationSource: wt?.source ?? null,
+        glyph: instance.word.glyph ?? null,
       };
     });
 

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FormField } from '@/components/ui/FormField';
 import { AuthIllustration } from '@/components/illustrations/AuthIllustration';
+import { useTurnstile } from '@/components/auth/Turnstile';
 
 const ERROR_MESSAGES: Record<string, string> = {
   link_expired: 'Your sign-in link has expired or already been used. Please sign in again.',
@@ -36,13 +37,15 @@ function LoginForm() {
   const [magicSent, setMagicSent] = useState(false);
 
   const supabase = createClient();
+  const { getToken, widget: captcha } = useTurnstile();
 
   async function handlePasswordSignIn(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const captchaToken = await getToken();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
       if (error) { setError(friendlyAuthError(error.message)); return; }
       const destination = data.user?.user_metadata?.onboardingComplete ? '/dashboard' : '/onboarding';
       router.replace(destination);
@@ -58,9 +61,10 @@ function LoginForm() {
     setError('');
     setLoading(true);
     try {
+      const captchaToken = await getToken();
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard`, captchaToken },
       });
       if (error) { setError(friendlyAuthError(error.message)); return; }
       setMagicSent(true);
@@ -193,6 +197,8 @@ function LoginForm() {
                 </Button>
               </form>
             )}
+            {/* Outside both forms so switching mode doesn't unmount the widget. */}
+            {captcha}
           </div>
 
           <p className="font-sans text-ui-sm text-muted text-center">

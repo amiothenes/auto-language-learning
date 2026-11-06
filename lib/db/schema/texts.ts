@@ -46,7 +46,7 @@ export const texts = pgTable(
     knownPctIdx: index('texts_known_percentage_idx').on(table.knownPercentage),
     userIdx: index('texts_user_id_idx').on(table.userId),
   })
-);
+).enableRLS();
 
 export type Text = typeof texts.$inferSelect;
 export type NewText = typeof texts.$inferInsert;

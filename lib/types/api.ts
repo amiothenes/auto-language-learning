@@ -210,6 +210,8 @@ export interface WordInstanceItem {
   exampleSentenceTranslation: string | null;
   /** Which service provided the translation */
   translationSource: TranslationSource | null;
+  /** Riso picture key (deck conceptId) if this lemma is a starter-deck word with a glyph. */
+  glyph: string | null;
 }
 
 export interface WordInstancesResponse {
@@ -447,6 +449,8 @@ export interface SrsCard {
   wordId: string;
   cardType: SrsCardType;
   lemma: string;
+  /** Riso glyph key for starter-deck picture cards (components/riso/glyphs); null otherwise. */
+  glyph?: string | null;
   translation: string | null;
   meanings: TranslationMeaning[] | null;
   pos: string | null;

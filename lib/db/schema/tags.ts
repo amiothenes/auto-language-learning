@@ -16,7 +16,7 @@ export const tags = pgTable(
   (table) => ({
     uniqueNameUser: unique('tags_name_user_id_unique').on(table.name, table.userId),
   })
-);
+).enableRLS();
 
 export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;

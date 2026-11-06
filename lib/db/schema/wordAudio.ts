@@ -29,7 +29,7 @@ export const wordAudio = pgTable(
     ),
     lemmaLangIdx: index('word_audio_lemma_lang_idx').on(table.lemma, table.languageCode),
   })
-);
+).enableRLS();
 
 export type WordAudio = typeof wordAudio.$inferSelect;
 export type NewWordAudio = typeof wordAudio.$inferInsert;

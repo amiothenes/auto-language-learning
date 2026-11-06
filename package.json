@@ -16,7 +16,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx lib/db/seed.ts",
-    "db:seed:freq": "tsx lib/db/seeds/subtlex.ts"
+    "db:seed:freq": "tsx lib/db/seeds/subtlex.ts",
+    "content:build": "tsx scripts/build-onboarding-content.ts",
+    "content:validate": "tsx scripts/build-onboarding-content.ts --validate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -1,6 +1,16 @@
-import { pgTable, text, integer, timestamp, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, unique, index, check } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { vocabularyStatusEnum } from './enums';
+
+/**
+ * Where a word row came from:
+ *  - text:         created by importing a text (the default, and all pre-existing rows)
+ *  - placement:    pre-marked by the onboarding placement estimate
+ *  - starter_deck: Core 625 + grammar words seeded for SRS drip introduction
+ *  - import:       vocabulary CSV/LWT import
+ */
+export const WORD_ORIGINS = ['text', 'placement', 'starter_deck', 'import'] as const;
 
 export const words = pgTable(
   'words',
@@ -31,6 +41,13 @@ export const words = pgTable(
     todayScore: integer('today_score').default(0).notNull(),
     tomorrowScore: integer('tomorrow_score').default(0).notNull(),
 
+    // Onboarding / starter deck
+    origin: text('origin', { enum: WORD_ORIGINS }).default('text').notNull(),
+    // Introduction order within the starter deck (1 = first card); NULL outside the deck.
+    deckOrder: integer('deck_order'),
+    // Riso glyph key (conceptId) for picture flashcards; NULL → typographic card.
+    glyph: text('glyph'),
+
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -59,8 +76,16 @@ export const words = pgTable(
       table.languageId,
       table.statusChangedAt
     ),
+
+    originCheck: check('words_origin_check', sql`${table.origin} IN ('text','placement','starter_deck','import')`),
+
+    // Used by: SRS starter-deck drip (lib/srs/queue.ts), which picks the next
+    // UNKNOWN deck cards in deck_order. Partial, so it only covers deck rows.
+    starterDeckIdx: index('words_starter_deck_idx')
+      .on(table.userId, table.languageId, table.deckOrder)
+      .where(sql`${table.origin} = 'starter_deck'`),
   })
-);
+).enableRLS();
 
 // Import languages from languages.ts to avoid circular dependency
 import { languages } from './languages';

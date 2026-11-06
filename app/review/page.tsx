@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, PartyPopper, Settings } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import { LanternScene } from '@/components/riso/scenes/Scenes';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { useActiveVoice } from '@/lib/hooks/useActiveVoice';
@@ -27,6 +28,7 @@ import { SkeletonText } from '@/components/ui/Skeleton';
 import { Heading, Muted } from '@/components/ui/Typography';
 import type { SrsCard, SrsGrade } from '@/lib/types/api';
 import type { TranslationMeaning } from '@/lib/db/schema/wordTranslations';
+import { FieldNote } from '@/components/teach/FieldNote';
 
 const INSIGHTS_STORAGE_KEY = 'verbista_review_insights_open';
 // How many cards later a missed card reappears in the queue (Anki's "Again" spacing, simplified).
@@ -254,6 +256,10 @@ export default function ReviewPage() {
         </div>
       </header>
 
+      <FieldNote hint="note-review" title="Review keeps words awake" illustration="hourglass" guideAnchor="review">
+        Words come back here just before you&rsquo;d forget them, and new words from your reading and the starter deck arrive a few a day. Ten minutes here protects every word that counts toward your Fluency.
+      </FieldNote>
+
       {settingsAnchorEl && languageId && isDesktop && (
         <ReviewSettingsPanel anchorEl={settingsAnchorEl} languageId={languageId} onClose={() => setSettingsAnchorEl(null)} />
       )}
@@ -279,10 +285,17 @@ export default function ReviewPage() {
       )}
 
       {totalCards === 0 && (
-        <Card padding="lg" className="text-center space-y-2">
-          <PartyPopper className="mx-auto text-primary" size={32} strokeWidth={1.5} />
-          <Heading size="lg" as="h2">All caught up</Heading>
-          <Muted>No cards due for {currentLanguage?.name} right now. Check back later.</Muted>
+        <Card padding="none" className="text-center overflow-hidden">
+          <div className="border-b border-border bg-desk">
+            <LanternScene className="max-h-56" />
+          </div>
+          <div className="p-6 space-y-2">
+            <Heading size="lg" as="h2">Every lamp is lit</Heading>
+            <Muted>
+              Nothing due for {currentLanguage?.name} right now. Read something new and its words will come back here
+              tomorrow, just before you&rsquo;d forget them.
+            </Muted>
+          </div>
         </Card>
       )}
 

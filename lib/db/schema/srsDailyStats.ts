@@ -31,7 +31,7 @@ export const srsDailyStats = pgTable(
       table.date
     ),
   })
-);
+).enableRLS();
 
 export type SrsDailyStats = typeof srsDailyStats.$inferSelect;
 export type NewSrsDailyStats = typeof srsDailyStats.$inferInsert;

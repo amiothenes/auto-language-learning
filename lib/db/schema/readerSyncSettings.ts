@@ -34,7 +34,7 @@ export const readerSyncSettings = pgTable(
   (table) => ({
     uniqueUser: unique('reader_sync_settings_user_id_unique').on(table.userId),
   })
-);
+).enableRLS();
 
 export type ReaderSyncSettingsRow = typeof readerSyncSettings.$inferSelect;
 export type NewReaderSyncSettingsRow = typeof readerSyncSettings.$inferInsert;

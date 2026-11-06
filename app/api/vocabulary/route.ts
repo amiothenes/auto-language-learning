@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
           dictionaryFrequency: words.dictionaryFrequency,
           userFrequency: words.userFrequency,
           translation: words.translation,
+          glyph: words.glyph,
         })
         .from(words)
         .where(whereClause)
@@ -162,6 +163,7 @@ export async function GET(request: NextRequest) {
       meanings: wordTranslationMap.get(r.id)?.meanings ?? null,
       tags: [],
       textCount: textCountMap[r.id] ?? 0,
+      glyph: r.glyph ?? null,
     }));
 
     return NextResponse.json({

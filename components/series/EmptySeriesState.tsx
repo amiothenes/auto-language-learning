@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Plus } from 'lucide-react';
+import { ShelvesScene } from '@/components/riso/scenes/Scenes';
 
 // ============================================================================
 // EmptySeriesState Component
@@ -14,9 +15,9 @@ interface EmptySeriesStateProps {
 export function EmptySeriesState({ onCreateClick }: EmptySeriesStateProps) {
   return (
     <EmptyState
-      illustration="books"
-      title="No Series Yet"
-      description="Create your first series to organize your texts and track your progress"
+      scene={<ShelvesScene lit={0} />}
+      title="The shelves are waiting"
+      description="Start a series to keep related texts together, like the chapters of a book, and see how ready you are for each one."
       primaryAction={
         onCreateClick
           ? {

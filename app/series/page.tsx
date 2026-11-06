@@ -30,6 +30,7 @@ import type { NewSeriesData } from '@/lib/types/forms';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
 import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { useTexts } from '@/lib/hooks/useTexts';
+import { FieldNote } from '@/components/teach/FieldNote';
 
 // ============================================================================
 // Fetch helper — distinguishes network/server failures from API error responses
@@ -463,6 +464,10 @@ function SeriesPageContent() {
             New Series
           </Button>
         </header>
+
+        <FieldNote hint="note-series" title="Your shelves" illustration="books" guideAnchor="series">
+          A series keeps related texts together, like chapters of a book. Ready / OK / Hard shows how much of each one you already know, so you can always pick something at the right level.
+        </FieldNote>
 
         {/* Filter Bar */}
         <div className="flex flex-col md:flex-row gap-3">

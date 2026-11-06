@@ -69,8 +69,25 @@ export async function proxy(request: NextRequest) {
   // /reset-password is deliberately excluded — a user lands there via a valid
   // recovery session and must be allowed to see the reset form, not bounced away.
   const AUTH_SCREENS = ['/login', '/signup', '/forgot-password'];
-  if (user && (pathname === '/' || AUTH_SCREENS.some((p) => pathname.startsWith(p)))) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Only an explicit `false` means "not onboarded yet" (set by signup and by
+  // anonymous "Start reading"). Older accounts without the flag count as done.
+  const needsOnboarding = user?.user_metadata?.onboardingComplete === false;
+  // Guests (anonymous sign-in) may still open the auth screens, to sign in to
+  // an existing account or create one.
+  const isGuest = user?.is_anonymous === true;
+
+  if (user && !isGuest && (pathname === '/' || AUTH_SCREENS.some((p) => pathname.startsWith(p)))) {
+    return NextResponse.redirect(new URL(needsOnboarding ? '/onboarding' : '/dashboard', request.url));
+  }
+  if (user && isGuest && pathname === '/') {
+    return NextResponse.redirect(new URL(needsOnboarding ? '/onboarding' : '/dashboard', request.url));
+  }
+
+  // Unfinished onboarding: send app pages to the wizard (API routes and the
+  // onboarding page itself are exempt, since the wizard calls the API).
+  const ONBOARDING_EXEMPT = ['/onboarding', '/api', '/auth', '/og', '/share', '/manifest.json', ...AUTH_SCREENS, '/reset-password'];
+  if (user && needsOnboarding && pathname !== '/' && !ONBOARDING_EXEMPT.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
   // / is public (landing page); prefix-matched paths are also public

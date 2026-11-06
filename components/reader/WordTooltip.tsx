@@ -12,6 +12,7 @@ import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { useSentenceTranslation } from '@/lib/hooks/useSentenceTranslation';
 import { MORPH_PRIORITY, buildMorphSummary, buildMorphFull } from '@/lib/utils/morphology';
 import { posMatches } from '@/lib/utils/pos';
+import { WordPicture } from '@/components/riso/glyphs/WordPicture';
 
 interface WordTooltipProps {
   wordData: WordData;
@@ -219,6 +220,10 @@ export function WordTooltip({
                   <Volume2 size={15} strokeWidth={1.5} />
                 )}
               </button>
+              {/* Riso picture, only once the meaning is showing, so it never answers a "Know this word?" check */}
+              {showTranslation && (
+                <WordPicture variant="inline" conceptId={wordData.glyph} word={wordData.lemma} size={40} className="ml-auto" />
+              )}
             </div>
 
             {showTranslation && (

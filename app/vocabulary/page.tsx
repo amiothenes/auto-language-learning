@@ -31,6 +31,7 @@ import { useVocabulary } from '@/lib/hooks/useVocabulary';
 import { useStats } from '@/lib/hooks/useStats';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
+import { FieldNote } from '@/components/teach/FieldNote';
 
 // ============================================================================
 // Vocabulary Page Component
@@ -644,6 +645,10 @@ export default function VocabularyPage() {
             </span>
           </div>
         </header>
+
+        <FieldNote hint="note-vocabulary" title="Every word you’ve met" illustration="vocabulary" guideAnchor="vocabulary">
+          This is your whole word list, with each word&rsquo;s status and where you met it. Filter by colour to find shaky words, or bulk-mark words you know so they stop being highlighted.
+        </FieldNote>
 
         {/* Vocabulary Distribution + Reading Coverage */}
         {isStatsLoading ? (

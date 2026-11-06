@@ -20,7 +20,7 @@ export const sentences = pgTable(
     textIdx: index('sentences_text_id_idx').on(table.textId),
     textOrderIdx: index('sentences_text_id_order_idx').on(table.textId, table.order),
   })
-);
+).enableRLS();
 
 export type Sentence = typeof sentences.$inferSelect;
 export type NewSentence = typeof sentences.$inferInsert;

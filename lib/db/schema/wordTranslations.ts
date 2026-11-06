@@ -34,7 +34,7 @@ export const wordTranslations = pgTable(
     wordIdIdx: index('word_translations_word_id_idx').on(table.wordId),
     targetLangIdx: index('word_translations_target_lang_idx').on(table.targetLangCode),
   })
-);
+).enableRLS();
 
 export type WordTranslation = typeof wordTranslations.$inferSelect;
 export type NewWordTranslation = typeof wordTranslations.$inferInsert;

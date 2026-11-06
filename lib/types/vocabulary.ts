@@ -129,6 +129,8 @@ export type WordData = {
   exampleSentenceTranslation?: string | null;
   /** Sentence this occurrence belongs to (nullable) — lets the tooltip offer "Translate sentence" */
   sentenceId?: string | null;
+  /** Riso picture key (deck conceptId) when this lemma has one (components/riso/glyphs). */
+  glyph?: string | null;
 }
 
 // ============================================================================
@@ -175,4 +177,6 @@ export type VocabularyItem = {
   tags: string[];
   /** Number of distinct texts this lemma appears in */
   textCount: number;
+  /** Riso picture key (deck conceptId) for starter-deck words with a glyph. */
+  glyph?: string | null;
 }

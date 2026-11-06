@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FormField } from '@/components/ui/FormField';
 import { AuthIllustration } from '@/components/illustrations/AuthIllustration';
+import { useTurnstile } from '@/components/auth/Turnstile';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -16,14 +17,17 @@ export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
 
   const supabase = createClient();
+  const { getToken, widget: captcha } = useTurnstile();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
+      const captchaToken = await getToken();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/confirm?type=recovery&next=/reset-password`,
+        captchaToken,
       });
       if (error) { setError(friendlyAuthError(error.message)); return; }
       setSent(true);
@@ -101,6 +105,7 @@ export default function ForgotPasswordPage() {
                 {loading ? 'Sending link...' : 'Send reset link'}
               </Button>
             </form>
+            {captcha}
           </div>
 
           <p className="font-sans text-ui-sm text-muted text-center">

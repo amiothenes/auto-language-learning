@@ -25,6 +25,8 @@ interface EmptyStateProps {
   };
   illustration?: IllustrationType | 'none';
   illustrationSize?: number;
+  /** A full-width riso story scene (components/riso/scenes), shown instead of the illustration. */
+  scene?: ReactNode;
   className?: string;
 }
 
@@ -36,13 +38,16 @@ export function EmptyState({
   secondaryAction,
   illustration = 'none',
   illustrationSize = 128,
+  scene,
   className,
 }: EmptyStateProps) {
   return (
     <div className={cn('flex items-center justify-center min-h-[400px]', className)}>
-      <div className="bg-paper border border-border rounded-card shadow-raised p-12 max-w-md text-center">
-        {/* Icon or Illustration */}
-        {illustration !== 'none' ? (
+      <div className={cn('bg-paper border border-border rounded-card shadow-raised max-w-md text-center overflow-hidden', !!scene ? 'w-full pb-8 md:pb-10' : 'p-8 md:p-12')}>
+        {/* Scene, icon or illustration */}
+        {scene ? (
+          <div className="mb-6 border-b border-border bg-desk">{scene}</div>
+        ) : illustration !== 'none' ? (
           <div className="mb-6 flex justify-center">
             <EmptyStateIllustration type={illustration} size={illustrationSize} />
           </div>
@@ -54,6 +59,7 @@ export function EmptyState({
           </div>
         ) : null}
 
+        <div className={cn(!!scene && 'px-6 md:px-10')}>
         {/* Heading */}
         <Heading size="xl" as="h2" className="mb-3">
           {title}
@@ -86,6 +92,7 @@ export function EmptyState({
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ export const textTags = pgTable(
     textIdx: index('text_tags_text_id_idx').on(table.textId),
     tagIdx: index('text_tags_tag_id_idx').on(table.tagId),
   })
-);
+).enableRLS();
 
 export type TextTag = typeof textTags.$inferSelect;
 export type NewTextTag = typeof textTags.$inferInsert;

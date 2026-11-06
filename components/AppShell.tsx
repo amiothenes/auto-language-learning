@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { ViewTransitionWrapper } from '@/components/ViewTransitionWrapper';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { SkipLink } from '@/components/ui/SkipLink';
+import { GuestBanner } from '@/components/auth/GuestBanner';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -34,6 +35,7 @@ export function AppShell({ children }: AppShellProps) {
             tabIndex={-1}
             className={cn('min-h-screen pb-16 md:pb-0', showShell && 'md:ml-16')}
           >
+            {showShell && <GuestBanner />}
             {children}
           </main>
         </ErrorBoundary>

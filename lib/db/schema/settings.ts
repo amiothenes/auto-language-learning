@@ -9,7 +9,7 @@ export const settings = pgTable('settings', {
   value: text('value').notNull(),
 
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}).enableRLS();
 
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;

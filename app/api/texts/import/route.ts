@@ -10,14 +10,9 @@ import {
   type NewTag,
   type NewTextTag,
 } from '@/lib/db/schema';
-import { eq, inArray, and, sql } from 'drizzle-orm';
-import {
-  processTextForImport,
-  TextProcessingError,
-  autoIgnoreProperNouns,
-} from '@/lib/nlp/textProcessor';
-import { syncTextStatistics } from '@/lib/utils/vocabularySync';
-import { splitIntoChunks } from '@/lib/nlp/textChunker';
+import { eq, inArray, and } from 'drizzle-orm';
+import { TextProcessingError } from '@/lib/nlp/textProcessor';
+import { importTextPages, type ImportTextResult } from '@/lib/texts/importText';
 import type { ImportTextRequest, ImportTextResponse, ApiErrorResponse } from '@/lib/types/api';
 import { requireUser } from '@/lib/auth/requireUser';
 import { ownedBy } from '@/lib/db/scope';
@@ -160,61 +155,30 @@ export async function POST(request: NextRequest) {
       console.log(`[Text Import] Series auto-created: ${newSeries.id} ("${newSeries.name}")`);
     }
 
-    // New texts are appended after whatever's already in the series (so a
-    // manually-arranged Custom Order isn't disturbed by an import), rather
-    // than always starting back at 1.
-    const [{ maxOrder }] = await db
-      .select({ maxOrder: sql<number>`COALESCE(MAX(${texts.order}), 0)` })
-      .from(texts)
-      .where(eq(texts.seriesId, resolvedSeriesId));
-
     // ========================================================================
-    // 4. Split Content into Chunks + Process Each
+    // 4. Split, NLP-process and store the pages (shared with onboarding).
+    //    Pages are appended after the series' last text, so a manually
+    //    arranged Custom Order isn't disturbed.
     // ========================================================================
 
-    const normalizedContent = content.replace(/\r\n/g, '\n').trim();
-    const chunks = splitIntoChunks(normalizedContent);
-    const isMultiChunk = chunks.length > 1;
-
-    console.log(`[Text Import] Split into ${chunks.length} chunk(s)`);
-
-    type ChunkResult = Awaited<ReturnType<typeof processTextForImport>>;
-    const results: ChunkResult[] = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkTitle = isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim(); //TODO change titles to what i need (later)
-
-      try {
-        const result = await processTextForImport(
-          chunkTitle,
-          chunks[i],
-          language.id,
-          resolvedSeriesId,
-          maxOrder + i + 1,
-          undefined,
-          user.id
+    let imported: ImportTextResult;
+    try {
+      imported = await importTextPages({
+        userId: user.id,
+        languageId: language.id,
+        seriesId: resolvedSeriesId,
+        title,
+        content,
+      });
+    } catch (error) {
+      if (error instanceof TextProcessingError) {
+        console.error(`[Text Import] Failed at stage "${error.stage}":`, error.message);
+        return NextResponse.json<ApiErrorResponse>(
+          { error: 'Text processing failed', details: error.message, stage: error.stage },
+          { status: 400 }
         );
-
-        console.log(
-          `[Text Import] Chunk ${i + 1}/${chunks.length} done: ${result.wordCount} words, ` +
-          `${result.processingTime}ms`
-        );
-
-        results.push(result);
-      } catch (error) {
-        if (error instanceof TextProcessingError) {
-          console.error(`[Text Import] Chunk ${i + 1} failed at stage "${error.stage}":`, error.message);
-          return NextResponse.json<ApiErrorResponse>(
-            {
-              error: 'Text processing failed',
-              details: error.message,
-              stage: error.stage,
-            },
-            { status: 400 }
-          );
-        }
-        throw error;
       }
+      throw error;
     }
 
     // ========================================================================
@@ -222,7 +186,7 @@ export async function POST(request: NextRequest) {
     // ========================================================================
 
     let processedTags: Array<{ id: string; name: string }> = [];
-    const firstTextId = results[0].textId;
+    const firstTextId = imported.textIds[0];
 
     if (tagNames && tagNames.length > 0) {
       try {
@@ -280,35 +244,17 @@ export async function POST(request: NextRequest) {
     // ========================================================================
 
     const totalTime = Date.now() - startTime;
-    console.log(`[Text Import] Import complete: ${results.length} page(s) in ${totalTime}ms`);
+    console.log(`[Text Import] Import complete: ${imported.pages.length} page(s) in ${totalTime}ms`);
 
-    // Auto-ignore proper nouns synchronously: pure SQL, <10ms, returns count for toast
-    const textIds = results.map((r) => r.textId);
-    const ignoredPropnCount = await autoIgnoreProperNouns(textIds);
-
-    // Auto-ignoring proper nouns changes each text's denominator — resync so the
-    // knownPercentage returned to the client isn't stale from before the ignore.
-    const correctedPercentages = ignoredPropnCount > 0
-      ? await Promise.all(textIds.map((id) => syncTextStatistics(id)))
-      : results.map((r) => r.knownPercentage);
-
+    // Proper-noun auto-ignore and the stats resync already ran inside importTextPages.
+    const textIds = imported.textIds;
     const response: ImportTextResponse = {
       success: true,
       seriesId: resolvedSeriesId,
-      texts: results.map((r, i) => ({
-        id: r.textId,
-        title: isMultiChunk ? `${title.trim()} (Part ${i + 1})` : title.trim(),
-        wordCount: r.wordCount,
-        uniqueWordCount: r.uniqueWordCount,
-        knownPercentage: correctedPercentages[i],
-      })),
-      statistics: {
-        newWordsCreated: results.reduce((sum, r) => sum + r.newWordsCreated, 0),
-        sentencesCreated: results.reduce((sum, r) => sum + r.sentencesCreated, 0),
-        processingTime: results.reduce((sum, r) => sum + r.processingTime, 0),
-      },
+      texts: imported.pages,
+      statistics: imported.statistics,
       tags: processedTags,
-      ignoredPropnCount,
+      ignoredPropnCount: imported.ignoredPropnCount,
     };
 
     // Trigger auto-translation after response is sent — does not block the client

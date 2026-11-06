@@ -19,7 +19,7 @@ interface KeyboardShortcutsProviderProps {
  * Shortcuts:
  * - / : Focus search input (navigates to /vocabulary if not there)
  * - Esc : Close/dismiss (fallback - components handle primarily)
- * - Shift+? : Show keyboard shortcuts help (future enhancement)
+ * - Shift+? : Open the Field Guide (/guide)
  */
 export function KeyboardShortcutsProvider({ children }: KeyboardShortcutsProviderProps) {
   const router = useRouter();
@@ -65,11 +65,10 @@ export function KeyboardShortcutsProvider({ children }: KeyboardShortcutsProvide
       shiftKey: true,
       handler: (e) => {
         e.preventDefault();
-        // Future enhancement: Show keyboard shortcuts modal
-        console.log('Keyboard shortcuts help - to be implemented');
+        // The Field Guide: what each feature is for, plus the shortcuts.
+        if (pathname !== '/guide') router.push('/guide');
       },
-      description: 'Show keyboard shortcuts help',
-      enabled: false, // Disabled until modal is implemented
+      description: 'Open the Field Guide',
     },
   ]);
 

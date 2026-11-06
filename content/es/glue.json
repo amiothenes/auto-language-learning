@@ -1,0 +1,13 @@
+{
+  "_comment": "High-frequency grammar words the Core 625 leaves out (articles, connectors, core verbs). Without them a beginner can't read even Chapter 1. Ordered by usefulness for chapters 1-2. Entry format: [lemma, english]. Lemmas must match spaCy, which folds forms together: the article 'la' becomes 'el', 'un/una' become 'uno', and 'muy' becomes 'mucho'.",
+  "language": "es",
+  "words": [
+    ["el","the"],["uno","a; an (un, una)"],["y","and"],["ser","to be (identity)"],["estar","to be (state; place)"],["haber","there is (hay)"],["tener","to have"],["en","in; on"],["de","of; from"],["con","with"],
+    ["mucho","much; many; very (muy)"],["también","also"],["pero","but"],["no","not"],["detrás","behind"],["verdad","truth; real"],["otro","other; another"],["este","this"],["ese","that"],
+    ["mi","my"],["tu","your"],["su","his; her; their"],["a","to; at"],["por","for; by; through"],["para","for; in order to"],["sin","without"],["sobre","on; about"],["entre","between; among"],["que","that; which"],
+    ["porque","because"],["cuando","when"],["si","if"],["como","like; as"],["más","more"],["menos","less"],["ya","already"],["todavía","still; yet"],["aquí","here"],["allí","there"],
+    ["hoy","today"],["ayer","yesterday"],["siempre","always"],["nunca","never"],["ahora","now"],["después","after; later"],["antes","before"],["hacer","to do; to make"],["poder","can; to be able"],["querer","to want"],
+    ["dar","to give"],["saber","to know"],["venir","to come"],["volver","to come back"],["entrar","to go in"],["todo","all; everything"],["poco","little; few"],["algo","something"],["nada","nothing"],["alguien","someone"],
+    ["nadie","nobody"],["qué","what"],["quién","who"],["dónde","where"],["cómo","how"],["cuánto","how much"]
+  ]
+}

@@ -10,6 +10,7 @@ import { FrequencyBadge } from '@/components/ui/FrequencyBadge';
 import { cn } from '@/lib/utils';
 import { useWordAudioButton } from '@/lib/hooks/useWordAudioButton';
 import { posMatches } from '@/lib/utils/pos';
+import { WordPicture } from '@/components/riso/glyphs/WordPicture';
 
 const PEEK_HEIGHT = 264;
 
@@ -311,6 +312,10 @@ export function MobileWordSheet({
                 <Volume2 size={18} strokeWidth={1.5} />
               )}
             </button>
+            {/* Riso picture, only once the meaning is showing, so it never answers the check */}
+            {showTranslation && (
+              <WordPicture variant="inline" conceptId={wordData.glyph} word={wordData.lemma} size={48} className="ml-auto" />
+            )}
           </div>
 
           {/* ③ Translation — hidden in test mode; enlarged post-grade; editable in instant mode */}

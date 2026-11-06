@@ -21,7 +21,7 @@ export const posTags = pgTable(
     wordIdx: index('pos_tags_word_id_idx').on(table.wordId),
     tagIdx: index('pos_tags_tag_id_idx').on(table.tagId),
   })
-);
+).enableRLS();
 
 export type POSTag = typeof posTags.$inferSelect;
 export type NewPOSTag = typeof posTags.$inferInsert;

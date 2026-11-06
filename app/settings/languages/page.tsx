@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Trash2, ChevronDown } from 'lucide-react';
 import { SettingSection } from '@/components/settings/SettingSection';
 import { Select, SelectOption } from '@/components/settings/Select';
@@ -31,6 +32,7 @@ interface LanguageSettingsDraft {
 const NO_TRANSLATION = 'none';
 
 export default function LanguagesSettingsPage() {
+  const router = useRouter();
   const { languages, selectedLanguage, setSelectedLanguage } = useLanguage();
   const createLanguage = useCreateLanguage();
   const deleteLanguage = useDeleteLanguage();
@@ -97,6 +99,9 @@ export default function LanguagesSettingsPage() {
       onSuccess: (newLang) => {
         setIsAddModalOpen(false);
         setExpandedLanguageId(newLang.id);
+        // Every new target language gets its own onboarding: level placement,
+        // known words, starter story (or "bring a text" where there's no content).
+        router.push(`/onboarding?languageId=${encodeURIComponent(newLang.id)}&from=settings`);
       },
     });
   };
@@ -201,6 +206,15 @@ export default function LanguagesSettingsPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
+                    {/* Re-run placement. It only ever ADDS known words, never demotes. */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/onboarding?languageId=${encodeURIComponent(language.id)}&from=settings`)}
+                      title="Find your level again and mark the words you know"
+                    >
+                      Retake placement
+                    </Button>
                     <Button
                       variant="secondary"
                       size="sm"

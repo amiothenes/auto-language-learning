@@ -38,7 +38,7 @@ export const wordReviews = pgTable(
     uniqueWord: unique('word_reviews_word_id_unique').on(table.wordId),
     userDueIdx: index('word_reviews_user_due_idx').on(table.userId, table.dueAt),
   })
-);
+).enableRLS();
 
 export type WordReview = typeof wordReviews.$inferSelect;
 export type NewWordReview = typeof wordReviews.$inferInsert;

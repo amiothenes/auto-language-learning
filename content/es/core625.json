@@ -1,0 +1,88 @@
+{
+  "_comment": "Verbista Core 625 (Spanish). Concept inventory based on Gabriel Wyner's 'Your First 625' thematic word list (Fluent Forever), credited in the Field Guide. Translations and selection are Verbista's own. Entry format: [lemma, english, gender ('m'|'f'|null), display?]. `lemma` must equal the spaCy lemma so deck words, placement words and story words share one word row (checked by scripts/build-onboarding-content.ts). `display` is the card form when it differs from the lemma (reflexives). Multi-word concepts use a single-word equivalent or are omitted (compound numbers such as 'treinta y uno'). Duplicate lemmas are merged at build time, first occurrence wins and glosses are joined.",
+  "language": "es",
+  "firstWords": ["niño", "libro", "casa", "puerta", "llave", "gato", "noche", "luz", "lámpara", "mesa"],
+  "categories": [
+    { "id": "animal", "name": "Animals", "words": [
+      ["perro","dog","m"],["gato","cat","m"],["pez","fish","m"],["pájaro","bird","m"],["vaca","cow","f"],["cerdo","pig","m"],["ratón","mouse","m"],["caballo","horse","m"],["ala","wing","f"],["animal","animal","m"]
+    ]},
+    { "id": "transport", "name": "Transportation", "words": [
+      ["tren","train","m"],["avión","plane","m"],["coche","car","m"],["camión","truck","m"],["bicicleta","bicycle","f"],["autobús","bus","m"],["barco","boat","m"],["buque","ship","m"],["neumático","tire","m"],["gasolina","gasoline","f"],["motor","engine","m"],["billete","ticket","m"],["transporte","transportation","m"]
+    ]},
+    { "id": "location", "name": "Places", "words": [
+      ["ciudad","city","f"],["casa","house","f"],["apartamento","apartment","m"],["calle","street","f"],["aeropuerto","airport","m"],["estación","station","f"],["puente","bridge","m"],["hotel","hotel","m"],["restaurante","restaurant","m"],["granja","farm","f"],["tribunal","court","m"],["escuela","school","f"],["oficina","office","f"],["habitación","room","f"],["pueblo","town","m"],["universidad","university","f"],["club","club","m"],["bar","bar","m"],["parque","park","m"],["campamento","camp","m"],["tienda","store; shop","f"],["teatro","theater","m"],["biblioteca","library","f"],["hospital","hospital","m"],["iglesia","church","f"],["mercado","market","m"],["país","country","m"],["edificio","building","m"],["suelo","ground; floor","m"],["espacio","space","m"],["banco","bank","m"],["lugar","place; location","m"]
+    ]},
+    { "id": "clothing", "name": "Clothing", "words": [
+      ["sombrero","hat","m"],["vestido","dress","m"],["traje","suit","m"],["falda","skirt","f"],["camisa","shirt","f"],["camiseta","T-shirt","f"],["pantalón","pants","m"],["zapato","shoe","m"],["bolsillo","pocket","m"],["abrigo","coat","m"],["mancha","stain","f"],["ropa","clothing","f"]
+    ]},
+    { "id": "color", "name": "Colors", "words": [
+      ["rojo","red",null],["verde","green",null],["azul","blue",null],["amarillo","yellow",null],["marrón","brown",null],["rosa","pink",null],["naranja","orange",null],["negro","black",null],["blanco","white",null],["gris","gray",null],["color","color","m"]
+    ]},
+    { "id": "people", "name": "People", "words": [
+      ["hijo","son","m"],["hija","daughter","f"],["madre","mother","f"],["padre","father","m"],["bebé","baby","m"],["hombre","man","m"],["mujer","woman","f"],["hermano","brother","m"],["hermana","sister","f"],["familia","family","f"],["abuelo","grandfather","m"],["abuela","grandmother","f"],["marido","husband","m"],["esposa","wife","f"],["rey","king","m"],["reina","queen","f"],["presidente","president","m"],["vecino","neighbor","m"],["niño","boy; child","m"],["niña","girl","f"],["adulto","adult","m"],["humano","human","m"],["amigo","friend","m"],["víctima","victim","f"],["jugador","player","m"],["aficionado","fan","m"],["multitud","crowd","f"],["persona","person","f"]
+    ]},
+    { "id": "job", "name": "Jobs", "words": [
+      ["profesor","teacher","m"],["estudiante","student","m"],["abogado","lawyer","m"],["médico","doctor","m"],["paciente","patient","m"],["camarero","waiter","m"],["secretario","secretary","m"],["sacerdote","priest","m"],["policía","police","f"],["ejército","army","m"],["soldado","soldier","m"],["artista","artist","m"],["autor","author","m"],["gerente","manager","m"],["periodista","reporter","m"],["actor","actor","m"],["trabajo","job; work","m"]
+    ]},
+    { "id": "society", "name": "Society", "words": [
+      ["religión","religion","f"],["cielo","heaven; sky","m"],["infierno","hell","m"],["muerte","death","f"],["medicina","medicine","f"],["dinero","money","m"],["dólar","dollar","m"],["factura","bill","f"],["matrimonio","marriage","m"],["boda","wedding","f"],["equipo","team","m"],["relación","relationship","f"],["raza","race (ethnicity)","f"],["sexo","sex","m"],["asesinato","murder","m"],["cárcel","prison","f"],["tecnología","technology","f"],["energía","energy","f"],["guerra","war","f"],["paz","peace","f"],["ataque","attack","m"],["elección","election","f"],["revista","magazine","f"],["periódico","newspaper","m"],["veneno","poison","m"],["pistola","gun","f"],["deporte","sport","m"],["carrera","race (sport)","f"],["ejercicio","exercise","m"],["pelota","ball","f"],["juego","game","m"],["precio","price","m"],["contrato","contract","m"],["droga","drug","f"],["señal","sign","f"],["ciencia","science","f"],["dios","God","m"]
+    ]},
+    { "id": "art", "name": "Art", "words": [
+      ["banda","band","f"],["canción","song","f"],["instrumento","instrument","m"],["música","music","f"],["película","movie","f"],["arte","art","m"]
+    ]},
+    { "id": "drink", "name": "Drinks", "words": [
+      ["café","coffee","m"],["té","tea","m"],["vino","wine","m"],["cerveza","beer","f"],["zumo","juice","m"],["agua","water","f"],["leche","milk","f"],["bebida","drink","f"]
+    ]},
+    { "id": "food", "name": "Food", "words": [
+      ["huevo","egg","m"],["queso","cheese","m"],["pan","bread","m"],["sopa","soup","f"],["pastel","cake","m"],["pollo","chicken","m"],["cerdo","pork","m"],["carne","beef; meat","f"],["manzana","apple","f"],["plátano","banana","m"],["naranja","orange (fruit)","f"],["limón","lemon","m"],["maíz","corn","m"],["arroz","rice","m"],["aceite","oil","m"],["semilla","seed","f"],["cuchillo","knife","m"],["cuchara","spoon","f"],["tenedor","fork","m"],["plato","plate","m"],["taza","cup","f"],["desayuno","breakfast","m"],["almuerzo","lunch","m"],["cena","dinner","f"],["azúcar","sugar","m"],["sal","salt","f"],["botella","bottle","f"],["comida","food","f"]
+    ]},
+    { "id": "home", "name": "Home", "words": [
+      ["mesa","table","f"],["silla","chair","f"],["cama","bed","f"],["sueño","dream","m"],["ventana","window","f"],["puerta","door","f"],["dormitorio","bedroom","m"],["cocina","kitchen","f"],["baño","bathroom","m"],["lápiz","pencil","m"],["bolígrafo","pen","m"],["foto","photograph","f"],["jabón","soap","m"],["libro","book","m"],["página","page","f"],["llave","key","f"],["pintura","paint","f"],["carta","letter","f"],["nota","note","f"],["pared","wall","f"],["papel","paper","m"],["techo","ceiling; roof","m"],["piscina","pool","f"],["cerradura","lock","f"],["teléfono","telephone","m"],["jardín","garden","m"],["patio","yard","m"],["aguja","needle","f"],["bolsa","bag","f"],["caja","box","f"],["regalo","gift","m"],["tarjeta","card","f"],["anillo","ring","m"],["herramienta","tool","f"],["lámpara","lamp","f"],["cuaderno","notebook","m"]
+    ]},
+    { "id": "electronics", "name": "Electronics", "words": [
+      ["reloj","clock","m"],["ventilador","fan (device)","m"],["móvil","cell phone","m"],["red","network","f"],["ordenador","computer","m"],["programa","program","m"],["portátil","laptop","m"],["pantalla","screen","f"],["cámara","camera","f"],["televisión","television","f"],["radio","radio","f"]
+    ]},
+    { "id": "body", "name": "Body", "words": [
+      ["cabeza","head","f"],["cuello","neck","m"],["cara","face","f"],["barba","beard","f"],["pelo","hair","m"],["ojo","eye","m"],["boca","mouth","f"],["labio","lip","m"],["nariz","nose","f"],["diente","tooth","m"],["oreja","ear","f"],["lágrima","tear (drop)","f"],["lengua","tongue; language","f"],["espalda","back","f"],["dedo","finger; toe","m"],["pie","foot","m"],["mano","hand","f"],["pierna","leg","f"],["brazo","arm","m"],["hombro","shoulder","m"],["corazón","heart","m"],["sangre","blood","f"],["cerebro","brain","m"],["rodilla","knee","f"],["sudor","sweat","m"],["enfermedad","disease","f"],["hueso","bone","m"],["voz","voice","f"],["piel","skin","f"],["cuerpo","body","m"]
+    ]},
+    { "id": "nature", "name": "Nature", "words": [
+      ["mar","sea","m"],["océano","ocean","m"],["río","river","m"],["montaña","mountain","f"],["lluvia","rain","f"],["nieve","snow","f"],["árbol","tree","m"],["sol","sun","m"],["luna","moon","f"],["mundo","world","m"],["tierra","Earth; soil","f"],["bosque","forest","m"],["planta","plant","f"],["viento","wind","m"],["flor","flower","f"],["valle","valley","m"],["raíz","root","f"],["lago","lake","m"],["estrella","star","f"],["hierba","grass","f"],["hoja","leaf","f"],["aire","air","m"],["arena","sand","f"],["playa","beach","f"],["ola","wave","f"],["fuego","fire","m"],["hielo","ice","m"],["isla","island","f"],["colina","hill","f"],["calor","heat","m"],["naturaleza","nature","f"]
+    ]},
+    { "id": "material", "name": "Materials", "words": [
+      ["vidrio","glass","m"],["metal","metal","m"],["plástico","plastic","m"],["madera","wood","f"],["piedra","stone","f"],["diamante","diamond","m"],["arcilla","clay","f"],["polvo","dust","m"],["oro","gold","m"],["cobre","copper","m"],["plata","silver","f"],["material","material","m"]
+    ]},
+    { "id": "measure", "name": "Math & Measurements", "words": [
+      ["metro","meter","m"],["centímetro","centimeter","m"],["kilo","kilogram","m"],["pulgada","inch","f"],["libra","pound","f"],["mitad","half","f"],["círculo","circle","m"],["cuadrado","square","m"],["temperatura","temperature","f"],["fecha","date","f"],["peso","weight","m"],["borde","edge","m"],["esquina","corner","f"]
+    ]},
+    { "id": "misc", "name": "Miscellaneous", "words": [
+      ["mapa","map","m"],["punto","dot","m"],["consonante","consonant","f"],["vocal","vowel","f"],["luz","light","f"],["sonido","sound","m"],["sí","yes",null],["no","no",null],["pedazo","piece","m"],["dolor","pain","m"],["herida","injury","f"],["agujero","hole","m"],["imagen","image","f"],["patrón","pattern","m"],["sustantivo","noun","m"],["verbo","verb","m"],["adjetivo","adjective","m"]
+    ]},
+    { "id": "direction", "name": "Directions", "words": [
+      ["arriba","top; up",null],["fondo","bottom","m"],["lado","side","m"],["frente","front","m"],["atrás","back (direction)",null],["fuera","outside",null],["dentro","inside",null],["abajo","down",null],["izquierda","left","f"],["derecha","right","f"],["recto","straight",null],["norte","north","m"],["sur","south","m"],["este","east","m"],["oeste","west","m"],["dirección","direction","f"]
+    ]},
+    { "id": "season", "name": "Seasons", "words": [
+      ["verano","summer","m"],["primavera","spring","f"],["invierno","winter","m"],["otoño","fall","m"],["estación","season","f"]
+    ]},
+    { "id": "number", "name": "Numbers", "words": [
+      ["uno","one",null],["dos","two",null],["tres","three",null],["cuatro","four",null],["cinco","five",null],["seis","six",null],["siete","seven",null],["ocho","eight",null],["nueve","nine",null],["diez","ten",null],["once","eleven",null],["doce","twelve",null],["trece","thirteen",null],["catorce","fourteen",null],["quince","fifteen",null],["dieciséis","sixteen",null],["diecisiete","seventeen",null],["dieciocho","eighteen",null],["diecinueve","nineteen",null],["veinte","twenty",null],["veintiuno","twenty-one",null],["veintidós","twenty-two",null],["treinta","thirty",null],["cuarenta","forty",null],["cincuenta","fifty",null],["sesenta","sixty",null],["setenta","seventy",null],["ochenta","eighty",null],["noventa","ninety",null],["cien","one hundred",null],["mil","one thousand",null],["millón","million","m"],["primero","first",null],["segundo","second; 2nd",null],["tercero","third",null],["cuarto","fourth",null],["quinto","fifth",null],["número","number","m"]
+    ]},
+    { "id": "month", "name": "Months", "words": [
+      ["enero","January","m"],["febrero","February","m"],["marzo","March","m"],["abril","April","m"],["mayo","May","m"],["junio","June","m"],["julio","July","m"],["agosto","August","m"],["septiembre","September","m"],["octubre","October","m"],["noviembre","November","m"],["diciembre","December","m"]
+    ]},
+    { "id": "weekday", "name": "Days of the week", "words": [
+      ["lunes","Monday","m"],["martes","Tuesday","m"],["miércoles","Wednesday","m"],["jueves","Thursday","m"],["viernes","Friday","m"],["sábado","Saturday","m"],["domingo","Sunday","m"]
+    ]},
+    { "id": "time", "name": "Time", "words": [
+      ["año","year","m"],["mes","month","m"],["semana","week","f"],["día","day","m"],["hora","hour","f"],["minuto","minute","m"],["segundo","second","m"],["mañana","morning; tomorrow","f"],["tarde","afternoon; evening","f"],["noche","night","f"],["tiempo","time","m"]
+    ]},
+    { "id": "verb", "name": "Verbs", "words": [
+      ["trabajar","to work",null],["jugar","to play",null],["caminar","to walk",null],["correr","to run",null],["conducir","to drive",null],["volar","to fly",null],["nadar","to swim",null],["ir","to go",null],["parar","to stop",null],["seguir","to follow",null],["pensar","to think",null],["hablar","to speak",null],["decir","to say",null],["comer","to eat",null],["beber","to drink",null],["matar","to kill",null],["morir","to die",null],["sonreír","to smile",null],["reír","to laugh",null],["llorar","to cry",null],["comprar","to buy",null],["pagar","to pay",null],["vender","to sell",null],["disparar","to shoot",null],["aprender","to learn",null],["saltar","to jump",null],["oler","to smell",null],["oír","to hear",null],["escuchar","to listen",null],["probar","to taste",null],["tocar","to touch",null],["ver","to see",null],["mirar","to watch; to look",null],["besar","to kiss",null],["quemar","to burn",null],["derretir","to melt",null],["cavar","to dig",null],["explotar","to explode",null],["sentar","to sit",null,"sentarse"],["amar","to love",null],["pasar","to pass by",null],["cortar","to cut",null],["luchar","to fight",null],["acostar","to lie down",null,"acostarse"],["bailar","to dance",null],["dormir","to sleep",null],["despertar","to wake up",null,"despertarse"],["cantar","to sing",null],["contar","to count",null],["casar","to marry",null,"casarse"],["rezar","to pray",null],["ganar","to win",null],["perder","to lose",null],["mezclar","to mix",null],["doblar","to bend",null],["lavar","to wash",null],["cocinar","to cook",null],["abrir","to open",null],["cerrar","to close",null],["escribir","to write",null],["llamar","to call",null],["girar","to turn",null],["construir","to build",null],["enseñar","to teach",null],["crecer","to grow",null],["dibujar","to draw",null],["alimentar","to feed",null],["atrapar","to catch",null],["lanzar","to throw",null],["limpiar","to clean",null],["encontrar","to find",null],["caer","to fall",null],["empujar","to push",null],["tirar","to pull",null],["llevar","to carry; to wear",null],["romper","to break",null],["colgar","to hang",null],["sacudir","to shake",null],["firmar","to sign",null],["golpear","to beat",null],["levantar","to lift",null],["leer","to read",null]
+    ]},
+    { "id": "adjective", "name": "Adjectives", "words": [
+      ["largo","long",null],["corto","short (vs long)",null],["alto","tall; high",null],["bajo","short (vs tall); low",null],["ancho","wide",null],["estrecho","narrow",null],["grande","big",null],["pequeño","small",null],["lento","slow",null],["rápido","fast",null],["caliente","hot",null],["frío","cold",null],["cálido","warm",null],["fresco","cool",null],["nuevo","new",null],["viejo","old",null],["joven","young",null],["bueno","good",null],["malo","bad",null],["mojado","wet",null],["seco","dry",null],["enfermo","sick",null],["sano","healthy",null],["ruidoso","loud",null],["tranquilo","quiet",null],["feliz","happy",null],["triste","sad",null],["bonito","beautiful",null],["feo","ugly",null],["sordo","deaf",null],["ciego","blind",null],["amable","nice",null],["cruel","mean",null],["rico","rich",null],["pobre","poor",null],["grueso","thick",null],["delgado","thin",null],["caro","expensive",null],["barato","cheap",null],["plano","flat",null],["curvo","curved",null],["masculino","male",null],["femenino","female",null],["apretado","tight",null],["suelto","loose",null],["blando","soft",null],["duro","hard",null],["profundo","deep",null],["limpio","clean",null],["sucio","dirty",null],["fuerte","strong",null],["débil","weak",null],["muerto","dead",null],["vivo","alive",null],["pesado","heavy",null],["ligero","light (weight)",null],["oscuro","dark",null],["claro","light (color)",null],["nuclear","nuclear",null],["famoso","famous",null]
+    ]},
+    { "id": "pronoun", "name": "Pronouns", "words": [
+      ["yo","I; we",null,"yo · nosotros"],["tú","you (singular)",null],["él","he; she; they",null,"él · ella · ellos"],["vosotros","you (plural)",null],["usted","you (formal)",null]
+    ]}
+  ]
+}

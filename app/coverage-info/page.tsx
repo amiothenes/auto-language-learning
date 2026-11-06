@@ -34,7 +34,7 @@ export default function CoverageInfoPage() {
           className="inline-flex items-center gap-2 text-muted hover:text-primary transition-colors font-sans text-ui-sm font-medium"
         >
           <ArrowLeft size={16} strokeWidth={2} />
-          Back to Dashboard
+          Back to Today
         </Link>
 
         {/* Page Header */}

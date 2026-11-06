@@ -29,7 +29,7 @@ export const wordInstances = pgTable(
     positionIdx: index('word_instances_position_idx').on(table.position),
     posIdx: index('word_instances_pos_idx').on(table.pos),
   })
-);
+).enableRLS();
 
 // Import references (will be defined in other files)
 import { words } from './words';

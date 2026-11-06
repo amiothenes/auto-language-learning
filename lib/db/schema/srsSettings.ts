@@ -54,7 +54,7 @@ export const srsSettings = pgTable(
   (table) => ({
     uniqueUserLanguage: unique('srs_settings_user_language_unique').on(table.userId, table.languageId),
   })
-);
+).enableRLS();
 
 export type SrsSettingsRow = typeof srsSettings.$inferSelect;
 export type NewSrsSettingsRow = typeof srsSettings.$inferInsert;

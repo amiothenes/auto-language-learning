@@ -1,69 +1,53 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Settings, Share2, Check } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Settings, ArrowRight } from 'lucide-react';
 import { Heading, Muted } from '@/components/ui/Typography';
 import { useLanguage } from '@/lib/contexts/LanguageContext';
-import { StatsCard } from '@/components/dashboard/StatsCard';
+import { useStats } from '@/lib/hooks/useStats';
+import { useHints } from '@/lib/hooks/useHints';
+import { useSeriesList } from '@/lib/hooks/useSeriesList';
 import { RecentTextsList } from '@/components/dashboard/RecentTextsList';
-import { ActionButtons } from '@/components/dashboard/ActionButtons';
+import { FluencyHero } from '@/components/today/FluencyHero';
+import { NextStepCard } from '@/components/today/NextStepCard';
+import { NewTextModal } from '@/components/texts/NewTextModal';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { createClient } from '@/lib/supabase/client';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { pickNextStep } from '@/lib/onboarding/nextStep';
+import type { TodayResponse } from '@/app/api/today/route';
+import type { ImportTextResponse } from '@/lib/types/api';
 
-// ─── Share button ─────────────────────────────────────────────────────────────
-// Generates a public /share/[userId]?lang=xx URL and copies it to clipboard.
-function ShareProgressButton({ languageCode }: { languageCode: string }) {
-  const [copied, setCopied] = useState(false);
-  const [busy, setBusy] = useState(false);
+// ─── Today ──────────────────────────────────────────────────────────────────
+// The home screen: the Fluency number (the north star), ONE next step, and
+// what you were reading. Charts, streak history and sharing live on /progress.
+//   phone:   Fluency → next step → continue reading (one column)
+//   tablet:  Fluency (number + map side by side), then next step | reading
+//   desktop: wide Fluency hero with the map, then next step | reading
 
-  async function handleShare() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      const userId = data.user?.id;
-      if (!userId) return;
-      const url = `${window.location.origin}/share/${userId}?lang=${languageCode}`;
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <button
-      onClick={handleShare}
-      disabled={busy}
-      className="inline-flex items-center gap-1.5 font-sans text-ui-sm text-muted hover:text-ink border border-border bg-paper rounded px-3 py-1.5 transition-colors hover:border-border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {copied ? (
-        <>
-          <Check size={13} strokeWidth={2.5} className="text-primary" />
-          Link copied
-        </>
-      ) : (
-        <>
-          <Share2 size={13} strokeWidth={2} />
-          Share progress
-        </>
-      )}
-    </button>
-  );
-}
-
-// ─── Dashboard page ───────────────────────────────────────────────────────────
-
-export default function Dashboard() {
+export default function TodayPage() {
   const router = useRouter();
-  const { currentLanguage, isLoading } = useLanguage();
+  const queryClient = useQueryClient();
+  const { currentLanguage, selectedLanguage, isLoading } = useLanguage();
+  const { data: stats } = useStats();
+  const { ready: hintsReady, hasSeen, markSeen } = useHints();
+  const { data: seriesList } = useSeriesList();
+  const [importOpen, setImportOpen] = useState(false);
 
-  if (isLoading) {
-    return <div className="min-h-screen" />;
-  }
+  const today = useQuery({
+    queryKey: ['today', selectedLanguage],
+    queryFn: async () => {
+      const res = await fetch(`/api/today?languageCode=${encodeURIComponent(selectedLanguage)}`);
+      if (!res.ok) throw new Error('Failed to load today');
+      return (await res.json()) as TodayResponse;
+    },
+    enabled: !!selectedLanguage,
+    staleTime: 30_000,
+  });
+
+  if (isLoading) return <div className="min-h-screen" />;
 
   if (!currentLanguage) {
     return (
@@ -82,44 +66,80 @@ export default function Dashboard() {
     );
   }
 
+  const step =
+    today.data && hintsReady
+      ? pickNextStep({
+          guidedDone: hasSeen('guided-read'),
+          dueCount: today.data.dueCount,
+          continueText: today.data.continueText,
+          story: today.data.story,
+          libraryNext: today.data.libraryNext,
+          prefersOwnTexts: today.data.prefersOwnTexts,
+          hasReadOwnTexts: today.data.hasReadOwnTexts,
+        })
+      : null;
+
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* Page Header */}
-        <header className="flex items-start justify-between gap-4">
+      <div className="max-w-5xl mx-auto space-y-6 md:space-y-8">
+        <header className="flex items-end justify-between gap-4">
           <div className="space-y-1">
             <Heading size="2xl" as="h1">
-              {currentLanguage.name}
+              Today
             </Heading>
             <Muted>
-              Track your language learning progress and recent activity
+              {currentLanguage.name}
+              {today.data?.story ? ` · ${today.data.story.name}` : ''}
             </Muted>
           </div>
-          <div className="pt-1 shrink-0">
-            <ShareProgressButton languageCode={currentLanguage.code} />
+          {/* Progress and the Field Guide are desktop sidebar items; on phones
+              these links are how you reach them. */}
+          <div className="shrink-0 flex items-center gap-4">
+            <Link href="/guide" className="inline-flex items-center gap-1 font-sans text-ui-sm text-muted hover:text-ink hover:underline">
+              Guide
+            </Link>
+            <Link href="/progress" className="inline-flex items-center gap-1 font-sans text-ui-sm text-primary hover:underline">
+              Your progress <ArrowRight size={14} strokeWidth={2} />
+            </Link>
           </div>
         </header>
 
-        {/* Two Column Layout: Left (Chart + Stats) | Right (Recent Texts).
-            Grid items stretch to the row height by default, but only the BOX
-            stretches - the content inside still sits at its natural height. So
-            StatsCard is the grid child directly (no wrapper div to swallow the
-            stretch) and takes h-full from here, letting its chart grow into
-            whatever height the right column sets. That is what keeps the two
-            columns' bottom edges flush without anyone hard-coding a height. */}
-        <div className="flex flex-col xl:grid xl:grid-cols-[35%_1fr] gap-6 xl:items-stretch">
-          {/* LEFT COLUMN: Chart + Stats — first on mobile, left on desktop */}
-          <StatsCard />
+        {stats ? (
+          <FluencyHero
+            fluency={stats.readingCoverage}
+            band={stats.cefrBand}
+            languageName={currentLanguage.name}
+            streak={stats.streak}
+          />
+        ) : (
+          <Skeleton className="h-56 w-full rounded-card" />
+        )}
 
-          {/* RIGHT COLUMN: Recent Texts — second on mobile, right on desktop */}
-          <div className="space-y-6">
-            <RecentTextsList />
-            <div className="hidden xl:block">
-              <ActionButtons />
-            </div>
-          </div>
+        <div className="grid gap-6 md:grid-cols-2 md:items-start">
+          {step ? (
+            <NextStepCard
+              step={step}
+              onImport={() => setImportOpen(true)}
+              onSecondary={(action) => action === 'skip-guided' && markSeen('guided-read')}
+            />
+          ) : (
+            <Skeleton className="h-48 w-full rounded-card" />
+          )}
+          <RecentTextsList />
         </div>
       </div>
+
+      <NewTextModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        availableSeries={seriesList ?? []}
+        onAdd={(result: ImportTextResponse) => {
+          queryClient.invalidateQueries({ queryKey: ['texts'] });
+          queryClient.invalidateQueries({ queryKey: ['series-list'] });
+          queryClient.invalidateQueries({ queryKey: ['today'] });
+          router.push(`/reader/${result.texts[0].id}`);
+        }}
+      />
     </div>
   );
 }

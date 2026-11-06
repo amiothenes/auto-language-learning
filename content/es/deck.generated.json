@@ -1,0 +1,6465 @@
+{
+ "language": "es",
+ "cards": [
+  {
+   "lemma": "niño",
+   "gloss": "boy; child",
+   "gender": "m",
+   "display": null,
+   "conceptId": "boy-child",
+   "category": "people",
+   "kind": "core",
+   "order": 1
+  },
+  {
+   "lemma": "libro",
+   "gloss": "book",
+   "gender": "m",
+   "display": null,
+   "conceptId": "book",
+   "category": "home",
+   "kind": "core",
+   "order": 2
+  },
+  {
+   "lemma": "casa",
+   "gloss": "house",
+   "gender": "f",
+   "display": null,
+   "conceptId": "house",
+   "category": "location",
+   "kind": "core",
+   "order": 3
+  },
+  {
+   "lemma": "puerta",
+   "gloss": "door",
+   "gender": "f",
+   "display": null,
+   "conceptId": "door",
+   "category": "home",
+   "kind": "core",
+   "order": 4
+  },
+  {
+   "lemma": "llave",
+   "gloss": "key",
+   "gender": "f",
+   "display": null,
+   "conceptId": "key",
+   "category": "home",
+   "kind": "core",
+   "order": 5
+  },
+  {
+   "lemma": "gato",
+   "gloss": "cat",
+   "gender": "m",
+   "display": null,
+   "conceptId": "cat",
+   "category": "animal",
+   "kind": "core",
+   "order": 6
+  },
+  {
+   "lemma": "noche",
+   "gloss": "night",
+   "gender": "f",
+   "display": null,
+   "conceptId": "night",
+   "category": "time",
+   "kind": "core",
+   "order": 7
+  },
+  {
+   "lemma": "luz",
+   "gloss": "light",
+   "gender": "f",
+   "display": null,
+   "conceptId": "light",
+   "category": "misc",
+   "kind": "core",
+   "order": 8
+  },
+  {
+   "lemma": "lámpara",
+   "gloss": "lamp",
+   "gender": "f",
+   "display": null,
+   "conceptId": "lamp",
+   "category": "home",
+   "kind": "core",
+   "order": 9
+  },
+  {
+   "lemma": "mesa",
+   "gloss": "table",
+   "gender": "f",
+   "display": null,
+   "conceptId": "table",
+   "category": "home",
+   "kind": "core",
+   "order": 10
+  },
+  {
+   "lemma": "de",
+   "gloss": "of; from",
+   "gender": null,
+   "display": null,
+   "conceptId": "of-from",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 11
+  },
+  {
+   "lemma": "que",
+   "gloss": "that; which",
+   "gender": null,
+   "display": null,
+   "conceptId": "that-which",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 12
+  },
+  {
+   "lemma": "el",
+   "gloss": "the",
+   "gender": null,
+   "display": null,
+   "conceptId": "the",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 13
+  },
+  {
+   "lemma": "en",
+   "gloss": "in; on",
+   "gender": null,
+   "display": null,
+   "conceptId": "in-on",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 14
+  },
+  {
+   "lemma": "y",
+   "gloss": "and",
+   "gender": null,
+   "display": null,
+   "conceptId": "and",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 15
+  },
+  {
+   "lemma": "a",
+   "gloss": "to; at",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-at",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 16
+  },
+  {
+   "lemma": "no",
+   "gloss": "no; not",
+   "gender": null,
+   "display": null,
+   "conceptId": "no",
+   "category": "misc",
+   "kind": "core",
+   "order": 17
+  },
+  {
+   "lemma": "por",
+   "gloss": "for; by; through",
+   "gender": null,
+   "display": null,
+   "conceptId": "for-by-through",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 18
+  },
+  {
+   "lemma": "con",
+   "gloss": "with",
+   "gender": null,
+   "display": null,
+   "conceptId": "with",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 19
+  },
+  {
+   "lemma": "para",
+   "gloss": "for; in order to",
+   "gender": null,
+   "display": null,
+   "conceptId": "for-in-order-to",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 20
+  },
+  {
+   "lemma": "su",
+   "gloss": "his; her; their",
+   "gender": null,
+   "display": null,
+   "conceptId": "his-her-their",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 21
+  },
+  {
+   "lemma": "como",
+   "gloss": "like; as",
+   "gender": null,
+   "display": null,
+   "conceptId": "like-as",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 22
+  },
+  {
+   "lemma": "más",
+   "gloss": "more",
+   "gender": null,
+   "display": null,
+   "conceptId": "more",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 23
+  },
+  {
+   "lemma": "si",
+   "gloss": "if",
+   "gender": null,
+   "display": null,
+   "conceptId": "if",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 24
+  },
+  {
+   "lemma": "pero",
+   "gloss": "but",
+   "gender": null,
+   "display": null,
+   "conceptId": "but",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 25
+  },
+  {
+   "lemma": "mi",
+   "gloss": "my",
+   "gender": null,
+   "display": null,
+   "conceptId": "my",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 26
+  },
+  {
+   "lemma": "este",
+   "gloss": "east; this",
+   "gender": "m",
+   "display": null,
+   "conceptId": "east",
+   "category": "direction",
+   "kind": "core",
+   "order": 27
+  },
+  {
+   "lemma": "todo",
+   "gloss": "all; everything",
+   "gender": null,
+   "display": null,
+   "conceptId": "all-everything",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 28
+  },
+  {
+   "lemma": "ya",
+   "gloss": "already",
+   "gender": null,
+   "display": null,
+   "conceptId": "already",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 29
+  },
+  {
+   "lemma": "cuando",
+   "gloss": "when",
+   "gender": null,
+   "display": null,
+   "conceptId": "when",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 30
+  },
+  {
+   "lemma": "yo",
+   "gloss": "I; we (yo · nosotros)",
+   "gender": null,
+   "display": "yo · nosotros",
+   "conceptId": "i-we",
+   "category": "pronoun",
+   "kind": "core",
+   "order": 31
+  },
+  {
+   "lemma": "ser",
+   "gloss": "to be (identity)",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-be-identity",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 32
+  },
+  {
+   "lemma": "sin",
+   "gloss": "without",
+   "gender": null,
+   "display": null,
+   "conceptId": "without",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 33
+  },
+  {
+   "lemma": "tu",
+   "gloss": "your",
+   "gender": null,
+   "display": null,
+   "conceptId": "your",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 34
+  },
+  {
+   "lemma": "sobre",
+   "gloss": "on; about",
+   "gender": null,
+   "display": null,
+   "conceptId": "on-about",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 35
+  },
+  {
+   "lemma": "también",
+   "gloss": "also",
+   "gender": null,
+   "display": null,
+   "conceptId": "also",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 36
+  },
+  {
+   "lemma": "porque",
+   "gloss": "because",
+   "gender": null,
+   "display": null,
+   "conceptId": "because",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 37
+  },
+  {
+   "lemma": "qué",
+   "gloss": "what",
+   "gender": null,
+   "display": null,
+   "conceptId": "what",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 38
+  },
+  {
+   "lemma": "dos",
+   "gloss": "two",
+   "gender": null,
+   "display": null,
+   "conceptId": "two",
+   "category": "number",
+   "kind": "core",
+   "order": 39
+  },
+  {
+   "lemma": "entre",
+   "gloss": "between; among",
+   "gender": null,
+   "display": null,
+   "conceptId": "between-among",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 40
+  },
+  {
+   "lemma": "hacer",
+   "gloss": "to do; to make",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-do-to-make",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 41
+  },
+  {
+   "lemma": "ahora",
+   "gloss": "now",
+   "gender": null,
+   "display": null,
+   "conceptId": "now",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 42
+  },
+  {
+   "lemma": "nada",
+   "gloss": "nothing",
+   "gender": null,
+   "display": null,
+   "conceptId": "nothing",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 43
+  },
+  {
+   "lemma": "algo",
+   "gloss": "something",
+   "gender": null,
+   "display": null,
+   "conceptId": "something",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 44
+  },
+  {
+   "lemma": "tiempo",
+   "gloss": "time",
+   "gender": "m",
+   "display": null,
+   "conceptId": "time",
+   "category": "time",
+   "kind": "core",
+   "order": 45
+  },
+  {
+   "lemma": "día",
+   "gloss": "day",
+   "gender": "m",
+   "display": null,
+   "conceptId": "day",
+   "category": "time",
+   "kind": "core",
+   "order": 46
+  },
+  {
+   "lemma": "uno",
+   "gloss": "one; a; an (un, una)",
+   "gender": null,
+   "display": null,
+   "conceptId": "one",
+   "category": "number",
+   "kind": "core",
+   "order": 47
+  },
+  {
+   "lemma": "mucho",
+   "gloss": "much; many; very (muy)",
+   "gender": null,
+   "display": null,
+   "conceptId": "much-many-very-muy",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 48
+  },
+  {
+   "lemma": "ver",
+   "gloss": "to see",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-see",
+   "category": "verb",
+   "kind": "core",
+   "order": 49
+  },
+  {
+   "lemma": "ese",
+   "gloss": "that",
+   "gender": null,
+   "display": null,
+   "conceptId": "that",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 50
+  },
+  {
+   "lemma": "siempre",
+   "gloss": "always",
+   "gender": null,
+   "display": null,
+   "conceptId": "always",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 51
+  },
+  {
+   "lemma": "después",
+   "gloss": "after; later",
+   "gender": null,
+   "display": null,
+   "conceptId": "after-later",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 52
+  },
+  {
+   "lemma": "mundo",
+   "gloss": "world",
+   "gender": "m",
+   "display": null,
+   "conceptId": "world",
+   "category": "nature",
+   "kind": "core",
+   "order": 53
+  },
+  {
+   "lemma": "año",
+   "gloss": "year",
+   "gender": "m",
+   "display": null,
+   "conceptId": "year",
+   "category": "time",
+   "kind": "core",
+   "order": 54
+  },
+  {
+   "lemma": "otro",
+   "gloss": "other; another",
+   "gender": null,
+   "display": null,
+   "conceptId": "other-another",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 55
+  },
+  {
+   "lemma": "menos",
+   "gloss": "less",
+   "gender": null,
+   "display": null,
+   "conceptId": "less",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 56
+  },
+  {
+   "lemma": "nunca",
+   "gloss": "never",
+   "gender": null,
+   "display": null,
+   "conceptId": "never",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 57
+  },
+  {
+   "lemma": "antes",
+   "gloss": "before",
+   "gender": null,
+   "display": null,
+   "conceptId": "before",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 58
+  },
+  {
+   "lemma": "poco",
+   "gloss": "little; few",
+   "gender": null,
+   "display": null,
+   "conceptId": "little-few",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 59
+  },
+  {
+   "lemma": "tener",
+   "gloss": "to have",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-have",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 60
+  },
+  {
+   "lemma": "trabajo",
+   "gloss": "job; work",
+   "gender": "m",
+   "display": null,
+   "conceptId": "job-work",
+   "category": "job",
+   "kind": "core",
+   "order": 61
+  },
+  {
+   "lemma": "lugar",
+   "gloss": "place; location",
+   "gender": "m",
+   "display": null,
+   "conceptId": "place-location",
+   "category": "location",
+   "kind": "core",
+   "order": 62
+  },
+  {
+   "lemma": "cómo",
+   "gloss": "how",
+   "gender": null,
+   "display": null,
+   "conceptId": "how",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 63
+  },
+  {
+   "lemma": "decir",
+   "gloss": "to say",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-say",
+   "category": "verb",
+   "kind": "core",
+   "order": 64
+  },
+  {
+   "lemma": "país",
+   "gloss": "country",
+   "gender": "m",
+   "display": null,
+   "conceptId": "country",
+   "category": "location",
+   "kind": "core",
+   "order": 65
+  },
+  {
+   "lemma": "nuevo",
+   "gloss": "new",
+   "gender": null,
+   "display": null,
+   "conceptId": "new",
+   "category": "adjective",
+   "kind": "core",
+   "order": 66
+  },
+  {
+   "lemma": "él",
+   "gloss": "he; she; they (él · ella · ellos)",
+   "gender": null,
+   "display": "él · ella · ellos",
+   "conceptId": "he-she-they",
+   "category": "pronoun",
+   "kind": "core",
+   "order": 67
+  },
+  {
+   "lemma": "aquí",
+   "gloss": "here",
+   "gender": null,
+   "display": null,
+   "conceptId": "here",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 68
+  },
+  {
+   "lemma": "sí",
+   "gloss": "yes",
+   "gender": null,
+   "display": null,
+   "conceptId": "yes",
+   "category": "misc",
+   "kind": "core",
+   "order": 69
+  },
+  {
+   "lemma": "estar",
+   "gloss": "to be (state; place)",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-be-state-place",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 70
+  },
+  {
+   "lemma": "hoy",
+   "gloss": "today",
+   "gender": null,
+   "display": null,
+   "conceptId": "today",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 71
+  },
+  {
+   "lemma": "alguien",
+   "gloss": "someone",
+   "gender": null,
+   "display": null,
+   "conceptId": "someone",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 72
+  },
+  {
+   "lemma": "tres",
+   "gloss": "three",
+   "gender": null,
+   "display": null,
+   "conceptId": "three",
+   "category": "number",
+   "kind": "core",
+   "order": 73
+  },
+  {
+   "lemma": "bueno",
+   "gloss": "good",
+   "gender": null,
+   "display": null,
+   "conceptId": "good",
+   "category": "adjective",
+   "kind": "core",
+   "order": 74
+  },
+  {
+   "lemma": "ciudad",
+   "gloss": "city",
+   "gender": "f",
+   "display": null,
+   "conceptId": "city",
+   "category": "location",
+   "kind": "core",
+   "order": 75
+  },
+  {
+   "lemma": "poder",
+   "gloss": "can; to be able",
+   "gender": null,
+   "display": null,
+   "conceptId": "can-to-be-able",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 76
+  },
+  {
+   "lemma": "verdad",
+   "gloss": "truth; real",
+   "gender": null,
+   "display": null,
+   "conceptId": "truth-real",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 77
+  },
+  {
+   "lemma": "nadie",
+   "gloss": "nobody",
+   "gender": null,
+   "display": null,
+   "conceptId": "nobody",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 78
+  },
+  {
+   "lemma": "ir",
+   "gloss": "to go",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-go",
+   "category": "verb",
+   "kind": "core",
+   "order": 79
+  },
+  {
+   "lemma": "dios",
+   "gloss": "God",
+   "gender": "m",
+   "display": null,
+   "conceptId": "god",
+   "category": "society",
+   "kind": "core",
+   "order": 80
+  },
+  {
+   "lemma": "bajo",
+   "gloss": "short (vs tall); low",
+   "gender": null,
+   "display": null,
+   "conceptId": "short-vs-tall-low",
+   "category": "adjective",
+   "kind": "core",
+   "order": 81
+  },
+  {
+   "lemma": "fuera",
+   "gloss": "outside",
+   "gender": null,
+   "display": null,
+   "conceptId": "outside",
+   "category": "direction",
+   "kind": "core",
+   "order": 82
+  },
+  {
+   "lemma": "haber",
+   "gloss": "there is (hay)",
+   "gender": null,
+   "display": null,
+   "conceptId": "there-is-hay",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 83
+  },
+  {
+   "lemma": "hombre",
+   "gloss": "man",
+   "gender": "m",
+   "display": null,
+   "conceptId": "man",
+   "category": "people",
+   "kind": "core",
+   "order": 84
+  },
+  {
+   "lemma": "mujer",
+   "gloss": "woman",
+   "gender": "f",
+   "display": null,
+   "conceptId": "woman",
+   "category": "people",
+   "kind": "core",
+   "order": 85
+  },
+  {
+   "lemma": "persona",
+   "gloss": "person",
+   "gender": "f",
+   "display": null,
+   "conceptId": "person",
+   "category": "people",
+   "kind": "core",
+   "order": 86
+  },
+  {
+   "lemma": "presidente",
+   "gloss": "president",
+   "gender": "m",
+   "display": null,
+   "conceptId": "president",
+   "category": "people",
+   "kind": "core",
+   "order": 87
+  },
+  {
+   "lemma": "dentro",
+   "gloss": "inside",
+   "gender": null,
+   "display": null,
+   "conceptId": "inside",
+   "category": "direction",
+   "kind": "core",
+   "order": 88
+  },
+  {
+   "lemma": "familia",
+   "gloss": "family",
+   "gender": "f",
+   "display": null,
+   "conceptId": "family",
+   "category": "people",
+   "kind": "core",
+   "order": 89
+  },
+  {
+   "lemma": "lado",
+   "gloss": "side",
+   "gender": "m",
+   "display": null,
+   "conceptId": "side",
+   "category": "direction",
+   "kind": "core",
+   "order": 90
+  },
+  {
+   "lemma": "pueblo",
+   "gloss": "town",
+   "gender": "m",
+   "display": null,
+   "conceptId": "town",
+   "category": "location",
+   "kind": "core",
+   "order": 91
+  },
+  {
+   "lemma": "punto",
+   "gloss": "dot",
+   "gender": "m",
+   "display": null,
+   "conceptId": "dot",
+   "category": "misc",
+   "kind": "core",
+   "order": 92
+  },
+  {
+   "lemma": "agua",
+   "gloss": "water",
+   "gender": "f",
+   "display": null,
+   "conceptId": "water",
+   "category": "drink",
+   "kind": "core",
+   "order": 93
+  },
+  {
+   "lemma": "equipo",
+   "gloss": "team",
+   "gender": "m",
+   "display": null,
+   "conceptId": "team",
+   "category": "society",
+   "kind": "core",
+   "order": 94
+  },
+  {
+   "lemma": "guerra",
+   "gloss": "war",
+   "gender": "f",
+   "display": null,
+   "conceptId": "war",
+   "category": "society",
+   "kind": "core",
+   "order": 95
+  },
+  {
+   "lemma": "saber",
+   "gloss": "to know",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-know",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 96
+  },
+  {
+   "lemma": "dar",
+   "gloss": "to give",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-give",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 97
+  },
+  {
+   "lemma": "mañana",
+   "gloss": "morning; tomorrow",
+   "gender": "f",
+   "display": null,
+   "conceptId": "morning-tomorrow",
+   "category": "time",
+   "kind": "core",
+   "order": 98
+  },
+  {
+   "lemma": "semana",
+   "gloss": "week",
+   "gender": "f",
+   "display": null,
+   "conceptId": "week",
+   "category": "time",
+   "kind": "core",
+   "order": 99
+  },
+  {
+   "lemma": "claro",
+   "gloss": "light (color)",
+   "gender": null,
+   "display": null,
+   "conceptId": "light-color",
+   "category": "adjective",
+   "kind": "core",
+   "order": 100
+  },
+  {
+   "lemma": "dinero",
+   "gloss": "money",
+   "gender": "m",
+   "display": null,
+   "conceptId": "money",
+   "category": "society",
+   "kind": "core",
+   "order": 101
+  },
+  {
+   "lemma": "número",
+   "gloss": "number",
+   "gender": "m",
+   "display": null,
+   "conceptId": "number",
+   "category": "number",
+   "kind": "core",
+   "order": 102
+  },
+  {
+   "lemma": "hablar",
+   "gloss": "to speak",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-speak",
+   "category": "verb",
+   "kind": "core",
+   "order": 103
+  },
+  {
+   "lemma": "hora",
+   "gloss": "hour",
+   "gender": "f",
+   "display": null,
+   "conceptId": "hour",
+   "category": "time",
+   "kind": "core",
+   "order": 104
+  },
+  {
+   "lemma": "madre",
+   "gloss": "mother",
+   "gender": "f",
+   "display": null,
+   "conceptId": "mother",
+   "category": "people",
+   "kind": "core",
+   "order": 105
+  },
+  {
+   "lemma": "muerte",
+   "gloss": "death",
+   "gender": "f",
+   "display": null,
+   "conceptId": "death",
+   "category": "society",
+   "kind": "core",
+   "order": 106
+  },
+  {
+   "lemma": "tarde",
+   "gloss": "afternoon; evening",
+   "gender": "f",
+   "display": null,
+   "conceptId": "afternoon-evening",
+   "category": "time",
+   "kind": "core",
+   "order": 107
+  },
+  {
+   "lemma": "tú",
+   "gloss": "you (singular)",
+   "gender": null,
+   "display": null,
+   "conceptId": "you-singular",
+   "category": "pronoun",
+   "kind": "core",
+   "order": 108
+  },
+  {
+   "lemma": "frente",
+   "gloss": "front",
+   "gender": "m",
+   "display": null,
+   "conceptId": "front",
+   "category": "direction",
+   "kind": "core",
+   "order": 109
+  },
+  {
+   "lemma": "primero",
+   "gloss": "first",
+   "gender": null,
+   "display": null,
+   "conceptId": "first",
+   "category": "number",
+   "kind": "core",
+   "order": 110
+  },
+  {
+   "lemma": "cuatro",
+   "gloss": "four",
+   "gender": null,
+   "display": null,
+   "conceptId": "four",
+   "category": "number",
+   "kind": "core",
+   "order": 111
+  },
+  {
+   "lemma": "hijo",
+   "gloss": "son",
+   "gender": "m",
+   "display": null,
+   "conceptId": "son",
+   "category": "people",
+   "kind": "core",
+   "order": 112
+  },
+  {
+   "lemma": "juego",
+   "gloss": "game",
+   "gender": "m",
+   "display": null,
+   "conceptId": "game",
+   "category": "society",
+   "kind": "core",
+   "order": 113
+  },
+  {
+   "lemma": "mano",
+   "gloss": "hand",
+   "gender": "f",
+   "display": null,
+   "conceptId": "hand",
+   "category": "body",
+   "kind": "core",
+   "order": 114
+  },
+  {
+   "lemma": "grande",
+   "gloss": "big",
+   "gender": null,
+   "display": null,
+   "conceptId": "big",
+   "category": "adjective",
+   "kind": "core",
+   "order": 115
+  },
+  {
+   "lemma": "quién",
+   "gloss": "who",
+   "gender": null,
+   "display": null,
+   "conceptId": "who",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 116
+  },
+  {
+   "lemma": "todavía",
+   "gloss": "still; yet",
+   "gender": null,
+   "display": null,
+   "conceptId": "still-yet",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 117
+  },
+  {
+   "lemma": "amigo",
+   "gloss": "friend",
+   "gender": "m",
+   "display": null,
+   "conceptId": "friend",
+   "category": "people",
+   "kind": "core",
+   "order": 118
+  },
+  {
+   "lemma": "padre",
+   "gloss": "father",
+   "gender": "m",
+   "display": null,
+   "conceptId": "father",
+   "category": "people",
+   "kind": "core",
+   "order": 119
+  },
+  {
+   "lemma": "tierra",
+   "gloss": "Earth; soil",
+   "gender": "f",
+   "display": null,
+   "conceptId": "earth-soil",
+   "category": "nature",
+   "kind": "core",
+   "order": 120
+  },
+  {
+   "lemma": "cuerpo",
+   "gloss": "body",
+   "gender": "m",
+   "display": null,
+   "conceptId": "body",
+   "category": "body",
+   "kind": "core",
+   "order": 121
+  },
+  {
+   "lemma": "programa",
+   "gloss": "program",
+   "gender": "m",
+   "display": null,
+   "conceptId": "program",
+   "category": "electronics",
+   "kind": "core",
+   "order": 122
+  },
+  {
+   "lemma": "segundo",
+   "gloss": "second; 2nd",
+   "gender": null,
+   "display": null,
+   "conceptId": "second-2nd",
+   "category": "number",
+   "kind": "core",
+   "order": 123
+  },
+  {
+   "lemma": "universidad",
+   "gloss": "university",
+   "gender": "f",
+   "display": null,
+   "conceptId": "university",
+   "category": "location",
+   "kind": "core",
+   "order": 124
+  },
+  {
+   "lemma": "cabeza",
+   "gloss": "head",
+   "gender": "f",
+   "display": null,
+   "conceptId": "head",
+   "category": "body",
+   "kind": "core",
+   "order": 125
+  },
+  {
+   "lemma": "foto",
+   "gloss": "photograph",
+   "gender": "f",
+   "display": null,
+   "conceptId": "photograph",
+   "category": "home",
+   "kind": "core",
+   "order": 126
+  },
+  {
+   "lemma": "mil",
+   "gloss": "one thousand",
+   "gender": null,
+   "display": null,
+   "conceptId": "one-thousand",
+   "category": "number",
+   "kind": "core",
+   "order": 127
+  },
+  {
+   "lemma": "pasar",
+   "gloss": "to pass by",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-pass-by",
+   "category": "verb",
+   "kind": "core",
+   "order": 128
+  },
+  {
+   "lemma": "seguir",
+   "gloss": "to follow",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-follow",
+   "category": "verb",
+   "kind": "core",
+   "order": 129
+  },
+  {
+   "lemma": "cinco",
+   "gloss": "five",
+   "gender": null,
+   "display": null,
+   "conceptId": "five",
+   "category": "number",
+   "kind": "core",
+   "order": 130
+  },
+  {
+   "lemma": "mes",
+   "gloss": "month",
+   "gender": "m",
+   "display": null,
+   "conceptId": "month",
+   "category": "time",
+   "kind": "core",
+   "order": 131
+  },
+  {
+   "lemma": "usted",
+   "gloss": "you (formal)",
+   "gender": null,
+   "display": null,
+   "conceptId": "you-formal",
+   "category": "pronoun",
+   "kind": "core",
+   "order": 132
+  },
+  {
+   "lemma": "largo",
+   "gloss": "long",
+   "gender": null,
+   "display": null,
+   "conceptId": "long",
+   "category": "adjective",
+   "kind": "core",
+   "order": 133
+  },
+  {
+   "lemma": "alto",
+   "gloss": "tall; high",
+   "gender": null,
+   "display": null,
+   "conceptId": "tall-high",
+   "category": "adjective",
+   "kind": "core",
+   "order": 134
+  },
+  {
+   "lemma": "paz",
+   "gloss": "peace",
+   "gender": "f",
+   "display": null,
+   "conceptId": "peace",
+   "category": "society",
+   "kind": "core",
+   "order": 135
+  },
+  {
+   "lemma": "policía",
+   "gloss": "police",
+   "gender": "f",
+   "display": null,
+   "conceptId": "police",
+   "category": "job",
+   "kind": "core",
+   "order": 136
+  },
+  {
+   "lemma": "calle",
+   "gloss": "street",
+   "gender": "f",
+   "display": null,
+   "conceptId": "street",
+   "category": "location",
+   "kind": "core",
+   "order": 137
+  },
+  {
+   "lemma": "cara",
+   "gloss": "face",
+   "gender": "f",
+   "display": null,
+   "conceptId": "face",
+   "category": "body",
+   "kind": "core",
+   "order": 138
+  },
+  {
+   "lemma": "pensar",
+   "gloss": "to think",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-think",
+   "category": "verb",
+   "kind": "core",
+   "order": 139
+  },
+  {
+   "lemma": "allí",
+   "gloss": "there",
+   "gender": null,
+   "display": null,
+   "conceptId": "there",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 140
+  },
+  {
+   "lemma": "escuela",
+   "gloss": "school",
+   "gender": "f",
+   "display": null,
+   "conceptId": "school",
+   "category": "location",
+   "kind": "core",
+   "order": 141
+  },
+  {
+   "lemma": "julio",
+   "gloss": "July",
+   "gender": "m",
+   "display": null,
+   "conceptId": "july",
+   "category": "month",
+   "kind": "core",
+   "order": 142
+  },
+  {
+   "lemma": "relación",
+   "gloss": "relationship",
+   "gender": "f",
+   "display": null,
+   "conceptId": "relationship",
+   "category": "society",
+   "kind": "core",
+   "order": 143
+  },
+  {
+   "lemma": "fuerte",
+   "gloss": "strong",
+   "gender": null,
+   "display": null,
+   "conceptId": "strong",
+   "category": "adjective",
+   "kind": "core",
+   "order": 144
+  },
+  {
+   "lemma": "música",
+   "gloss": "music",
+   "gender": "f",
+   "display": null,
+   "conceptId": "music",
+   "category": "art",
+   "kind": "core",
+   "order": 145
+  },
+  {
+   "lemma": "rey",
+   "gloss": "king",
+   "gender": "m",
+   "display": null,
+   "conceptId": "king",
+   "category": "people",
+   "kind": "core",
+   "order": 146
+  },
+  {
+   "lemma": "mayo",
+   "gloss": "May",
+   "gender": "m",
+   "display": null,
+   "conceptId": "may",
+   "category": "month",
+   "kind": "core",
+   "order": 147
+  },
+  {
+   "lemma": "encontrar",
+   "gloss": "to find",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-find",
+   "category": "verb",
+   "kind": "core",
+   "order": 148
+  },
+  {
+   "lemma": "marzo",
+   "gloss": "March",
+   "gender": "m",
+   "display": null,
+   "conceptId": "march",
+   "category": "month",
+   "kind": "core",
+   "order": 149
+  },
+  {
+   "lemma": "sur",
+   "gloss": "south",
+   "gender": "m",
+   "display": null,
+   "conceptId": "south",
+   "category": "direction",
+   "kind": "core",
+   "order": 150
+  },
+  {
+   "lemma": "trabajar",
+   "gloss": "to work",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-work",
+   "category": "verb",
+   "kind": "core",
+   "order": 151
+  },
+  {
+   "lemma": "corazón",
+   "gloss": "heart",
+   "gender": "m",
+   "display": null,
+   "conceptId": "heart",
+   "category": "body",
+   "kind": "core",
+   "order": 152
+  },
+  {
+   "lemma": "diciembre",
+   "gloss": "December",
+   "gender": "m",
+   "display": null,
+   "conceptId": "december",
+   "category": "month",
+   "kind": "core",
+   "order": 153
+  },
+  {
+   "lemma": "imagen",
+   "gloss": "image",
+   "gender": "f",
+   "display": null,
+   "conceptId": "image",
+   "category": "misc",
+   "kind": "core",
+   "order": 154
+  },
+  {
+   "lemma": "norte",
+   "gloss": "north",
+   "gender": "m",
+   "display": null,
+   "conceptId": "north",
+   "category": "direction",
+   "kind": "core",
+   "order": 155
+  },
+  {
+   "lemma": "octubre",
+   "gloss": "October",
+   "gender": "m",
+   "display": null,
+   "conceptId": "october",
+   "category": "month",
+   "kind": "core",
+   "order": 156
+  },
+  {
+   "lemma": "volver",
+   "gloss": "to come back",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-come-back",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 157
+  },
+  {
+   "lemma": "voz",
+   "gloss": "voice",
+   "gender": "f",
+   "display": null,
+   "conceptId": "voice",
+   "category": "body",
+   "kind": "core",
+   "order": 158
+  },
+  {
+   "lemma": "abril",
+   "gloss": "April",
+   "gender": "m",
+   "display": null,
+   "conceptId": "april",
+   "category": "month",
+   "kind": "core",
+   "order": 159
+  },
+  {
+   "lemma": "joven",
+   "gloss": "young",
+   "gender": null,
+   "display": null,
+   "conceptId": "young",
+   "category": "adjective",
+   "kind": "core",
+   "order": 160
+  },
+  {
+   "lemma": "dirección",
+   "gloss": "direction",
+   "gender": "f",
+   "display": null,
+   "conceptId": "direction",
+   "category": "direction",
+   "kind": "core",
+   "order": 161
+  },
+  {
+   "lemma": "junio",
+   "gloss": "June",
+   "gender": "m",
+   "display": null,
+   "conceptId": "june",
+   "category": "month",
+   "kind": "core",
+   "order": 162
+  },
+  {
+   "lemma": "película",
+   "gloss": "movie",
+   "gender": "f",
+   "display": null,
+   "conceptId": "movie",
+   "category": "art",
+   "kind": "core",
+   "order": 163
+  },
+  {
+   "lemma": "dónde",
+   "gloss": "where",
+   "gender": null,
+   "display": null,
+   "conceptId": "where",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 164
+  },
+  {
+   "lemma": "mercado",
+   "gloss": "market",
+   "gender": "m",
+   "display": null,
+   "conceptId": "market",
+   "category": "location",
+   "kind": "core",
+   "order": 165
+  },
+  {
+   "lemma": "noviembre",
+   "gloss": "November",
+   "gender": "m",
+   "display": null,
+   "conceptId": "november",
+   "category": "month",
+   "kind": "core",
+   "order": 166
+  },
+  {
+   "lemma": "papel",
+   "gloss": "paper",
+   "gender": "m",
+   "display": null,
+   "conceptId": "paper",
+   "category": "home",
+   "kind": "core",
+   "order": 167
+  },
+  {
+   "lemma": "precio",
+   "gloss": "price",
+   "gender": "m",
+   "display": null,
+   "conceptId": "price",
+   "category": "society",
+   "kind": "core",
+   "order": 168
+  },
+  {
+   "lemma": "seis",
+   "gloss": "six",
+   "gender": null,
+   "display": null,
+   "conceptId": "six",
+   "category": "number",
+   "kind": "core",
+   "order": 169
+  },
+  {
+   "lemma": "agosto",
+   "gloss": "August",
+   "gender": "m",
+   "display": null,
+   "conceptId": "august",
+   "category": "month",
+   "kind": "core",
+   "order": 170
+  },
+  {
+   "lemma": "comida",
+   "gloss": "food",
+   "gender": "f",
+   "display": null,
+   "conceptId": "food",
+   "category": "food",
+   "kind": "core",
+   "order": 171
+  },
+  {
+   "lemma": "enero",
+   "gloss": "January",
+   "gender": "m",
+   "display": null,
+   "conceptId": "january",
+   "category": "month",
+   "kind": "core",
+   "order": 172
+  },
+  {
+   "lemma": "leer",
+   "gloss": "to read",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-read",
+   "category": "verb",
+   "kind": "core",
+   "order": 173
+  },
+  {
+   "lemma": "llevar",
+   "gloss": "to carry; to wear",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-carry-to-wear",
+   "category": "verb",
+   "kind": "core",
+   "order": 174
+  },
+  {
+   "lemma": "espacio",
+   "gloss": "space",
+   "gender": "m",
+   "display": null,
+   "conceptId": "space",
+   "category": "location",
+   "kind": "core",
+   "order": 175
+  },
+  {
+   "lemma": "febrero",
+   "gloss": "February",
+   "gender": "m",
+   "display": null,
+   "conceptId": "february",
+   "category": "month",
+   "kind": "core",
+   "order": 176
+  },
+  {
+   "lemma": "página",
+   "gloss": "page",
+   "gender": "f",
+   "display": null,
+   "conceptId": "page",
+   "category": "home",
+   "kind": "core",
+   "order": 177
+  },
+  {
+   "lemma": "arte",
+   "gloss": "art",
+   "gender": "m",
+   "display": null,
+   "conceptId": "art",
+   "category": "art",
+   "kind": "core",
+   "order": 178
+  },
+  {
+   "lemma": "septiembre",
+   "gloss": "September",
+   "gender": "m",
+   "display": null,
+   "conceptId": "september",
+   "category": "month",
+   "kind": "core",
+   "order": 179
+  },
+  {
+   "lemma": "vivo",
+   "gloss": "alive",
+   "gender": null,
+   "display": null,
+   "conceptId": "alive",
+   "category": "adjective",
+   "kind": "core",
+   "order": 180
+  },
+  {
+   "lemma": "fecha",
+   "gloss": "date",
+   "gender": "f",
+   "display": null,
+   "conceptId": "date",
+   "category": "measure",
+   "kind": "core",
+   "order": 181
+  },
+  {
+   "lemma": "feliz",
+   "gloss": "happy",
+   "gender": null,
+   "display": null,
+   "conceptId": "happy",
+   "category": "adjective",
+   "kind": "core",
+   "order": 182
+  },
+  {
+   "lemma": "iglesia",
+   "gloss": "church",
+   "gender": "f",
+   "display": null,
+   "conceptId": "church",
+   "category": "location",
+   "kind": "core",
+   "order": 183
+  },
+  {
+   "lemma": "hermano",
+   "gloss": "brother",
+   "gender": "m",
+   "display": null,
+   "conceptId": "brother",
+   "category": "people",
+   "kind": "core",
+   "order": 184
+  },
+  {
+   "lemma": "mar",
+   "gloss": "sea",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sea",
+   "category": "nature",
+   "kind": "core",
+   "order": 185
+  },
+  {
+   "lemma": "carrera",
+   "gloss": "race (sport)",
+   "gender": "f",
+   "display": null,
+   "conceptId": "race-sport",
+   "category": "society",
+   "kind": "core",
+   "order": 186
+  },
+  {
+   "lemma": "ejército",
+   "gloss": "army",
+   "gender": "m",
+   "display": null,
+   "conceptId": "army",
+   "category": "job",
+   "kind": "core",
+   "order": 187
+  },
+  {
+   "lemma": "negro",
+   "gloss": "black",
+   "gender": null,
+   "display": null,
+   "conceptId": "black",
+   "category": "color",
+   "kind": "core",
+   "order": 188
+  },
+  {
+   "lemma": "red",
+   "gloss": "network",
+   "gender": "f",
+   "display": null,
+   "conceptId": "network",
+   "category": "electronics",
+   "kind": "core",
+   "order": 189
+  },
+  {
+   "lemma": "río",
+   "gloss": "river",
+   "gender": "m",
+   "display": null,
+   "conceptId": "river",
+   "category": "nature",
+   "kind": "core",
+   "order": 190
+  },
+  {
+   "lemma": "ayer",
+   "gloss": "yesterday",
+   "gender": null,
+   "display": null,
+   "conceptId": "yesterday",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 191
+  },
+  {
+   "lemma": "blanco",
+   "gloss": "white",
+   "gender": null,
+   "display": null,
+   "conceptId": "white",
+   "category": "color",
+   "kind": "core",
+   "order": 192
+  },
+  {
+   "lemma": "comer",
+   "gloss": "to eat",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-eat",
+   "category": "verb",
+   "kind": "core",
+   "order": 193
+  },
+  {
+   "lemma": "ganar",
+   "gloss": "to win",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-win",
+   "category": "verb",
+   "kind": "core",
+   "order": 194
+  },
+  {
+   "lemma": "nota",
+   "gloss": "note",
+   "gender": "f",
+   "display": null,
+   "conceptId": "note",
+   "category": "home",
+   "kind": "core",
+   "order": 195
+  },
+  {
+   "lemma": "pequeño",
+   "gloss": "small",
+   "gender": null,
+   "display": null,
+   "conceptId": "small",
+   "category": "adjective",
+   "kind": "core",
+   "order": 196
+  },
+  {
+   "lemma": "sol",
+   "gloss": "sun",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sun",
+   "category": "nature",
+   "kind": "core",
+   "order": 197
+  },
+  {
+   "lemma": "aire",
+   "gloss": "air",
+   "gender": "m",
+   "display": null,
+   "conceptId": "air",
+   "category": "nature",
+   "kind": "core",
+   "order": 198
+  },
+  {
+   "lemma": "arriba",
+   "gloss": "top; up",
+   "gender": null,
+   "display": null,
+   "conceptId": "top-up",
+   "category": "direction",
+   "kind": "core",
+   "order": 199
+  },
+  {
+   "lemma": "autor",
+   "gloss": "author",
+   "gender": "m",
+   "display": null,
+   "conceptId": "author",
+   "category": "job",
+   "kind": "core",
+   "order": 200
+  },
+  {
+   "lemma": "entrar",
+   "gloss": "to go in",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-go-in",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 201
+  },
+  {
+   "lemma": "oro",
+   "gloss": "gold",
+   "gender": "m",
+   "display": null,
+   "conceptId": "gold",
+   "category": "material",
+   "kind": "core",
+   "order": 202
+  },
+  {
+   "lemma": "plata",
+   "gloss": "silver",
+   "gender": "f",
+   "display": null,
+   "conceptId": "silver",
+   "category": "material",
+   "kind": "core",
+   "order": 203
+  },
+  {
+   "lemma": "canción",
+   "gloss": "song",
+   "gender": "f",
+   "display": null,
+   "conceptId": "song",
+   "category": "art",
+   "kind": "core",
+   "order": 204
+  },
+  {
+   "lemma": "color",
+   "gloss": "color",
+   "gender": "m",
+   "display": null,
+   "conceptId": "color",
+   "category": "color",
+   "kind": "core",
+   "order": 205
+  },
+  {
+   "lemma": "fondo",
+   "gloss": "bottom",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bottom",
+   "category": "direction",
+   "kind": "core",
+   "order": 206
+  },
+  {
+   "lemma": "hija",
+   "gloss": "daughter",
+   "gender": "f",
+   "display": null,
+   "conceptId": "daughter",
+   "category": "people",
+   "kind": "core",
+   "order": 207
+  },
+  {
+   "lemma": "jugar",
+   "gloss": "to play",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-play",
+   "category": "verb",
+   "kind": "core",
+   "order": 208
+  },
+  {
+   "lemma": "banco",
+   "gloss": "bank",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bank",
+   "category": "location",
+   "kind": "core",
+   "order": 209
+  },
+  {
+   "lemma": "diez",
+   "gloss": "ten",
+   "gender": null,
+   "display": null,
+   "conceptId": "ten",
+   "category": "number",
+   "kind": "core",
+   "order": 210
+  },
+  {
+   "lemma": "mitad",
+   "gloss": "half",
+   "gender": "f",
+   "display": null,
+   "conceptId": "half",
+   "category": "measure",
+   "kind": "core",
+   "order": 211
+  },
+  {
+   "lemma": "oficina",
+   "gloss": "office",
+   "gender": "f",
+   "display": null,
+   "conceptId": "office",
+   "category": "location",
+   "kind": "core",
+   "order": 212
+  },
+  {
+   "lemma": "boca",
+   "gloss": "mouth",
+   "gender": "f",
+   "display": null,
+   "conceptId": "mouth",
+   "category": "body",
+   "kind": "core",
+   "order": 213
+  },
+  {
+   "lemma": "comprar",
+   "gloss": "to buy",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-buy",
+   "category": "verb",
+   "kind": "core",
+   "order": 214
+  },
+  {
+   "lemma": "energía",
+   "gloss": "energy",
+   "gender": "f",
+   "display": null,
+   "conceptId": "energy",
+   "category": "society",
+   "kind": "core",
+   "order": 215
+  },
+  {
+   "lemma": "malo",
+   "gloss": "bad",
+   "gender": null,
+   "display": null,
+   "conceptId": "bad",
+   "category": "adjective",
+   "kind": "core",
+   "order": 216
+  },
+  {
+   "lemma": "radio",
+   "gloss": "radio",
+   "gender": "f",
+   "display": null,
+   "conceptId": "radio",
+   "category": "electronics",
+   "kind": "core",
+   "order": 217
+  },
+  {
+   "lemma": "viejo",
+   "gloss": "old",
+   "gender": null,
+   "display": null,
+   "conceptId": "old",
+   "category": "adjective",
+   "kind": "core",
+   "order": 218
+  },
+  {
+   "lemma": "cámara",
+   "gloss": "camera",
+   "gender": "f",
+   "display": null,
+   "conceptId": "camera",
+   "category": "electronics",
+   "kind": "core",
+   "order": 219
+  },
+  {
+   "lemma": "domingo",
+   "gloss": "Sunday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sunday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 220
+  },
+  {
+   "lemma": "fuego",
+   "gloss": "fire",
+   "gender": "m",
+   "display": null,
+   "conceptId": "fire",
+   "category": "nature",
+   "kind": "core",
+   "order": 221
+  },
+  {
+   "lemma": "perder",
+   "gloss": "to lose",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-lose",
+   "category": "verb",
+   "kind": "core",
+   "order": 222
+  },
+  {
+   "lemma": "sangre",
+   "gloss": "blood",
+   "gender": "f",
+   "display": null,
+   "conceptId": "blood",
+   "category": "body",
+   "kind": "core",
+   "order": 223
+  },
+  {
+   "lemma": "carta",
+   "gloss": "letter",
+   "gender": "f",
+   "display": null,
+   "conceptId": "letter",
+   "category": "home",
+   "kind": "core",
+   "order": 224
+  },
+  {
+   "lemma": "rápido",
+   "gloss": "fast",
+   "gender": null,
+   "display": null,
+   "conceptId": "fast",
+   "category": "adjective",
+   "kind": "core",
+   "order": 225
+  },
+  {
+   "lemma": "banda",
+   "gloss": "band",
+   "gender": "f",
+   "display": null,
+   "conceptId": "band",
+   "category": "art",
+   "kind": "core",
+   "order": 226
+  },
+  {
+   "lemma": "pagar",
+   "gloss": "to pay",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-pay",
+   "category": "verb",
+   "kind": "core",
+   "order": 227
+  },
+  {
+   "lemma": "televisión",
+   "gloss": "television",
+   "gender": "f",
+   "display": null,
+   "conceptId": "television",
+   "category": "electronics",
+   "kind": "core",
+   "order": 228
+  },
+  {
+   "lemma": "abajo",
+   "gloss": "down",
+   "gender": null,
+   "display": null,
+   "conceptId": "down",
+   "category": "direction",
+   "kind": "core",
+   "order": 229
+  },
+  {
+   "lemma": "atrás",
+   "gloss": "back (direction)",
+   "gender": null,
+   "display": null,
+   "conceptId": "back-direction",
+   "category": "direction",
+   "kind": "core",
+   "order": 230
+  },
+  {
+   "lemma": "club",
+   "gloss": "club",
+   "gender": "m",
+   "display": null,
+   "conceptId": "club",
+   "category": "location",
+   "kind": "core",
+   "order": 231
+  },
+  {
+   "lemma": "sexo",
+   "gloss": "sex",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sex",
+   "category": "society",
+   "kind": "core",
+   "order": 232
+  },
+  {
+   "lemma": "siete",
+   "gloss": "seven",
+   "gender": null,
+   "display": null,
+   "conceptId": "seven",
+   "category": "number",
+   "kind": "core",
+   "order": 233
+  },
+  {
+   "lemma": "dolor",
+   "gloss": "pain",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pain",
+   "category": "misc",
+   "kind": "core",
+   "order": 234
+  },
+  {
+   "lemma": "isla",
+   "gloss": "island",
+   "gender": "f",
+   "display": null,
+   "conceptId": "island",
+   "category": "nature",
+   "kind": "core",
+   "order": 235
+  },
+  {
+   "lemma": "izquierda",
+   "gloss": "left",
+   "gender": "f",
+   "display": null,
+   "conceptId": "left",
+   "category": "direction",
+   "kind": "core",
+   "order": 236
+  },
+  {
+   "lemma": "profesor",
+   "gloss": "teacher",
+   "gender": "m",
+   "display": null,
+   "conceptId": "teacher",
+   "category": "job",
+   "kind": "core",
+   "order": 237
+  },
+  {
+   "lemma": "ropa",
+   "gloss": "clothing",
+   "gender": "f",
+   "display": null,
+   "conceptId": "clothing",
+   "category": "clothing",
+   "kind": "core",
+   "order": 238
+  },
+  {
+   "lemma": "cielo",
+   "gloss": "heaven; sky",
+   "gender": "m",
+   "display": null,
+   "conceptId": "heaven-sky",
+   "category": "society",
+   "kind": "core",
+   "order": 239
+  },
+  {
+   "lemma": "escribir",
+   "gloss": "to write",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-write",
+   "category": "verb",
+   "kind": "core",
+   "order": 240
+  },
+  {
+   "lemma": "rico",
+   "gloss": "rich",
+   "gender": null,
+   "display": null,
+   "conceptId": "rich",
+   "category": "adjective",
+   "kind": "core",
+   "order": 241
+  },
+  {
+   "lemma": "vino",
+   "gloss": "wine",
+   "gender": "m",
+   "display": null,
+   "conceptId": "wine",
+   "category": "drink",
+   "kind": "core",
+   "order": 242
+  },
+  {
+   "lemma": "derecha",
+   "gloss": "right",
+   "gender": "f",
+   "display": null,
+   "conceptId": "right",
+   "category": "direction",
+   "kind": "core",
+   "order": 243
+  },
+  {
+   "lemma": "peso",
+   "gloss": "weight",
+   "gender": "m",
+   "display": null,
+   "conceptId": "weight",
+   "category": "measure",
+   "kind": "core",
+   "order": 244
+  },
+  {
+   "lemma": "pobre",
+   "gloss": "poor",
+   "gender": null,
+   "display": null,
+   "conceptId": "poor",
+   "category": "adjective",
+   "kind": "core",
+   "order": 245
+  },
+  {
+   "lemma": "hospital",
+   "gloss": "hospital",
+   "gender": "m",
+   "display": null,
+   "conceptId": "hospital",
+   "category": "location",
+   "kind": "core",
+   "order": 246
+  },
+  {
+   "lemma": "humano",
+   "gloss": "human",
+   "gender": "m",
+   "display": null,
+   "conceptId": "human",
+   "category": "people",
+   "kind": "core",
+   "order": 247
+  },
+  {
+   "lemma": "pie",
+   "gloss": "foot",
+   "gender": "m",
+   "display": null,
+   "conceptId": "foot",
+   "category": "body",
+   "kind": "core",
+   "order": 248
+  },
+  {
+   "lemma": "tecnología",
+   "gloss": "technology",
+   "gender": "f",
+   "display": null,
+   "conceptId": "technology",
+   "category": "society",
+   "kind": "core",
+   "order": 249
+  },
+  {
+   "lemma": "verano",
+   "gloss": "summer",
+   "gender": "m",
+   "display": null,
+   "conceptId": "summer",
+   "category": "season",
+   "kind": "core",
+   "order": 250
+  },
+  {
+   "lemma": "aprender",
+   "gloss": "to learn",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-learn",
+   "category": "verb",
+   "kind": "core",
+   "order": 251
+  },
+  {
+   "lemma": "cuarto",
+   "gloss": "fourth",
+   "gender": null,
+   "display": null,
+   "conceptId": "fourth",
+   "category": "number",
+   "kind": "core",
+   "order": 252
+  },
+  {
+   "lemma": "muerto",
+   "gloss": "dead",
+   "gender": null,
+   "display": null,
+   "conceptId": "dead",
+   "category": "adjective",
+   "kind": "core",
+   "order": 253
+  },
+  {
+   "lemma": "ocho",
+   "gloss": "eight",
+   "gender": null,
+   "display": null,
+   "conceptId": "eight",
+   "category": "number",
+   "kind": "core",
+   "order": 254
+  },
+  {
+   "lemma": "suelo",
+   "gloss": "ground; floor",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ground-floor",
+   "category": "location",
+   "kind": "core",
+   "order": 255
+  },
+  {
+   "lemma": "ataque",
+   "gloss": "attack",
+   "gender": "m",
+   "display": null,
+   "conceptId": "attack",
+   "category": "society",
+   "kind": "core",
+   "order": 256
+  },
+  {
+   "lemma": "edificio",
+   "gloss": "building",
+   "gender": "m",
+   "display": null,
+   "conceptId": "building",
+   "category": "location",
+   "kind": "core",
+   "order": 257
+  },
+  {
+   "lemma": "lengua",
+   "gloss": "tongue; language",
+   "gender": "f",
+   "display": null,
+   "conceptId": "tongue-language",
+   "category": "body",
+   "kind": "core",
+   "order": 258
+  },
+  {
+   "lemma": "naturaleza",
+   "gloss": "nature",
+   "gender": "f",
+   "display": null,
+   "conceptId": "nature",
+   "category": "nature",
+   "kind": "core",
+   "order": 259
+  },
+  {
+   "lemma": "sueño",
+   "gloss": "dream",
+   "gender": "m",
+   "display": null,
+   "conceptId": "dream",
+   "category": "home",
+   "kind": "core",
+   "order": 260
+  },
+  {
+   "lemma": "teléfono",
+   "gloss": "telephone",
+   "gender": "m",
+   "display": null,
+   "conceptId": "telephone",
+   "category": "home",
+   "kind": "core",
+   "order": 261
+  },
+  {
+   "lemma": "transporte",
+   "gloss": "transportation",
+   "gender": "m",
+   "display": null,
+   "conceptId": "transportation",
+   "category": "transport",
+   "kind": "core",
+   "order": 262
+  },
+  {
+   "lemma": "detrás",
+   "gloss": "behind",
+   "gender": null,
+   "display": null,
+   "conceptId": "behind",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 263
+  },
+  {
+   "lemma": "escuchar",
+   "gloss": "to listen",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-listen",
+   "category": "verb",
+   "kind": "core",
+   "order": 264
+  },
+  {
+   "lemma": "material",
+   "gloss": "material",
+   "gender": "m",
+   "display": null,
+   "conceptId": "material",
+   "category": "material",
+   "kind": "core",
+   "order": 265
+  },
+  {
+   "lemma": "esposa",
+   "gloss": "wife",
+   "gender": "f",
+   "display": null,
+   "conceptId": "wife",
+   "category": "people",
+   "kind": "core",
+   "order": 266
+  },
+  {
+   "lemma": "perro",
+   "gloss": "dog",
+   "gender": "m",
+   "display": null,
+   "conceptId": "dog",
+   "category": "animal",
+   "kind": "core",
+   "order": 267
+  },
+  {
+   "lemma": "revista",
+   "gloss": "magazine",
+   "gender": "f",
+   "display": null,
+   "conceptId": "magazine",
+   "category": "society",
+   "kind": "core",
+   "order": 268
+  },
+  {
+   "lemma": "viernes",
+   "gloss": "Friday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "friday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 269
+  },
+  {
+   "lemma": "cama",
+   "gloss": "bed",
+   "gender": "f",
+   "display": null,
+   "conceptId": "bed",
+   "category": "home",
+   "kind": "core",
+   "order": 270
+  },
+  {
+   "lemma": "ciencia",
+   "gloss": "science",
+   "gender": "f",
+   "display": null,
+   "conceptId": "science",
+   "category": "society",
+   "kind": "core",
+   "order": 271
+  },
+  {
+   "lemma": "médico",
+   "gloss": "doctor",
+   "gender": "m",
+   "display": null,
+   "conceptId": "doctor",
+   "category": "job",
+   "kind": "core",
+   "order": 272
+  },
+  {
+   "lemma": "contar",
+   "gloss": "to count",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-count",
+   "category": "verb",
+   "kind": "core",
+   "order": 273
+  },
+  {
+   "lemma": "verde",
+   "gloss": "green",
+   "gender": null,
+   "display": null,
+   "conceptId": "green",
+   "category": "color",
+   "kind": "core",
+   "order": 274
+  },
+  {
+   "lemma": "dormir",
+   "gloss": "to sleep",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-sleep",
+   "category": "verb",
+   "kind": "core",
+   "order": 275
+  },
+  {
+   "lemma": "hermana",
+   "gloss": "sister",
+   "gender": "f",
+   "display": null,
+   "conceptId": "sister",
+   "category": "people",
+   "kind": "core",
+   "order": 276
+  },
+  {
+   "lemma": "tribunal",
+   "gloss": "court",
+   "gender": "m",
+   "display": null,
+   "conceptId": "court",
+   "category": "location",
+   "kind": "core",
+   "order": 277
+  },
+  {
+   "lemma": "elección",
+   "gloss": "election",
+   "gender": "f",
+   "display": null,
+   "conceptId": "election",
+   "category": "society",
+   "kind": "core",
+   "order": 278
+  },
+  {
+   "lemma": "llamar",
+   "gloss": "to call",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-call",
+   "category": "verb",
+   "kind": "core",
+   "order": 279
+  },
+  {
+   "lemma": "morir",
+   "gloss": "to die",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-die",
+   "category": "verb",
+   "kind": "core",
+   "order": 280
+  },
+  {
+   "lemma": "parque",
+   "gloss": "park",
+   "gender": "m",
+   "display": null,
+   "conceptId": "park",
+   "category": "location",
+   "kind": "core",
+   "order": 281
+  },
+  {
+   "lemma": "triste",
+   "gloss": "sad",
+   "gender": null,
+   "display": null,
+   "conceptId": "sad",
+   "category": "adjective",
+   "kind": "core",
+   "order": 282
+  },
+  {
+   "lemma": "contrato",
+   "gloss": "contract",
+   "gender": "m",
+   "display": null,
+   "conceptId": "contract",
+   "category": "society",
+   "kind": "core",
+   "order": 283
+  },
+  {
+   "lemma": "niña",
+   "gloss": "girl",
+   "gender": "f",
+   "display": null,
+   "conceptId": "girl",
+   "category": "people",
+   "kind": "core",
+   "order": 284
+  },
+  {
+   "lemma": "rojo",
+   "gloss": "red",
+   "gender": null,
+   "display": null,
+   "conceptId": "red",
+   "category": "color",
+   "kind": "core",
+   "order": 285
+  },
+  {
+   "lemma": "azul",
+   "gloss": "blue",
+   "gender": null,
+   "display": null,
+   "conceptId": "blue",
+   "category": "color",
+   "kind": "core",
+   "order": 286
+  },
+  {
+   "lemma": "carne",
+   "gloss": "beef; meat",
+   "gender": "f",
+   "display": null,
+   "conceptId": "beef-meat",
+   "category": "food",
+   "kind": "core",
+   "order": 287
+  },
+  {
+   "lemma": "teatro",
+   "gloss": "theater",
+   "gender": "m",
+   "display": null,
+   "conceptId": "theater",
+   "category": "location",
+   "kind": "core",
+   "order": 288
+  },
+  {
+   "lemma": "caja",
+   "gloss": "box",
+   "gender": "f",
+   "display": null,
+   "conceptId": "box",
+   "category": "home",
+   "kind": "core",
+   "order": 289
+  },
+  {
+   "lemma": "enfermedad",
+   "gloss": "disease",
+   "gender": "f",
+   "display": null,
+   "conceptId": "disease",
+   "category": "body",
+   "kind": "core",
+   "order": 290
+  },
+  {
+   "lemma": "matrimonio",
+   "gloss": "marriage",
+   "gender": "m",
+   "display": null,
+   "conceptId": "marriage",
+   "category": "society",
+   "kind": "core",
+   "order": 291
+  },
+  {
+   "lemma": "pan",
+   "gloss": "bread",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bread",
+   "category": "food",
+   "kind": "core",
+   "order": 292
+  },
+  {
+   "lemma": "pelo",
+   "gloss": "hair",
+   "gender": "m",
+   "display": null,
+   "conceptId": "hair",
+   "category": "body",
+   "kind": "core",
+   "order": 293
+  },
+  {
+   "lemma": "venir",
+   "gloss": "to come",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-come",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 294
+  },
+  {
+   "lemma": "café",
+   "gloss": "coffee",
+   "gender": "m",
+   "display": null,
+   "conceptId": "coffee",
+   "category": "drink",
+   "kind": "core",
+   "order": 295
+  },
+  {
+   "lemma": "duro",
+   "gloss": "hard",
+   "gender": null,
+   "display": null,
+   "conceptId": "hard",
+   "category": "adjective",
+   "kind": "core",
+   "order": 296
+  },
+  {
+   "lemma": "estación",
+   "gloss": "station; season",
+   "gender": "f",
+   "display": null,
+   "conceptId": "station",
+   "category": "location",
+   "kind": "core",
+   "order": 297
+  },
+  {
+   "lemma": "lunes",
+   "gloss": "Monday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "monday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 298
+  },
+  {
+   "lemma": "planta",
+   "gloss": "plant",
+   "gender": "f",
+   "display": null,
+   "conceptId": "plant",
+   "category": "nature",
+   "kind": "core",
+   "order": 299
+  },
+  {
+   "lemma": "baño",
+   "gloss": "bathroom",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bathroom",
+   "category": "home",
+   "kind": "core",
+   "order": 300
+  },
+  {
+   "lemma": "hotel",
+   "gloss": "hotel",
+   "gender": "m",
+   "display": null,
+   "conceptId": "hotel",
+   "category": "location",
+   "kind": "core",
+   "order": 301
+  },
+  {
+   "lemma": "matar",
+   "gloss": "to kill",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-kill",
+   "category": "verb",
+   "kind": "core",
+   "order": 302
+  },
+  {
+   "lemma": "piel",
+   "gloss": "skin",
+   "gender": "f",
+   "display": null,
+   "conceptId": "skin",
+   "category": "body",
+   "kind": "core",
+   "order": 303
+  },
+  {
+   "lemma": "luna",
+   "gloss": "moon",
+   "gender": "f",
+   "display": null,
+   "conceptId": "moon",
+   "category": "nature",
+   "kind": "core",
+   "order": 304
+  },
+  {
+   "lemma": "ojo",
+   "gloss": "eye",
+   "gender": "m",
+   "display": null,
+   "conceptId": "eye",
+   "category": "body",
+   "kind": "core",
+   "order": 305
+  },
+  {
+   "lemma": "reina",
+   "gloss": "queen",
+   "gender": "f",
+   "display": null,
+   "conceptId": "queen",
+   "category": "people",
+   "kind": "core",
+   "order": 306
+  },
+  {
+   "lemma": "sábado",
+   "gloss": "Saturday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "saturday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 307
+  },
+  {
+   "lemma": "abogado",
+   "gloss": "lawyer",
+   "gender": "m",
+   "display": null,
+   "conceptId": "lawyer",
+   "category": "job",
+   "kind": "core",
+   "order": 308
+  },
+  {
+   "lemma": "abrir",
+   "gloss": "to open",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-open",
+   "category": "verb",
+   "kind": "core",
+   "order": 309
+  },
+  {
+   "lemma": "ejercicio",
+   "gloss": "exercise",
+   "gender": "m",
+   "display": null,
+   "conceptId": "exercise",
+   "category": "society",
+   "kind": "core",
+   "order": 310
+  },
+  {
+   "lemma": "jugador",
+   "gloss": "player",
+   "gender": "m",
+   "display": null,
+   "conceptId": "player",
+   "category": "people",
+   "kind": "core",
+   "order": 311
+  },
+  {
+   "lemma": "nueve",
+   "gloss": "nine",
+   "gender": null,
+   "display": null,
+   "conceptId": "nine",
+   "category": "number",
+   "kind": "core",
+   "order": 312
+  },
+  {
+   "lemma": "calor",
+   "gloss": "heat",
+   "gender": "m",
+   "display": null,
+   "conceptId": "heat",
+   "category": "nature",
+   "kind": "core",
+   "order": 313
+  },
+  {
+   "lemma": "cárcel",
+   "gloss": "prison",
+   "gender": "f",
+   "display": null,
+   "conceptId": "prison",
+   "category": "society",
+   "kind": "core",
+   "order": 314
+  },
+  {
+   "lemma": "piedra",
+   "gloss": "stone",
+   "gender": "f",
+   "display": null,
+   "conceptId": "stone",
+   "category": "material",
+   "kind": "core",
+   "order": 315
+  },
+  {
+   "lemma": "secretario",
+   "gloss": "secretary",
+   "gender": "m",
+   "display": null,
+   "conceptId": "secretary",
+   "category": "job",
+   "kind": "core",
+   "order": 316
+  },
+  {
+   "lemma": "aeropuerto",
+   "gloss": "airport",
+   "gender": "m",
+   "display": null,
+   "conceptId": "airport",
+   "category": "location",
+   "kind": "core",
+   "order": 317
+  },
+  {
+   "lemma": "querer",
+   "gloss": "to want",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-want",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 318
+  },
+  {
+   "lemma": "coche",
+   "gloss": "car",
+   "gender": "m",
+   "display": null,
+   "conceptId": "car",
+   "category": "transport",
+   "kind": "core",
+   "order": 319
+  },
+  {
+   "lemma": "corto",
+   "gloss": "short (vs long)",
+   "gender": null,
+   "display": null,
+   "conceptId": "short-vs-long",
+   "category": "adjective",
+   "kind": "core",
+   "order": 320
+  },
+  {
+   "lemma": "cuánto",
+   "gloss": "how much",
+   "gender": null,
+   "display": null,
+   "conceptId": "how-much",
+   "category": "grammar",
+   "kind": "glue",
+   "order": 321
+  },
+  {
+   "lemma": "leche",
+   "gloss": "milk",
+   "gender": "f",
+   "display": null,
+   "conceptId": "milk",
+   "category": "drink",
+   "kind": "core",
+   "order": 322
+  },
+  {
+   "lemma": "mirar",
+   "gloss": "to watch; to look",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-watch-to-look",
+   "category": "verb",
+   "kind": "core",
+   "order": 323
+  },
+  {
+   "lemma": "tienda",
+   "gloss": "store; shop",
+   "gender": "f",
+   "display": null,
+   "conceptId": "store-shop",
+   "category": "location",
+   "kind": "core",
+   "order": 324
+  },
+  {
+   "lemma": "construir",
+   "gloss": "to build",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-build",
+   "category": "verb",
+   "kind": "core",
+   "order": 325
+  },
+  {
+   "lemma": "pantalla",
+   "gloss": "screen",
+   "gender": "f",
+   "display": null,
+   "conceptId": "screen",
+   "category": "electronics",
+   "kind": "core",
+   "order": 326
+  },
+  {
+   "lemma": "artista",
+   "gloss": "artist",
+   "gender": "m",
+   "display": null,
+   "conceptId": "artist",
+   "category": "job",
+   "kind": "core",
+   "order": 327
+  },
+  {
+   "lemma": "caer",
+   "gloss": "to fall",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-fall",
+   "category": "verb",
+   "kind": "core",
+   "order": 328
+  },
+  {
+   "lemma": "playa",
+   "gloss": "beach",
+   "gender": "f",
+   "display": null,
+   "conceptId": "beach",
+   "category": "nature",
+   "kind": "core",
+   "order": 329
+  },
+  {
+   "lemma": "asesinato",
+   "gloss": "murder",
+   "gender": "m",
+   "display": null,
+   "conceptId": "murder",
+   "category": "society",
+   "kind": "core",
+   "order": 330
+  },
+  {
+   "lemma": "cocina",
+   "gloss": "kitchen",
+   "gender": "f",
+   "display": null,
+   "conceptId": "kitchen",
+   "category": "home",
+   "kind": "core",
+   "order": 331
+  },
+  {
+   "lemma": "jueves",
+   "gloss": "Thursday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "thursday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 332
+  },
+  {
+   "lemma": "medicina",
+   "gloss": "medicine",
+   "gender": "f",
+   "display": null,
+   "conceptId": "medicine",
+   "category": "society",
+   "kind": "core",
+   "order": 333
+  },
+  {
+   "lemma": "puente",
+   "gloss": "bridge",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bridge",
+   "category": "location",
+   "kind": "core",
+   "order": 334
+  },
+  {
+   "lemma": "rosa",
+   "gloss": "pink",
+   "gender": null,
+   "display": null,
+   "conceptId": "pink",
+   "category": "color",
+   "kind": "core",
+   "order": 335
+  },
+  {
+   "lemma": "tren",
+   "gloss": "train",
+   "gender": "m",
+   "display": null,
+   "conceptId": "train",
+   "category": "transport",
+   "kind": "core",
+   "order": 336
+  },
+  {
+   "lemma": "bebé",
+   "gloss": "baby",
+   "gender": "m",
+   "display": null,
+   "conceptId": "baby",
+   "category": "people",
+   "kind": "core",
+   "order": 337
+  },
+  {
+   "lemma": "frío",
+   "gloss": "cold",
+   "gender": null,
+   "display": null,
+   "conceptId": "cold",
+   "category": "adjective",
+   "kind": "core",
+   "order": 338
+  },
+  {
+   "lemma": "periodista",
+   "gloss": "reporter",
+   "gender": "m",
+   "display": null,
+   "conceptId": "reporter",
+   "category": "job",
+   "kind": "core",
+   "order": 339
+  },
+  {
+   "lemma": "avión",
+   "gloss": "plane",
+   "gender": "m",
+   "display": null,
+   "conceptId": "plane",
+   "category": "transport",
+   "kind": "core",
+   "order": 340
+  },
+  {
+   "lemma": "biblioteca",
+   "gloss": "library",
+   "gender": "f",
+   "display": null,
+   "conceptId": "library",
+   "category": "location",
+   "kind": "core",
+   "order": 341
+  },
+  {
+   "lemma": "deporte",
+   "gloss": "sport",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sport",
+   "category": "society",
+   "kind": "core",
+   "order": 342
+  },
+  {
+   "lemma": "madera",
+   "gloss": "wood",
+   "gender": "f",
+   "display": null,
+   "conceptId": "wood",
+   "category": "material",
+   "kind": "core",
+   "order": 343
+  },
+  {
+   "lemma": "minuto",
+   "gloss": "minute",
+   "gender": "m",
+   "display": null,
+   "conceptId": "minute",
+   "category": "time",
+   "kind": "core",
+   "order": 344
+  },
+  {
+   "lemma": "móvil",
+   "gloss": "cell phone",
+   "gender": "m",
+   "display": null,
+   "conceptId": "cell-phone",
+   "category": "electronics",
+   "kind": "core",
+   "order": 345
+  },
+  {
+   "lemma": "animal",
+   "gloss": "animal",
+   "gender": "m",
+   "display": null,
+   "conceptId": "animal",
+   "category": "animal",
+   "kind": "core",
+   "order": 346
+  },
+  {
+   "lemma": "habitación",
+   "gloss": "room",
+   "gender": "f",
+   "display": null,
+   "conceptId": "room",
+   "category": "location",
+   "kind": "core",
+   "order": 347
+  },
+  {
+   "lemma": "regalo",
+   "gloss": "gift",
+   "gender": "m",
+   "display": null,
+   "conceptId": "gift",
+   "category": "home",
+   "kind": "core",
+   "order": 348
+  },
+  {
+   "lemma": "religión",
+   "gloss": "religion",
+   "gender": "f",
+   "display": null,
+   "conceptId": "religion",
+   "category": "society",
+   "kind": "core",
+   "order": 349
+  },
+  {
+   "lemma": "bonito",
+   "gloss": "beautiful",
+   "gender": null,
+   "display": null,
+   "conceptId": "beautiful",
+   "category": "adjective",
+   "kind": "core",
+   "order": 350
+  },
+  {
+   "lemma": "estrella",
+   "gloss": "star",
+   "gender": "f",
+   "display": null,
+   "conceptId": "star",
+   "category": "nature",
+   "kind": "core",
+   "order": 351
+  },
+  {
+   "lemma": "martes",
+   "gloss": "Tuesday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "tuesday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 352
+  },
+  {
+   "lemma": "metro",
+   "gloss": "meter",
+   "gender": "m",
+   "display": null,
+   "conceptId": "meter",
+   "category": "measure",
+   "kind": "core",
+   "order": 353
+  },
+  {
+   "lemma": "señal",
+   "gloss": "sign",
+   "gender": "f",
+   "display": null,
+   "conceptId": "sign",
+   "category": "society",
+   "kind": "core",
+   "order": 354
+  },
+  {
+   "lemma": "valle",
+   "gloss": "valley",
+   "gender": "m",
+   "display": null,
+   "conceptId": "valley",
+   "category": "nature",
+   "kind": "core",
+   "order": 355
+  },
+  {
+   "lemma": "viento",
+   "gloss": "wind",
+   "gender": "m",
+   "display": null,
+   "conceptId": "wind",
+   "category": "nature",
+   "kind": "core",
+   "order": 356
+  },
+  {
+   "lemma": "invierno",
+   "gloss": "winter",
+   "gender": "m",
+   "display": null,
+   "conceptId": "winter",
+   "category": "season",
+   "kind": "core",
+   "order": 357
+  },
+  {
+   "lemma": "luchar",
+   "gloss": "to fight",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-fight",
+   "category": "verb",
+   "kind": "core",
+   "order": 358
+  },
+  {
+   "lemma": "sonido",
+   "gloss": "sound",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sound",
+   "category": "misc",
+   "kind": "core",
+   "order": 359
+  },
+  {
+   "lemma": "tarjeta",
+   "gloss": "card",
+   "gender": "f",
+   "display": null,
+   "conceptId": "card",
+   "category": "home",
+   "kind": "core",
+   "order": 360
+  },
+  {
+   "lemma": "bolsa",
+   "gloss": "bag",
+   "gender": "f",
+   "display": null,
+   "conceptId": "bag",
+   "category": "home",
+   "kind": "core",
+   "order": 361
+  },
+  {
+   "lemma": "cerebro",
+   "gloss": "brain",
+   "gender": "m",
+   "display": null,
+   "conceptId": "brain",
+   "category": "body",
+   "kind": "core",
+   "order": 362
+  },
+  {
+   "lemma": "espalda",
+   "gloss": "back",
+   "gender": "f",
+   "display": null,
+   "conceptId": "back",
+   "category": "body",
+   "kind": "core",
+   "order": 363
+  },
+  {
+   "lemma": "probar",
+   "gloss": "to taste",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-taste",
+   "category": "verb",
+   "kind": "core",
+   "order": 364
+  },
+  {
+   "lemma": "víctima",
+   "gloss": "victim",
+   "gender": "f",
+   "display": null,
+   "conceptId": "victim",
+   "category": "people",
+   "kind": "core",
+   "order": 365
+  },
+  {
+   "lemma": "mapa",
+   "gloss": "map",
+   "gender": "m",
+   "display": null,
+   "conceptId": "map",
+   "category": "misc",
+   "kind": "core",
+   "order": 366
+  },
+  {
+   "lemma": "miércoles",
+   "gloss": "Wednesday",
+   "gender": "m",
+   "display": null,
+   "conceptId": "wednesday",
+   "category": "weekday",
+   "kind": "core",
+   "order": 367
+  },
+  {
+   "lemma": "periódico",
+   "gloss": "newspaper",
+   "gender": "m",
+   "display": null,
+   "conceptId": "newspaper",
+   "category": "society",
+   "kind": "core",
+   "order": 368
+  },
+  {
+   "lemma": "vender",
+   "gloss": "to sell",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-sell",
+   "category": "verb",
+   "kind": "core",
+   "order": 369
+  },
+  {
+   "lemma": "cerrar",
+   "gloss": "to close",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-close",
+   "category": "verb",
+   "kind": "core",
+   "order": 370
+  },
+  {
+   "lemma": "cuello",
+   "gloss": "neck",
+   "gender": "m",
+   "display": null,
+   "conceptId": "neck",
+   "category": "body",
+   "kind": "core",
+   "order": 371
+  },
+  {
+   "lemma": "famoso",
+   "gloss": "famous",
+   "gender": null,
+   "display": null,
+   "conceptId": "famous",
+   "category": "adjective",
+   "kind": "core",
+   "order": 372
+  },
+  {
+   "lemma": "abuela",
+   "gloss": "grandmother",
+   "gender": "f",
+   "display": null,
+   "conceptId": "grandmother",
+   "category": "people",
+   "kind": "core",
+   "order": 373
+  },
+  {
+   "lemma": "lluvia",
+   "gloss": "rain",
+   "gender": "f",
+   "display": null,
+   "conceptId": "rain",
+   "category": "nature",
+   "kind": "core",
+   "order": 374
+  },
+  {
+   "lemma": "marido",
+   "gloss": "husband",
+   "gender": "m",
+   "display": null,
+   "conceptId": "husband",
+   "category": "people",
+   "kind": "core",
+   "order": 375
+  },
+  {
+   "lemma": "oeste",
+   "gloss": "west",
+   "gender": "m",
+   "display": null,
+   "conceptId": "west",
+   "category": "direction",
+   "kind": "core",
+   "order": 376
+  },
+  {
+   "lemma": "tocar",
+   "gloss": "to touch",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-touch",
+   "category": "verb",
+   "kind": "core",
+   "order": 377
+  },
+  {
+   "lemma": "tranquilo",
+   "gloss": "quiet",
+   "gender": null,
+   "display": null,
+   "conceptId": "quiet",
+   "category": "adjective",
+   "kind": "core",
+   "order": 378
+  },
+  {
+   "lemma": "correr",
+   "gloss": "to run",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-run",
+   "category": "verb",
+   "kind": "core",
+   "order": 379
+  },
+  {
+   "lemma": "motor",
+   "gloss": "engine",
+   "gender": "m",
+   "display": null,
+   "conceptId": "engine",
+   "category": "transport",
+   "kind": "core",
+   "order": 380
+  },
+  {
+   "lemma": "caliente",
+   "gloss": "hot",
+   "gender": null,
+   "display": null,
+   "conceptId": "hot",
+   "category": "adjective",
+   "kind": "core",
+   "order": 381
+  },
+  {
+   "lemma": "millón",
+   "gloss": "million",
+   "gender": "m",
+   "display": null,
+   "conceptId": "million",
+   "category": "number",
+   "kind": "core",
+   "order": 382
+  },
+  {
+   "lemma": "parar",
+   "gloss": "to stop",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-stop",
+   "category": "verb",
+   "kind": "core",
+   "order": 383
+  },
+  {
+   "lemma": "raza",
+   "gloss": "race (ethnicity)",
+   "gender": "f",
+   "display": null,
+   "conceptId": "race-ethnicity",
+   "category": "society",
+   "kind": "core",
+   "order": 384
+  },
+  {
+   "lemma": "árbol",
+   "gloss": "tree",
+   "gender": "m",
+   "display": null,
+   "conceptId": "tree",
+   "category": "nature",
+   "kind": "core",
+   "order": 385
+  },
+  {
+   "lemma": "bosque",
+   "gloss": "forest",
+   "gender": "m",
+   "display": null,
+   "conceptId": "forest",
+   "category": "nature",
+   "kind": "core",
+   "order": 386
+  },
+  {
+   "lemma": "estudiante",
+   "gloss": "student",
+   "gender": "m",
+   "display": null,
+   "conceptId": "student",
+   "category": "job",
+   "kind": "core",
+   "order": 387
+  },
+  {
+   "lemma": "primavera",
+   "gloss": "spring",
+   "gender": "f",
+   "display": null,
+   "conceptId": "spring",
+   "category": "season",
+   "kind": "core",
+   "order": 388
+  },
+  {
+   "lemma": "romper",
+   "gloss": "to break",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-break",
+   "category": "verb",
+   "kind": "core",
+   "order": 389
+  },
+  {
+   "lemma": "sal",
+   "gloss": "salt",
+   "gender": "f",
+   "display": null,
+   "conceptId": "salt",
+   "category": "food",
+   "kind": "core",
+   "order": 390
+  },
+  {
+   "lemma": "vestido",
+   "gloss": "dress",
+   "gender": "m",
+   "display": null,
+   "conceptId": "dress",
+   "category": "clothing",
+   "kind": "core",
+   "order": 391
+  },
+  {
+   "lemma": "vosotros",
+   "gloss": "you (plural)",
+   "gender": null,
+   "display": null,
+   "conceptId": "you-plural",
+   "category": "pronoun",
+   "kind": "core",
+   "order": 392
+  },
+  {
+   "lemma": "caballo",
+   "gloss": "horse",
+   "gender": "m",
+   "display": null,
+   "conceptId": "horse",
+   "category": "animal",
+   "kind": "core",
+   "order": 393
+  },
+  {
+   "lemma": "herramienta",
+   "gloss": "tool",
+   "gender": "f",
+   "display": null,
+   "conceptId": "tool",
+   "category": "home",
+   "kind": "core",
+   "order": 394
+  },
+  {
+   "lemma": "jardín",
+   "gloss": "garden",
+   "gender": "m",
+   "display": null,
+   "conceptId": "garden",
+   "category": "home",
+   "kind": "core",
+   "order": 395
+  },
+  {
+   "lemma": "arena",
+   "gloss": "sand",
+   "gender": "f",
+   "display": null,
+   "conceptId": "sand",
+   "category": "nature",
+   "kind": "core",
+   "order": 396
+  },
+  {
+   "lemma": "caminar",
+   "gloss": "to walk",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-walk",
+   "category": "verb",
+   "kind": "core",
+   "order": 397
+  },
+  {
+   "lemma": "montaña",
+   "gloss": "mountain",
+   "gender": "f",
+   "display": null,
+   "conceptId": "mountain",
+   "category": "nature",
+   "kind": "core",
+   "order": 398
+  },
+  {
+   "lemma": "paciente",
+   "gloss": "patient",
+   "gender": "m",
+   "display": null,
+   "conceptId": "patient",
+   "category": "job",
+   "kind": "core",
+   "order": 399
+  },
+  {
+   "lemma": "pintura",
+   "gloss": "paint",
+   "gender": "f",
+   "display": null,
+   "conceptId": "paint",
+   "category": "home",
+   "kind": "core",
+   "order": 400
+  },
+  {
+   "lemma": "temperatura",
+   "gloss": "temperature",
+   "gender": "f",
+   "display": null,
+   "conceptId": "temperature",
+   "category": "measure",
+   "kind": "core",
+   "order": 401
+  },
+  {
+   "lemma": "plano",
+   "gloss": "flat",
+   "gender": null,
+   "display": null,
+   "conceptId": "flat",
+   "category": "adjective",
+   "kind": "core",
+   "order": 402
+  },
+  {
+   "lemma": "ventana",
+   "gloss": "window",
+   "gender": "f",
+   "display": null,
+   "conceptId": "window",
+   "category": "home",
+   "kind": "core",
+   "order": 403
+  },
+  {
+   "lemma": "actor",
+   "gloss": "actor",
+   "gender": "m",
+   "display": null,
+   "conceptId": "actor",
+   "category": "job",
+   "kind": "core",
+   "order": 404
+  },
+  {
+   "lemma": "bar",
+   "gloss": "bar",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bar",
+   "category": "location",
+   "kind": "core",
+   "order": 405
+  },
+  {
+   "lemma": "brazo",
+   "gloss": "arm",
+   "gender": "m",
+   "display": null,
+   "conceptId": "arm",
+   "category": "body",
+   "kind": "core",
+   "order": 406
+  },
+  {
+   "lemma": "barco",
+   "gloss": "boat",
+   "gender": "m",
+   "display": null,
+   "conceptId": "boat",
+   "category": "transport",
+   "kind": "core",
+   "order": 407
+  },
+  {
+   "lemma": "cerveza",
+   "gloss": "beer",
+   "gender": "f",
+   "display": null,
+   "conceptId": "beer",
+   "category": "drink",
+   "kind": "core",
+   "order": 408
+  },
+  {
+   "lemma": "cien",
+   "gloss": "one hundred",
+   "gender": null,
+   "display": null,
+   "conceptId": "one-hundred",
+   "category": "number",
+   "kind": "core",
+   "order": 409
+  },
+  {
+   "lemma": "llorar",
+   "gloss": "to cry",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-cry",
+   "category": "verb",
+   "kind": "core",
+   "order": 410
+  },
+  {
+   "lemma": "profundo",
+   "gloss": "deep",
+   "gender": null,
+   "display": null,
+   "conceptId": "deep",
+   "category": "adjective",
+   "kind": "core",
+   "order": 411
+  },
+  {
+   "lemma": "huevo",
+   "gloss": "egg",
+   "gender": "m",
+   "display": null,
+   "conceptId": "egg",
+   "category": "food",
+   "kind": "core",
+   "order": 412
+  },
+  {
+   "lemma": "pared",
+   "gloss": "wall",
+   "gender": "f",
+   "display": null,
+   "conceptId": "wall",
+   "category": "home",
+   "kind": "core",
+   "order": 413
+  },
+  {
+   "lemma": "vecino",
+   "gloss": "neighbor",
+   "gender": "m",
+   "display": null,
+   "conceptId": "neighbor",
+   "category": "people",
+   "kind": "core",
+   "order": 414
+  },
+  {
+   "lemma": "abuelo",
+   "gloss": "grandfather",
+   "gender": "m",
+   "display": null,
+   "conceptId": "grandfather",
+   "category": "people",
+   "kind": "core",
+   "order": 415
+  },
+  {
+   "lemma": "oscuro",
+   "gloss": "dark",
+   "gender": null,
+   "display": null,
+   "conceptId": "dark",
+   "category": "adjective",
+   "kind": "core",
+   "order": 416
+  },
+  {
+   "lemma": "crecer",
+   "gloss": "to grow",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-grow",
+   "category": "verb",
+   "kind": "core",
+   "order": 417
+  },
+  {
+   "lemma": "círculo",
+   "gloss": "circle",
+   "gender": "m",
+   "display": null,
+   "conceptId": "circle",
+   "category": "measure",
+   "kind": "core",
+   "order": 418
+  },
+  {
+   "lemma": "lago",
+   "gloss": "lake",
+   "gender": "m",
+   "display": null,
+   "conceptId": "lake",
+   "category": "nature",
+   "kind": "core",
+   "order": 419
+  },
+  {
+   "lemma": "dedo",
+   "gloss": "finger; toe",
+   "gender": "m",
+   "display": null,
+   "conceptId": "finger-toe",
+   "category": "body",
+   "kind": "core",
+   "order": 420
+  },
+  {
+   "lemma": "doce",
+   "gloss": "twelve",
+   "gender": null,
+   "display": null,
+   "conceptId": "twelve",
+   "category": "number",
+   "kind": "core",
+   "order": 421
+  },
+  {
+   "lemma": "flor",
+   "gloss": "flower",
+   "gender": "f",
+   "display": null,
+   "conceptId": "flower",
+   "category": "nature",
+   "kind": "core",
+   "order": 422
+  },
+  {
+   "lemma": "techo",
+   "gloss": "ceiling; roof",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ceiling-roof",
+   "category": "home",
+   "kind": "core",
+   "order": 423
+  },
+  {
+   "lemma": "veinte",
+   "gloss": "twenty",
+   "gender": null,
+   "display": null,
+   "conceptId": "twenty",
+   "category": "number",
+   "kind": "core",
+   "order": 424
+  },
+  {
+   "lemma": "aceite",
+   "gloss": "oil",
+   "gender": "m",
+   "display": null,
+   "conceptId": "oil",
+   "category": "food",
+   "kind": "core",
+   "order": 425
+  },
+  {
+   "lemma": "azúcar",
+   "gloss": "sugar",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sugar",
+   "category": "food",
+   "kind": "core",
+   "order": 426
+  },
+  {
+   "lemma": "esquina",
+   "gloss": "corner",
+   "gender": "f",
+   "display": null,
+   "conceptId": "corner",
+   "category": "measure",
+   "kind": "core",
+   "order": 427
+  },
+  {
+   "lemma": "raíz",
+   "gloss": "root",
+   "gender": "f",
+   "display": null,
+   "conceptId": "root",
+   "category": "nature",
+   "kind": "core",
+   "order": 428
+  },
+  {
+   "lemma": "queso",
+   "gloss": "cheese",
+   "gender": "m",
+   "display": null,
+   "conceptId": "cheese",
+   "category": "food",
+   "kind": "core",
+   "order": 429
+  },
+  {
+   "lemma": "restaurante",
+   "gloss": "restaurant",
+   "gender": "m",
+   "display": null,
+   "conceptId": "restaurant",
+   "category": "location",
+   "kind": "core",
+   "order": 430
+  },
+  {
+   "lemma": "bailar",
+   "gloss": "to dance",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-dance",
+   "category": "verb",
+   "kind": "core",
+   "order": 431
+  },
+  {
+   "lemma": "infierno",
+   "gloss": "hell",
+   "gender": "m",
+   "display": null,
+   "conceptId": "hell",
+   "category": "society",
+   "kind": "core",
+   "order": 432
+  },
+  {
+   "lemma": "metal",
+   "gloss": "metal",
+   "gender": "m",
+   "display": null,
+   "conceptId": "metal",
+   "category": "material",
+   "kind": "core",
+   "order": 433
+  },
+  {
+   "lemma": "polvo",
+   "gloss": "dust",
+   "gender": "m",
+   "display": null,
+   "conceptId": "dust",
+   "category": "material",
+   "kind": "core",
+   "order": 434
+  },
+  {
+   "lemma": "tercero",
+   "gloss": "third",
+   "gender": null,
+   "display": null,
+   "conceptId": "third",
+   "category": "number",
+   "kind": "core",
+   "order": 435
+  },
+  {
+   "lemma": "cantar",
+   "gloss": "to sing",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-sing",
+   "category": "verb",
+   "kind": "core",
+   "order": 436
+  },
+  {
+   "lemma": "silla",
+   "gloss": "chair",
+   "gender": "f",
+   "display": null,
+   "conceptId": "chair",
+   "category": "home",
+   "kind": "core",
+   "order": 437
+  },
+  {
+   "lemma": "cena",
+   "gloss": "dinner",
+   "gender": "f",
+   "display": null,
+   "conceptId": "dinner",
+   "category": "food",
+   "kind": "core",
+   "order": 438
+  },
+  {
+   "lemma": "enfermo",
+   "gloss": "sick",
+   "gender": null,
+   "display": null,
+   "conceptId": "sick",
+   "category": "adjective",
+   "kind": "core",
+   "order": 439
+  },
+  {
+   "lemma": "treinta",
+   "gloss": "thirty",
+   "gender": null,
+   "display": null,
+   "conceptId": "thirty",
+   "category": "number",
+   "kind": "core",
+   "order": 440
+  },
+  {
+   "lemma": "boda",
+   "gloss": "wedding",
+   "gender": "f",
+   "display": null,
+   "conceptId": "wedding",
+   "category": "society",
+   "kind": "core",
+   "order": 441
+  },
+  {
+   "lemma": "hielo",
+   "gloss": "ice",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ice",
+   "category": "nature",
+   "kind": "core",
+   "order": 442
+  },
+  {
+   "lemma": "levantar",
+   "gloss": "to lift",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-lift",
+   "category": "verb",
+   "kind": "core",
+   "order": 443
+  },
+  {
+   "lemma": "patio",
+   "gloss": "yard",
+   "gender": "m",
+   "display": null,
+   "conceptId": "yard",
+   "category": "home",
+   "kind": "core",
+   "order": 444
+  },
+  {
+   "lemma": "arroz",
+   "gloss": "rice",
+   "gender": "m",
+   "display": null,
+   "conceptId": "rice",
+   "category": "food",
+   "kind": "core",
+   "order": 445
+  },
+  {
+   "lemma": "caro",
+   "gloss": "expensive",
+   "gender": null,
+   "display": null,
+   "conceptId": "expensive",
+   "category": "adjective",
+   "kind": "core",
+   "order": 446
+  },
+  {
+   "lemma": "nieve",
+   "gloss": "snow",
+   "gender": "f",
+   "display": null,
+   "conceptId": "snow",
+   "category": "nature",
+   "kind": "core",
+   "order": 447
+  },
+  {
+   "lemma": "once",
+   "gloss": "eleven",
+   "gender": null,
+   "display": null,
+   "conceptId": "eleven",
+   "category": "number",
+   "kind": "core",
+   "order": 448
+  },
+  {
+   "lemma": "desayuno",
+   "gloss": "breakfast",
+   "gender": "m",
+   "display": null,
+   "conceptId": "breakfast",
+   "category": "food",
+   "kind": "core",
+   "order": 449
+  },
+  {
+   "lemma": "droga",
+   "gloss": "drug",
+   "gender": "f",
+   "display": null,
+   "conceptId": "drug",
+   "category": "society",
+   "kind": "core",
+   "order": 450
+  },
+  {
+   "lemma": "débil",
+   "gloss": "weak",
+   "gender": null,
+   "display": null,
+   "conceptId": "weak",
+   "category": "adjective",
+   "kind": "core",
+   "order": 451
+  },
+  {
+   "lemma": "instrumento",
+   "gloss": "instrument",
+   "gender": "m",
+   "display": null,
+   "conceptId": "instrument",
+   "category": "art",
+   "kind": "core",
+   "order": 452
+  },
+  {
+   "lemma": "lento",
+   "gloss": "slow",
+   "gender": null,
+   "display": null,
+   "conceptId": "slow",
+   "category": "adjective",
+   "kind": "core",
+   "order": 453
+  },
+  {
+   "lemma": "pollo",
+   "gloss": "chicken",
+   "gender": "m",
+   "display": null,
+   "conceptId": "chicken",
+   "category": "food",
+   "kind": "core",
+   "order": 454
+  },
+  {
+   "lemma": "reloj",
+   "gloss": "clock",
+   "gender": "m",
+   "display": null,
+   "conceptId": "clock",
+   "category": "electronics",
+   "kind": "core",
+   "order": 455
+  },
+  {
+   "lemma": "soldado",
+   "gloss": "soldier",
+   "gender": "m",
+   "display": null,
+   "conceptId": "soldier",
+   "category": "job",
+   "kind": "core",
+   "order": 456
+  },
+  {
+   "lemma": "traje",
+   "gloss": "suit",
+   "gender": "m",
+   "display": null,
+   "conceptId": "suit",
+   "category": "clothing",
+   "kind": "core",
+   "order": 457
+  },
+  {
+   "lemma": "cortar",
+   "gloss": "to cut",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-cut",
+   "category": "verb",
+   "kind": "core",
+   "order": 458
+  },
+  {
+   "lemma": "multitud",
+   "gloss": "crowd",
+   "gender": "f",
+   "display": null,
+   "conceptId": "crowd",
+   "category": "people",
+   "kind": "core",
+   "order": 459
+  },
+  {
+   "lemma": "nuclear",
+   "gloss": "nuclear",
+   "gender": null,
+   "display": null,
+   "conceptId": "nuclear",
+   "category": "adjective",
+   "kind": "core",
+   "order": 460
+  },
+  {
+   "lemma": "pelota",
+   "gloss": "ball",
+   "gender": "f",
+   "display": null,
+   "conceptId": "ball",
+   "category": "society",
+   "kind": "core",
+   "order": 461
+  },
+  {
+   "lemma": "plato",
+   "gloss": "plate",
+   "gender": "m",
+   "display": null,
+   "conceptId": "plate",
+   "category": "food",
+   "kind": "core",
+   "order": 462
+  },
+  {
+   "lemma": "tirar",
+   "gloss": "to pull",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-pull",
+   "category": "verb",
+   "kind": "core",
+   "order": 463
+  },
+  {
+   "lemma": "ancho",
+   "gloss": "wide",
+   "gender": null,
+   "display": null,
+   "conceptId": "wide",
+   "category": "adjective",
+   "kind": "core",
+   "order": 464
+  },
+  {
+   "lemma": "borde",
+   "gloss": "edge",
+   "gender": "m",
+   "display": null,
+   "conceptId": "edge",
+   "category": "measure",
+   "kind": "core",
+   "order": 465
+  },
+  {
+   "lemma": "enseñar",
+   "gloss": "to teach",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-teach",
+   "category": "verb",
+   "kind": "core",
+   "order": 466
+  },
+  {
+   "lemma": "femenino",
+   "gloss": "female",
+   "gender": null,
+   "display": null,
+   "conceptId": "female",
+   "category": "adjective",
+   "kind": "core",
+   "order": 467
+  },
+  {
+   "lemma": "feo",
+   "gloss": "ugly",
+   "gender": null,
+   "display": null,
+   "conceptId": "ugly",
+   "category": "adjective",
+   "kind": "core",
+   "order": 468
+  },
+  {
+   "lemma": "hoja",
+   "gloss": "leaf",
+   "gender": "f",
+   "display": null,
+   "conceptId": "leaf",
+   "category": "nature",
+   "kind": "core",
+   "order": 469
+  },
+  {
+   "lemma": "limpiar",
+   "gloss": "to clean",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-clean",
+   "category": "verb",
+   "kind": "core",
+   "order": 470
+  },
+  {
+   "lemma": "patrón",
+   "gloss": "pattern",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pattern",
+   "category": "misc",
+   "kind": "core",
+   "order": 471
+  },
+  {
+   "lemma": "quinto",
+   "gloss": "fifth",
+   "gender": null,
+   "display": null,
+   "conceptId": "fifth",
+   "category": "number",
+   "kind": "core",
+   "order": 472
+  },
+  {
+   "lemma": "botella",
+   "gloss": "bottle",
+   "gender": "f",
+   "display": null,
+   "conceptId": "bottle",
+   "category": "food",
+   "kind": "core",
+   "order": 473
+  },
+  {
+   "lemma": "amarillo",
+   "gloss": "yellow",
+   "gender": null,
+   "display": null,
+   "conceptId": "yellow",
+   "category": "color",
+   "kind": "core",
+   "order": 474
+  },
+  {
+   "lemma": "gasolina",
+   "gloss": "gasoline",
+   "gender": "f",
+   "display": null,
+   "conceptId": "gasoline",
+   "category": "transport",
+   "kind": "core",
+   "order": 475
+  },
+  {
+   "lemma": "gris",
+   "gloss": "gray",
+   "gender": null,
+   "display": null,
+   "conceptId": "gray",
+   "category": "color",
+   "kind": "core",
+   "order": 476
+  },
+  {
+   "lemma": "oír",
+   "gloss": "to hear",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-hear",
+   "category": "verb",
+   "kind": "core",
+   "order": 477
+  },
+  {
+   "lemma": "ala",
+   "gloss": "wing",
+   "gender": "f",
+   "display": null,
+   "conceptId": "wing",
+   "category": "animal",
+   "kind": "core",
+   "order": 478
+  },
+  {
+   "lemma": "autobús",
+   "gloss": "bus",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bus",
+   "category": "transport",
+   "kind": "core",
+   "order": 479
+  },
+  {
+   "lemma": "bicicleta",
+   "gloss": "bicycle",
+   "gender": "f",
+   "display": null,
+   "conceptId": "bicycle",
+   "category": "transport",
+   "kind": "core",
+   "order": 480
+  },
+  {
+   "lemma": "bolsillo",
+   "gloss": "pocket",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pocket",
+   "category": "clothing",
+   "kind": "core",
+   "order": 481
+  },
+  {
+   "lemma": "camiseta",
+   "gloss": "T-shirt",
+   "gender": "f",
+   "display": null,
+   "conceptId": "t-shirt",
+   "category": "clothing",
+   "kind": "core",
+   "order": 482
+  },
+  {
+   "lemma": "limpio",
+   "gloss": "clean",
+   "gender": null,
+   "display": null,
+   "conceptId": "clean",
+   "category": "adjective",
+   "kind": "core",
+   "order": 483
+  },
+  {
+   "lemma": "beber",
+   "gloss": "to drink",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-drink",
+   "category": "verb",
+   "kind": "core",
+   "order": 484
+  },
+  {
+   "lemma": "conducir",
+   "gloss": "to drive",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-drive",
+   "category": "verb",
+   "kind": "core",
+   "order": 485
+  },
+  {
+   "lemma": "firmar",
+   "gloss": "to sign",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-sign",
+   "category": "verb",
+   "kind": "core",
+   "order": 486
+  },
+  {
+   "lemma": "nariz",
+   "gloss": "nose",
+   "gender": "f",
+   "display": null,
+   "conceptId": "nose",
+   "category": "body",
+   "kind": "core",
+   "order": 487
+  },
+  {
+   "lemma": "quince",
+   "gloss": "fifteen",
+   "gender": null,
+   "display": null,
+   "conceptId": "fifteen",
+   "category": "number",
+   "kind": "core",
+   "order": 488
+  },
+  {
+   "lemma": "amable",
+   "gloss": "nice",
+   "gender": null,
+   "display": null,
+   "conceptId": "nice",
+   "category": "adjective",
+   "kind": "core",
+   "order": 489
+  },
+  {
+   "lemma": "cincuenta",
+   "gloss": "fifty",
+   "gender": null,
+   "display": null,
+   "conceptId": "fifty",
+   "category": "number",
+   "kind": "core",
+   "order": 490
+  },
+  {
+   "lemma": "despertar",
+   "gloss": "to wake up (despertarse)",
+   "gender": null,
+   "display": "despertarse",
+   "conceptId": "to-wake-up",
+   "category": "verb",
+   "kind": "core",
+   "order": 491
+  },
+  {
+   "lemma": "pedazo",
+   "gloss": "piece",
+   "gender": "m",
+   "display": null,
+   "conceptId": "piece",
+   "category": "misc",
+   "kind": "core",
+   "order": 492
+  },
+  {
+   "lemma": "té",
+   "gloss": "tea",
+   "gender": "m",
+   "display": null,
+   "conceptId": "tea",
+   "category": "drink",
+   "kind": "core",
+   "order": 493
+  },
+  {
+   "lemma": "campamento",
+   "gloss": "camp",
+   "gender": "m",
+   "display": null,
+   "conceptId": "camp",
+   "category": "location",
+   "kind": "core",
+   "order": 494
+  },
+  {
+   "lemma": "naranja",
+   "gloss": "orange; orange (fruit)",
+   "gender": null,
+   "display": null,
+   "conceptId": "orange",
+   "category": "color",
+   "kind": "core",
+   "order": 495
+  },
+  {
+   "lemma": "otoño",
+   "gloss": "fall",
+   "gender": "m",
+   "display": null,
+   "conceptId": "fall",
+   "category": "season",
+   "kind": "core",
+   "order": 496
+  },
+  {
+   "lemma": "sacerdote",
+   "gloss": "priest",
+   "gender": "m",
+   "display": null,
+   "conceptId": "priest",
+   "category": "job",
+   "kind": "core",
+   "order": 497
+  },
+  {
+   "lemma": "seco",
+   "gloss": "dry",
+   "gender": null,
+   "display": null,
+   "conceptId": "dry",
+   "category": "adjective",
+   "kind": "core",
+   "order": 498
+  },
+  {
+   "lemma": "volar",
+   "gloss": "to fly",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-fly",
+   "category": "verb",
+   "kind": "core",
+   "order": 499
+  },
+  {
+   "lemma": "apartamento",
+   "gloss": "apartment",
+   "gender": "m",
+   "display": null,
+   "conceptId": "apartment",
+   "category": "location",
+   "kind": "core",
+   "order": 500
+  },
+  {
+   "lemma": "barato",
+   "gloss": "cheap",
+   "gender": null,
+   "display": null,
+   "conceptId": "cheap",
+   "category": "adjective",
+   "kind": "core",
+   "order": 501
+  },
+  {
+   "lemma": "dólar",
+   "gloss": "dollar",
+   "gender": "m",
+   "display": null,
+   "conceptId": "dollar",
+   "category": "society",
+   "kind": "core",
+   "order": 502
+  },
+  {
+   "lemma": "océano",
+   "gloss": "ocean",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ocean",
+   "category": "nature",
+   "kind": "core",
+   "order": 503
+  },
+  {
+   "lemma": "amar",
+   "gloss": "to love",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-love",
+   "category": "verb",
+   "kind": "core",
+   "order": 504
+  },
+  {
+   "lemma": "cobre",
+   "gloss": "copper",
+   "gender": "m",
+   "display": null,
+   "conceptId": "copper",
+   "category": "material",
+   "kind": "core",
+   "order": 505
+  },
+  {
+   "lemma": "cruel",
+   "gloss": "mean",
+   "gender": null,
+   "display": null,
+   "conceptId": "mean",
+   "category": "adjective",
+   "kind": "core",
+   "order": 506
+  },
+  {
+   "lemma": "gerente",
+   "gloss": "manager",
+   "gender": "m",
+   "display": null,
+   "conceptId": "manager",
+   "category": "job",
+   "kind": "core",
+   "order": 507
+  },
+  {
+   "lemma": "herida",
+   "gloss": "injury",
+   "gender": "f",
+   "display": null,
+   "conceptId": "injury",
+   "category": "misc",
+   "kind": "core",
+   "order": 508
+  },
+  {
+   "lemma": "lanzar",
+   "gloss": "to throw",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-throw",
+   "category": "verb",
+   "kind": "core",
+   "order": 509
+  },
+  {
+   "lemma": "mancha",
+   "gloss": "stain",
+   "gender": "f",
+   "display": null,
+   "conceptId": "stain",
+   "category": "clothing",
+   "kind": "core",
+   "order": 510
+  },
+  {
+   "lemma": "camión",
+   "gloss": "truck",
+   "gender": "m",
+   "display": null,
+   "conceptId": "truck",
+   "category": "transport",
+   "kind": "core",
+   "order": 511
+  },
+  {
+   "lemma": "cuarenta",
+   "gloss": "forty",
+   "gender": null,
+   "display": null,
+   "conceptId": "forty",
+   "category": "number",
+   "kind": "core",
+   "order": 512
+  },
+  {
+   "lemma": "plástico",
+   "gloss": "plastic",
+   "gender": "m",
+   "display": null,
+   "conceptId": "plastic",
+   "category": "material",
+   "kind": "core",
+   "order": 513
+  },
+  {
+   "lemma": "anillo",
+   "gloss": "ring",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ring",
+   "category": "home",
+   "kind": "core",
+   "order": 514
+  },
+  {
+   "lemma": "pierna",
+   "gloss": "leg",
+   "gender": "f",
+   "display": null,
+   "conceptId": "leg",
+   "category": "body",
+   "kind": "core",
+   "order": 515
+  },
+  {
+   "lemma": "sano",
+   "gloss": "healthy",
+   "gender": null,
+   "display": null,
+   "conceptId": "healthy",
+   "category": "adjective",
+   "kind": "core",
+   "order": 516
+  },
+  {
+   "lemma": "vidrio",
+   "gloss": "glass",
+   "gender": "m",
+   "display": null,
+   "conceptId": "glass",
+   "category": "material",
+   "kind": "core",
+   "order": 517
+  },
+  {
+   "lemma": "ciego",
+   "gloss": "blind",
+   "gender": null,
+   "display": null,
+   "conceptId": "blind",
+   "category": "adjective",
+   "kind": "core",
+   "order": 518
+  },
+  {
+   "lemma": "fresco",
+   "gloss": "cool",
+   "gender": null,
+   "display": null,
+   "conceptId": "cool",
+   "category": "adjective",
+   "kind": "core",
+   "order": 519
+  },
+  {
+   "lemma": "pesado",
+   "gloss": "heavy",
+   "gender": null,
+   "display": null,
+   "conceptId": "heavy",
+   "category": "adjective",
+   "kind": "core",
+   "order": 520
+  },
+  {
+   "lemma": "cocinar",
+   "gloss": "to cook",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-cook",
+   "category": "verb",
+   "kind": "core",
+   "order": 521
+  },
+  {
+   "lemma": "maíz",
+   "gloss": "corn",
+   "gender": "m",
+   "display": null,
+   "conceptId": "corn",
+   "category": "food",
+   "kind": "core",
+   "order": 522
+  },
+  {
+   "lemma": "ola",
+   "gloss": "wave",
+   "gender": "f",
+   "display": null,
+   "conceptId": "wave",
+   "category": "nature",
+   "kind": "core",
+   "order": 523
+  },
+  {
+   "lemma": "camisa",
+   "gloss": "shirt",
+   "gender": "f",
+   "display": null,
+   "conceptId": "shirt",
+   "category": "clothing",
+   "kind": "core",
+   "order": 524
+  },
+  {
+   "lemma": "hombro",
+   "gloss": "shoulder",
+   "gender": "m",
+   "display": null,
+   "conceptId": "shoulder",
+   "category": "body",
+   "kind": "core",
+   "order": 525
+  },
+  {
+   "lemma": "pez",
+   "gloss": "fish",
+   "gender": "m",
+   "display": null,
+   "conceptId": "fish",
+   "category": "animal",
+   "kind": "core",
+   "order": 526
+  },
+  {
+   "lemma": "adulto",
+   "gloss": "adult",
+   "gender": "m",
+   "display": null,
+   "conceptId": "adult",
+   "category": "people",
+   "kind": "core",
+   "order": 527
+  },
+  {
+   "lemma": "almuerzo",
+   "gloss": "lunch",
+   "gender": "m",
+   "display": null,
+   "conceptId": "lunch",
+   "category": "food",
+   "kind": "core",
+   "order": 528
+  },
+  {
+   "lemma": "bebida",
+   "gloss": "drink",
+   "gender": "f",
+   "display": null,
+   "conceptId": "drink",
+   "category": "drink",
+   "kind": "core",
+   "order": 529
+  },
+  {
+   "lemma": "hueso",
+   "gloss": "bone",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bone",
+   "category": "body",
+   "kind": "core",
+   "order": 530
+  },
+  {
+   "lemma": "manzana",
+   "gloss": "apple",
+   "gender": "f",
+   "display": null,
+   "conceptId": "apple",
+   "category": "food",
+   "kind": "core",
+   "order": 531
+  },
+  {
+   "lemma": "ordenador",
+   "gloss": "computer",
+   "gender": "m",
+   "display": null,
+   "conceptId": "computer",
+   "category": "electronics",
+   "kind": "core",
+   "order": 532
+  },
+  {
+   "lemma": "piscina",
+   "gloss": "pool",
+   "gender": "f",
+   "display": null,
+   "conceptId": "pool",
+   "category": "home",
+   "kind": "core",
+   "order": 533
+  },
+  {
+   "lemma": "vaca",
+   "gloss": "cow",
+   "gender": "f",
+   "display": null,
+   "conceptId": "cow",
+   "category": "animal",
+   "kind": "core",
+   "order": 534
+  },
+  {
+   "lemma": "barba",
+   "gloss": "beard",
+   "gender": "f",
+   "display": null,
+   "conceptId": "beard",
+   "category": "body",
+   "kind": "core",
+   "order": 535
+  },
+  {
+   "lemma": "delgado",
+   "gloss": "thin",
+   "gender": null,
+   "display": null,
+   "conceptId": "thin",
+   "category": "adjective",
+   "kind": "core",
+   "order": 536
+  },
+  {
+   "lemma": "explotar",
+   "gloss": "to explode",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-explode",
+   "category": "verb",
+   "kind": "core",
+   "order": 537
+  },
+  {
+   "lemma": "quemar",
+   "gloss": "to burn",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-burn",
+   "category": "verb",
+   "kind": "core",
+   "order": 538
+  },
+  {
+   "lemma": "sopa",
+   "gloss": "soup",
+   "gender": "f",
+   "display": null,
+   "conceptId": "soup",
+   "category": "food",
+   "kind": "core",
+   "order": 539
+  },
+  {
+   "lemma": "masculino",
+   "gloss": "male",
+   "gender": null,
+   "display": null,
+   "conceptId": "male",
+   "category": "adjective",
+   "kind": "core",
+   "order": 540
+  },
+  {
+   "lemma": "reír",
+   "gloss": "to laugh",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-laugh",
+   "category": "verb",
+   "kind": "core",
+   "order": 541
+  },
+  {
+   "lemma": "sombrero",
+   "gloss": "hat",
+   "gender": "m",
+   "display": null,
+   "conceptId": "hat",
+   "category": "clothing",
+   "kind": "core",
+   "order": 542
+  },
+  {
+   "lemma": "cerdo",
+   "gloss": "pig; pork",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pig",
+   "category": "animal",
+   "kind": "core",
+   "order": 543
+  },
+  {
+   "lemma": "cuchillo",
+   "gloss": "knife",
+   "gender": "m",
+   "display": null,
+   "conceptId": "knife",
+   "category": "food",
+   "kind": "core",
+   "order": 544
+  },
+  {
+   "lemma": "factura",
+   "gloss": "bill",
+   "gender": "f",
+   "display": null,
+   "conceptId": "bill",
+   "category": "society",
+   "kind": "core",
+   "order": 545
+  },
+  {
+   "lemma": "limón",
+   "gloss": "lemon",
+   "gender": "m",
+   "display": null,
+   "conceptId": "lemon",
+   "category": "food",
+   "kind": "core",
+   "order": 546
+  },
+  {
+   "lemma": "sucio",
+   "gloss": "dirty",
+   "gender": null,
+   "display": null,
+   "conceptId": "dirty",
+   "category": "adjective",
+   "kind": "core",
+   "order": 547
+  },
+  {
+   "lemma": "ligero",
+   "gloss": "light (weight)",
+   "gender": null,
+   "display": null,
+   "conceptId": "light-weight",
+   "category": "adjective",
+   "kind": "core",
+   "order": 548
+  },
+  {
+   "lemma": "pistola",
+   "gloss": "gun",
+   "gender": "f",
+   "display": null,
+   "conceptId": "gun",
+   "category": "society",
+   "kind": "core",
+   "order": 549
+  },
+  {
+   "lemma": "granja",
+   "gloss": "farm",
+   "gender": "f",
+   "display": null,
+   "conceptId": "farm",
+   "category": "location",
+   "kind": "core",
+   "order": 550
+  },
+  {
+   "lemma": "ochenta",
+   "gloss": "eighty",
+   "gender": null,
+   "display": null,
+   "conceptId": "eighty",
+   "category": "number",
+   "kind": "core",
+   "order": 551
+  },
+  {
+   "lemma": "saltar",
+   "gloss": "to jump",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-jump",
+   "category": "verb",
+   "kind": "core",
+   "order": 552
+  },
+  {
+   "lemma": "buque",
+   "gloss": "ship",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ship",
+   "category": "transport",
+   "kind": "core",
+   "order": 553
+  },
+  {
+   "lemma": "sesenta",
+   "gloss": "sixty",
+   "gender": null,
+   "display": null,
+   "conceptId": "sixty",
+   "category": "number",
+   "kind": "core",
+   "order": 554
+  },
+  {
+   "lemma": "trece",
+   "gloss": "thirteen",
+   "gender": null,
+   "display": null,
+   "conceptId": "thirteen",
+   "category": "number",
+   "kind": "core",
+   "order": 555
+  },
+  {
+   "lemma": "agujero",
+   "gloss": "hole",
+   "gender": "m",
+   "display": null,
+   "conceptId": "hole",
+   "category": "misc",
+   "kind": "core",
+   "order": 556
+  },
+  {
+   "lemma": "estrecho",
+   "gloss": "narrow",
+   "gender": null,
+   "display": null,
+   "conceptId": "narrow",
+   "category": "adjective",
+   "kind": "core",
+   "order": 557
+  },
+  {
+   "lemma": "lavar",
+   "gloss": "to wash",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-wash",
+   "category": "verb",
+   "kind": "core",
+   "order": 558
+  },
+  {
+   "lemma": "billete",
+   "gloss": "ticket",
+   "gender": "m",
+   "display": null,
+   "conceptId": "ticket",
+   "category": "transport",
+   "kind": "core",
+   "order": 559
+  },
+  {
+   "lemma": "taza",
+   "gloss": "cup",
+   "gender": "f",
+   "display": null,
+   "conceptId": "cup",
+   "category": "food",
+   "kind": "core",
+   "order": 560
+  },
+  {
+   "lemma": "pastel",
+   "gloss": "cake",
+   "gender": "m",
+   "display": null,
+   "conceptId": "cake",
+   "category": "food",
+   "kind": "core",
+   "order": 561
+  },
+  {
+   "lemma": "disparar",
+   "gloss": "to shoot",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-shoot",
+   "category": "verb",
+   "kind": "core",
+   "order": 562
+  },
+  {
+   "lemma": "rodilla",
+   "gloss": "knee",
+   "gender": "f",
+   "display": null,
+   "conceptId": "knee",
+   "category": "body",
+   "kind": "core",
+   "order": 563
+  },
+  {
+   "lemma": "cuadrado",
+   "gloss": "square",
+   "gender": "m",
+   "display": null,
+   "conceptId": "square",
+   "category": "measure",
+   "kind": "core",
+   "order": 564
+  },
+  {
+   "lemma": "hierba",
+   "gloss": "grass",
+   "gender": "f",
+   "display": null,
+   "conceptId": "grass",
+   "category": "nature",
+   "kind": "core",
+   "order": 565
+  },
+  {
+   "lemma": "setenta",
+   "gloss": "seventy",
+   "gender": null,
+   "display": null,
+   "conceptId": "seventy",
+   "category": "number",
+   "kind": "core",
+   "order": 566
+  },
+  {
+   "lemma": "oreja",
+   "gloss": "ear",
+   "gender": "f",
+   "display": null,
+   "conceptId": "ear",
+   "category": "body",
+   "kind": "core",
+   "order": 567
+  },
+  {
+   "lemma": "veneno",
+   "gloss": "poison",
+   "gender": "m",
+   "display": null,
+   "conceptId": "poison",
+   "category": "society",
+   "kind": "core",
+   "order": 568
+  },
+  {
+   "lemma": "alimentar",
+   "gloss": "to feed",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-feed",
+   "category": "verb",
+   "kind": "core",
+   "order": 569
+  },
+  {
+   "lemma": "catorce",
+   "gloss": "fourteen",
+   "gender": null,
+   "display": null,
+   "conceptId": "fourteen",
+   "category": "number",
+   "kind": "core",
+   "order": 570
+  },
+  {
+   "lemma": "noventa",
+   "gloss": "ninety",
+   "gender": null,
+   "display": null,
+   "conceptId": "ninety",
+   "category": "number",
+   "kind": "core",
+   "order": 571
+  },
+  {
+   "lemma": "colina",
+   "gloss": "hill",
+   "gender": "f",
+   "display": null,
+   "conceptId": "hill",
+   "category": "nature",
+   "kind": "core",
+   "order": 572
+  },
+  {
+   "lemma": "dormitorio",
+   "gloss": "bedroom",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bedroom",
+   "category": "home",
+   "kind": "core",
+   "order": 573
+  },
+  {
+   "lemma": "grueso",
+   "gloss": "thick",
+   "gender": null,
+   "display": null,
+   "conceptId": "thick",
+   "category": "adjective",
+   "kind": "core",
+   "order": 574
+  },
+  {
+   "lemma": "pájaro",
+   "gloss": "bird",
+   "gender": "m",
+   "display": null,
+   "conceptId": "bird",
+   "category": "animal",
+   "kind": "core",
+   "order": 575
+  },
+  {
+   "lemma": "verbo",
+   "gloss": "verb",
+   "gender": "m",
+   "display": null,
+   "conceptId": "verb",
+   "category": "misc",
+   "kind": "core",
+   "order": 576
+  },
+  {
+   "lemma": "marrón",
+   "gloss": "brown",
+   "gender": null,
+   "display": null,
+   "conceptId": "brown",
+   "category": "color",
+   "kind": "core",
+   "order": 577
+  },
+  {
+   "lemma": "pantalón",
+   "gloss": "pants",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pants",
+   "category": "clothing",
+   "kind": "core",
+   "order": 578
+  },
+  {
+   "lemma": "abrigo",
+   "gloss": "coat",
+   "gender": "m",
+   "display": null,
+   "conceptId": "coat",
+   "category": "clothing",
+   "kind": "core",
+   "order": 579
+  },
+  {
+   "lemma": "dibujar",
+   "gloss": "to draw",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-draw",
+   "category": "verb",
+   "kind": "core",
+   "order": 580
+  },
+  {
+   "lemma": "golpear",
+   "gloss": "to beat",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-beat",
+   "category": "verb",
+   "kind": "core",
+   "order": 581
+  },
+  {
+   "lemma": "libra",
+   "gloss": "pound",
+   "gender": "f",
+   "display": null,
+   "conceptId": "pound",
+   "category": "measure",
+   "kind": "core",
+   "order": 582
+  },
+  {
+   "lemma": "semilla",
+   "gloss": "seed",
+   "gender": "f",
+   "display": null,
+   "conceptId": "seed",
+   "category": "food",
+   "kind": "core",
+   "order": 583
+  },
+  {
+   "lemma": "falda",
+   "gloss": "skirt",
+   "gender": "f",
+   "display": null,
+   "conceptId": "skirt",
+   "category": "clothing",
+   "kind": "core",
+   "order": 584
+  },
+  {
+   "lemma": "casar",
+   "gloss": "to marry (casarse)",
+   "gender": null,
+   "display": "casarse",
+   "conceptId": "to-marry",
+   "category": "verb",
+   "kind": "core",
+   "order": 585
+  },
+  {
+   "lemma": "jabón",
+   "gloss": "soap",
+   "gender": "m",
+   "display": null,
+   "conceptId": "soap",
+   "category": "home",
+   "kind": "core",
+   "order": 586
+  },
+  {
+   "lemma": "ratón",
+   "gloss": "mouse",
+   "gender": "m",
+   "display": null,
+   "conceptId": "mouse",
+   "category": "animal",
+   "kind": "core",
+   "order": 587
+  },
+  {
+   "lemma": "kilo",
+   "gloss": "kilogram",
+   "gender": "m",
+   "display": null,
+   "conceptId": "kilogram",
+   "category": "measure",
+   "kind": "core",
+   "order": 588
+  },
+  {
+   "lemma": "suelto",
+   "gloss": "loose",
+   "gender": null,
+   "display": null,
+   "conceptId": "loose",
+   "category": "adjective",
+   "kind": "core",
+   "order": 589
+  },
+  {
+   "lemma": "diamante",
+   "gloss": "diamond",
+   "gender": "m",
+   "display": null,
+   "conceptId": "diamond",
+   "category": "material",
+   "kind": "core",
+   "order": 590
+  },
+  {
+   "lemma": "rezar",
+   "gloss": "to pray",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-pray",
+   "category": "verb",
+   "kind": "core",
+   "order": 591
+  },
+  {
+   "lemma": "vocal",
+   "gloss": "vowel",
+   "gender": "f",
+   "display": null,
+   "conceptId": "vowel",
+   "category": "misc",
+   "kind": "core",
+   "order": 592
+  },
+  {
+   "lemma": "girar",
+   "gloss": "to turn",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-turn",
+   "category": "verb",
+   "kind": "core",
+   "order": 593
+  },
+  {
+   "lemma": "sudor",
+   "gloss": "sweat",
+   "gender": "m",
+   "display": null,
+   "conceptId": "sweat",
+   "category": "body",
+   "kind": "core",
+   "order": 594
+  },
+  {
+   "lemma": "diente",
+   "gloss": "tooth",
+   "gender": "m",
+   "display": null,
+   "conceptId": "tooth",
+   "category": "body",
+   "kind": "core",
+   "order": 595
+  },
+  {
+   "lemma": "aficionado",
+   "gloss": "fan",
+   "gender": "m",
+   "display": null,
+   "conceptId": "fan",
+   "category": "people",
+   "kind": "core",
+   "order": 596
+  },
+  {
+   "lemma": "cuaderno",
+   "gloss": "notebook",
+   "gender": "m",
+   "display": null,
+   "conceptId": "notebook",
+   "category": "home",
+   "kind": "core",
+   "order": 597
+  },
+  {
+   "lemma": "cálido",
+   "gloss": "warm",
+   "gender": null,
+   "display": null,
+   "conceptId": "warm",
+   "category": "adjective",
+   "kind": "core",
+   "order": 598
+  },
+  {
+   "lemma": "lápiz",
+   "gloss": "pencil",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pencil",
+   "category": "home",
+   "kind": "core",
+   "order": 599
+  },
+  {
+   "lemma": "recto",
+   "gloss": "straight",
+   "gender": null,
+   "display": null,
+   "conceptId": "straight",
+   "category": "direction",
+   "kind": "core",
+   "order": 600
+  },
+  {
+   "lemma": "aguja",
+   "gloss": "needle",
+   "gender": "f",
+   "display": null,
+   "conceptId": "needle",
+   "category": "home",
+   "kind": "core",
+   "order": 601
+  },
+  {
+   "lemma": "nadar",
+   "gloss": "to swim",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-swim",
+   "category": "verb",
+   "kind": "core",
+   "order": 602
+  },
+  {
+   "lemma": "besar",
+   "gloss": "to kiss",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-kiss",
+   "category": "verb",
+   "kind": "core",
+   "order": 603
+  },
+  {
+   "lemma": "portátil",
+   "gloss": "laptop",
+   "gender": "m",
+   "display": null,
+   "conceptId": "laptop",
+   "category": "electronics",
+   "kind": "core",
+   "order": 604
+  },
+  {
+   "lemma": "sentar",
+   "gloss": "to sit (sentarse)",
+   "gender": null,
+   "display": "sentarse",
+   "conceptId": "to-sit",
+   "category": "verb",
+   "kind": "core",
+   "order": 605
+  },
+  {
+   "lemma": "colgar",
+   "gloss": "to hang",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-hang",
+   "category": "verb",
+   "kind": "core",
+   "order": 606
+  },
+  {
+   "lemma": "sonreír",
+   "gloss": "to smile",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-smile",
+   "category": "verb",
+   "kind": "core",
+   "order": 607
+  },
+  {
+   "lemma": "zapato",
+   "gloss": "shoe",
+   "gender": "m",
+   "display": null,
+   "conceptId": "shoe",
+   "category": "clothing",
+   "kind": "core",
+   "order": 608
+  },
+  {
+   "lemma": "dieciocho",
+   "gloss": "eighteen",
+   "gender": null,
+   "display": null,
+   "conceptId": "eighteen",
+   "category": "number",
+   "kind": "core",
+   "order": 609
+  },
+  {
+   "lemma": "mojado",
+   "gloss": "wet",
+   "gender": null,
+   "display": null,
+   "conceptId": "wet",
+   "category": "adjective",
+   "kind": "core",
+   "order": 610
+  },
+  {
+   "lemma": "mezclar",
+   "gloss": "to mix",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-mix",
+   "category": "verb",
+   "kind": "core",
+   "order": 611
+  },
+  {
+   "lemma": "dieciséis",
+   "gloss": "sixteen",
+   "gender": null,
+   "display": null,
+   "conceptId": "sixteen",
+   "category": "number",
+   "kind": "core",
+   "order": 612
+  },
+  {
+   "lemma": "atrapar",
+   "gloss": "to catch",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-catch",
+   "category": "verb",
+   "kind": "core",
+   "order": 613
+  },
+  {
+   "lemma": "labio",
+   "gloss": "lip",
+   "gender": "m",
+   "display": null,
+   "conceptId": "lip",
+   "category": "body",
+   "kind": "core",
+   "order": 614
+  },
+  {
+   "lemma": "cuchara",
+   "gloss": "spoon",
+   "gender": "f",
+   "display": null,
+   "conceptId": "spoon",
+   "category": "food",
+   "kind": "core",
+   "order": 615
+  },
+  {
+   "lemma": "sordo",
+   "gloss": "deaf",
+   "gender": null,
+   "display": null,
+   "conceptId": "deaf",
+   "category": "adjective",
+   "kind": "core",
+   "order": 616
+  },
+  {
+   "lemma": "ventilador",
+   "gloss": "fan (device)",
+   "gender": "m",
+   "display": null,
+   "conceptId": "fan-device",
+   "category": "electronics",
+   "kind": "core",
+   "order": 617
+  },
+  {
+   "lemma": "arcilla",
+   "gloss": "clay",
+   "gender": "f",
+   "display": null,
+   "conceptId": "clay",
+   "category": "material",
+   "kind": "core",
+   "order": 618
+  },
+  {
+   "lemma": "plátano",
+   "gloss": "banana",
+   "gender": "m",
+   "display": null,
+   "conceptId": "banana",
+   "category": "food",
+   "kind": "core",
+   "order": 619
+  },
+  {
+   "lemma": "diecisiete",
+   "gloss": "seventeen",
+   "gender": null,
+   "display": null,
+   "conceptId": "seventeen",
+   "category": "number",
+   "kind": "core",
+   "order": 620
+  },
+  {
+   "lemma": "empujar",
+   "gloss": "to push",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-push",
+   "category": "verb",
+   "kind": "core",
+   "order": 621
+  },
+  {
+   "lemma": "doblar",
+   "gloss": "to bend",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-bend",
+   "category": "verb",
+   "kind": "core",
+   "order": 622
+  },
+  {
+   "lemma": "blando",
+   "gloss": "soft",
+   "gender": null,
+   "display": null,
+   "conceptId": "soft",
+   "category": "adjective",
+   "kind": "core",
+   "order": 623
+  },
+  {
+   "lemma": "camarero",
+   "gloss": "waiter",
+   "gender": "m",
+   "display": null,
+   "conceptId": "waiter",
+   "category": "job",
+   "kind": "core",
+   "order": 624
+  },
+  {
+   "lemma": "tenedor",
+   "gloss": "fork",
+   "gender": "m",
+   "display": null,
+   "conceptId": "fork",
+   "category": "food",
+   "kind": "core",
+   "order": 625
+  },
+  {
+   "lemma": "oler",
+   "gloss": "to smell",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-smell",
+   "category": "verb",
+   "kind": "core",
+   "order": 626
+  },
+  {
+   "lemma": "adjetivo",
+   "gloss": "adjective",
+   "gender": "m",
+   "display": null,
+   "conceptId": "adjective",
+   "category": "misc",
+   "kind": "core",
+   "order": 627
+  },
+  {
+   "lemma": "zumo",
+   "gloss": "juice",
+   "gender": "m",
+   "display": null,
+   "conceptId": "juice",
+   "category": "drink",
+   "kind": "core",
+   "order": 628
+  },
+  {
+   "lemma": "apretado",
+   "gloss": "tight",
+   "gender": null,
+   "display": null,
+   "conceptId": "tight",
+   "category": "adjective",
+   "kind": "core",
+   "order": 629
+  },
+  {
+   "lemma": "diecinueve",
+   "gloss": "nineteen",
+   "gender": null,
+   "display": null,
+   "conceptId": "nineteen",
+   "category": "number",
+   "kind": "core",
+   "order": 630
+  },
+  {
+   "lemma": "lágrima",
+   "gloss": "tear (drop)",
+   "gender": "f",
+   "display": null,
+   "conceptId": "tear-drop",
+   "category": "body",
+   "kind": "core",
+   "order": 631
+  },
+  {
+   "lemma": "cerradura",
+   "gloss": "lock",
+   "gender": "f",
+   "display": null,
+   "conceptId": "lock",
+   "category": "home",
+   "kind": "core",
+   "order": 632
+  },
+  {
+   "lemma": "sustantivo",
+   "gloss": "noun",
+   "gender": "m",
+   "display": null,
+   "conceptId": "noun",
+   "category": "misc",
+   "kind": "core",
+   "order": 633
+  },
+  {
+   "lemma": "centímetro",
+   "gloss": "centimeter",
+   "gender": "m",
+   "display": null,
+   "conceptId": "centimeter",
+   "category": "measure",
+   "kind": "core",
+   "order": 634
+  },
+  {
+   "lemma": "veintidós",
+   "gloss": "twenty-two",
+   "gender": null,
+   "display": null,
+   "conceptId": "twenty-two",
+   "category": "number",
+   "kind": "core",
+   "order": 635
+  },
+  {
+   "lemma": "neumático",
+   "gloss": "tire",
+   "gender": "m",
+   "display": null,
+   "conceptId": "tire",
+   "category": "transport",
+   "kind": "core",
+   "order": 636
+  },
+  {
+   "lemma": "ruidoso",
+   "gloss": "loud",
+   "gender": null,
+   "display": null,
+   "conceptId": "loud",
+   "category": "adjective",
+   "kind": "core",
+   "order": 637
+  },
+  {
+   "lemma": "pulgada",
+   "gloss": "inch",
+   "gender": "f",
+   "display": null,
+   "conceptId": "inch",
+   "category": "measure",
+   "kind": "core",
+   "order": 638
+  },
+  {
+   "lemma": "acostar",
+   "gloss": "to lie down (acostarse)",
+   "gender": null,
+   "display": "acostarse",
+   "conceptId": "to-lie-down",
+   "category": "verb",
+   "kind": "core",
+   "order": 639
+  },
+  {
+   "lemma": "sacudir",
+   "gloss": "to shake",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-shake",
+   "category": "verb",
+   "kind": "core",
+   "order": 640
+  },
+  {
+   "lemma": "bolígrafo",
+   "gloss": "pen",
+   "gender": "m",
+   "display": null,
+   "conceptId": "pen",
+   "category": "home",
+   "kind": "core",
+   "order": 641
+  },
+  {
+   "lemma": "cavar",
+   "gloss": "to dig",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-dig",
+   "category": "verb",
+   "kind": "core",
+   "order": 642
+  },
+  {
+   "lemma": "consonante",
+   "gloss": "consonant",
+   "gender": "f",
+   "display": null,
+   "conceptId": "consonant",
+   "category": "misc",
+   "kind": "core",
+   "order": 643
+  },
+  {
+   "lemma": "veintiuno",
+   "gloss": "twenty-one",
+   "gender": null,
+   "display": null,
+   "conceptId": "twenty-one",
+   "category": "number",
+   "kind": "core",
+   "order": 644
+  },
+  {
+   "lemma": "derretir",
+   "gloss": "to melt",
+   "gender": null,
+   "display": null,
+   "conceptId": "to-melt",
+   "category": "verb",
+   "kind": "core",
+   "order": 645
+  },
+  {
+   "lemma": "curvo",
+   "gloss": "curved",
+   "gender": null,
+   "display": null,
+   "conceptId": "curved",
+   "category": "adjective",
+   "kind": "core",
+   "order": 646
+  }
+ ]
+}

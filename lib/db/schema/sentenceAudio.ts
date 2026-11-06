@@ -40,7 +40,7 @@ export const sentenceAudio = pgTable(
     ),
     hashLangIdx: index('sentence_audio_hash_lang_idx').on(table.contentHash, table.languageCode),
   })
-);
+).enableRLS();
 
 export type SentenceAudio = typeof sentenceAudio.$inferSelect;
 export type NewSentenceAudio = typeof sentenceAudio.$inferInsert;

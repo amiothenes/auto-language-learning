@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { LanguageProvider } from "@/lib/contexts/LanguageContext";
@@ -6,6 +7,12 @@ import { QueryClientProvider } from "@/lib/contexts/QueryClientProvider";
 import { ReaderSettingsProvider } from "@/lib/contexts/ReaderSettingsContext";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { AuthQuerySync } from "@/components/AuthQuerySync";
+import { RisoDefs } from "@/components/riso/RisoDefs";
+
+// next/font self-hosts both families and exposes them as CSS variables, which
+// globals.css folds into --font-inter / --font-eb-garamond (with fallbacks).
+const inter = Inter({ subsets: ["latin", "latin-ext", "cyrillic"], variable: "--font-inter-loaded", display: "swap" });
+const ebGaramond = EB_Garamond({ subsets: ["latin", "latin-ext", "cyrillic"], variable: "--font-eb-garamond-loaded", display: "swap" });
 
 export const metadata: Metadata = {
   title: {
@@ -41,10 +48,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${ebGaramond.variable}`}>
       <body
         className="antialiased bg-desk"
       >
+        <RisoDefs />
         <QueryClientProvider>
           <AuthQuerySync />
           <LanguageProvider>

@@ -39,7 +39,8 @@ export type RateLimitName =
   | 'ttsWord'
   | 'ttsSentence'
   | 'deleteAllData'
-  | 'cleanupOrphaned';
+  | 'cleanupOrphaned'
+  | 'onboarding';
 
 const RATE_LIMIT_CONFIG: Record<RateLimitName, { limit: number; window: `${number} ${'s' | 'm' | 'h' | 'd'}` }> = {
   import: { limit: 5, window: '1 h' },
@@ -59,6 +60,9 @@ const RATE_LIMIT_CONFIG: Record<RateLimitName, { limit: number; window: `${numbe
   // more than once in a session.
   deleteAllData: { limit: 3, window: '1 h' },
   cleanupOrphaned: { limit: 20, window: '1 h' },
+  // Onboarding seeding: once per language normally. Allows a few retries and
+  // "retake placement" runs; the seeding itself is idempotent.
+  onboarding: { limit: 6, window: '1 h' },
 };
 
 const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
@@ -72,6 +76,7 @@ const RATE_LIMIT_LABELS: Record<RateLimitName, string> = {
   ttsSentence: 'sentence narration requests',
   deleteAllData: 'data deletion requests',
   cleanupOrphaned: 'vocabulary cleanup requests',
+  onboarding: 'library setups',
 };
 
 const limiters = redis

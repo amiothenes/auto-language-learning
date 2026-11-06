@@ -7,7 +7,7 @@ import { ReactNode, HTMLAttributes, ElementType } from 'react';
 // ============================================================================
 
 type CardVariant = 'default' | 'hover' | 'interactive';
-type CardPadding = 'sm' | 'md' | 'lg';
+type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
 interface CardProps extends HTMLAttributes<HTMLElement> {
   variant?: CardVariant;
@@ -46,6 +46,7 @@ export function Card({
   
   // Padding styles
   const paddingStyles = {
+    none: '',
     sm: 'p-4',
     md: 'p-6',
     lg: 'p-8',

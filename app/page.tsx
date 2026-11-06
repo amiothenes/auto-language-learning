@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, FileText, MousePointerClick, BarChart3 } from 'lucide-react';
+import { StartReadingButton } from '@/components/auth/StartReadingButton';
 
 // ─── Grammar Demo ─────────────────────────────────────────────────────────────
 // Static mockup of the reader experience — the core differentiator made visible.
@@ -127,12 +128,9 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <Link
-              href="/signup"
-              className="font-sans text-ui-sm font-medium bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
-            >
-              Start free
-            </Link>
+            <StartReadingButton className="font-sans text-ui-sm font-medium bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-60">
+              Start reading
+            </StartReadingButton>
           </div>
         </div>
       </nav>
@@ -184,13 +182,10 @@ export default function LandingPage() {
               grammatical case, tense, and aspect, drawn directly from the sentence.
             </p>
             <div className="flex items-center gap-3">
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-2 font-sans text-ui-base font-medium bg-primary text-white px-5 py-2.5 rounded hover:bg-primary-dark transition-colors"
-              >
-                Start reading free
+              <StartReadingButton className="inline-flex items-center gap-2 font-sans text-ui-base font-medium bg-primary text-white px-5 py-2.5 rounded hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-60">
+                Start reading, no signup
                 <ArrowRight size={16} strokeWidth={2} />
-              </Link>
+              </StartReadingButton>
               <Link
                 href="/login"
                 className="font-sans text-ui-base text-muted hover:text-ink transition-colors py-2.5 px-2"
@@ -319,13 +314,10 @@ export default function LandingPage() {
           <p className="font-sans text-ui-md text-muted mb-8">
             Paste an article, a novel excerpt, or a song lyric. Verbista handles the rest.
           </p>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-2 font-sans text-ui-base font-medium bg-primary text-white px-6 py-3 rounded hover:bg-primary-dark transition-colors"
-          >
-            Create a free account
+          <StartReadingButton className="inline-flex items-center gap-2 font-sans text-ui-base font-medium bg-primary text-white px-6 py-3 rounded hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-60">
+            Open the library
             <ArrowRight size={16} strokeWidth={2} />
-          </Link>
+          </StartReadingButton>
         </div>
       </section>
 

@@ -14,6 +14,15 @@
   --color-muted: #6E6D6A;
   --color-border: #E5E2DA;
 
+  /* Riso inks: the illustration palette. Green is the primary ink, ochre is
+     the warm second drum already used in public/illustrations, and coral is
+     the accent drum. Use coral sparingly: highlights, "lit" states, the
+     Fluency number. */
+  --color-riso-green: #183A37;
+  --color-riso-ochre: #C28A4A;
+  --color-riso-gold:  #C8A95A;
+  --color-riso-coral: #E0654F;
+
   /* Semantic / functional */
   --color-danger: #9B2335;
 
@@ -44,8 +53,8 @@
 /* Base Styles Layer */
 @layer base {
   :root {
-    --font-inter: 'Inter', system-ui, sans-serif;
-    --font-eb-garamond: 'EB Garamond', Georgia, serif;
+    --font-inter: var(--font-inter-loaded, 'Inter'), system-ui, sans-serif;
+    --font-eb-garamond: var(--font-eb-garamond-loaded, 'EB Garamond'), Georgia, serif;
   }
 
   html {
@@ -539,4 +548,25 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* ============================================================================
+   Guided first read (components/reader/GuidedCoach.tsx): the word to tap
+   glows with the coral riso ink. A static ring under reduced motion.
+   ============================================================================ */
+@keyframes coach-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(224, 101, 79, 0.85), 0 0 0 6px rgba(224, 101, 79, 0.18); }
+  50%      { box-shadow: 0 0 0 2px rgba(224, 101, 79, 0.85), 0 0 0 11px rgba(224, 101, 79, 0); }
+}
+.coach-glow {
+  border-radius: 4px;
+  animation: coach-glow 1.6s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-glow {
+    animation: none;
+    box-shadow: 0 0 0 2px rgba(224, 101, 79, 0.85), 0 0 0 6px rgba(224, 101, 79, 0.18);
+  }
 }
