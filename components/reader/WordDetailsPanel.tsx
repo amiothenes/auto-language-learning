@@ -69,7 +69,7 @@ export function WordDetailsPanel({
     setIsExiting(false);
   }, [wordData?.wordId]);
 
-  useBodyScrollLock(true);
+  useBodyScrollLock(!!wordData);
 
   const handleClose = useCallback(() => {
     setIsExiting(true);
