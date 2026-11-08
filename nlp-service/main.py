@@ -15,6 +15,7 @@ MODEL_MAP = {
     "es": "es_core_news_sm",
     "fr": "fr_core_news_sm",
     "ru": "ru_core_news_sm",
+    "it": "it_core_news_sm",
 }
 
 

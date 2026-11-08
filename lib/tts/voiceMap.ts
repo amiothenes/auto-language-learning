@@ -37,6 +37,11 @@ export const LANGUAGE_VOICE_OPTIONS: Record<string, VoiceOption[]> = {
     { id: 'ru-RU-DmitryNeural', label: 'Dmitry', gender: 'male' },
     { id: 'ru-RU-DariyaNeural', label: 'Dariya', gender: 'female' },
   ],
+  it: [
+    { id: 'it-IT-ElsaNeural', label: 'Elsa (Italy)', gender: 'female' },
+    { id: 'it-IT-DiegoNeural', label: 'Diego (Italy)', gender: 'male' },
+    { id: 'it-IT-IsabellaNeural', label: 'Isabella (Italy)', gender: 'female' },
+  ],
 };
 
 export function getVoiceOptions(languageCode: string): VoiceOption[] {

@@ -10,6 +10,7 @@ Output:
     lib/db/seeds/data/wordfreq_es.json
     lib/db/seeds/data/wordfreq_fr.json
     lib/db/seeds/data/wordfreq_ru.json
+    lib/db/seeds/data/wordfreq_it.json
 
 Each file is a flat JSON object: { "lemma": zipfScore, ... }
 Consumed by lib/db/seeds/subtlex.ts to populate words.dictionaryFrequency.
@@ -28,7 +29,7 @@ except ImportError:
     print("wordfreq not installed. Run: pip install wordfreq")
     sys.exit(1)
 
-LANGUAGES = ["en", "es", "fr", "ru"]
+LANGUAGES = ["en", "es", "fr", "ru", "it"]
 TOP_N = 100_000
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "lib", "db", "seeds", "data")
 
@@ -55,7 +56,7 @@ def main() -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     for lang in LANGUAGES:
         export_language(lang)
-    print("\nDone. Commit the 4 JSON files, then run: npm run db:seed:freq")
+    print("\nDone. Commit the JSON files, then run: npm run db:seed:freq")
 
 
 

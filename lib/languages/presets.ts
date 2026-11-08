@@ -46,4 +46,5 @@ export const PRESET_LANGUAGES: LanguagePreset[] = [
   { code: 'fr', name: 'French', flag: '🇫🇷', ttsCode: 'fr-FR', rtl: false, includeForeignScript: false },
   { code: 'ru', name: 'Russian', flag: '🇷🇺', ttsCode: 'ru-RU', rtl: false, includeForeignScript: true },
   { code: 'en', name: 'English', flag: '🇬🇧', ttsCode: 'en-US', rtl: false, includeForeignScript: false },
+  { code: 'it', name: 'Italian', flag: '🇮🇹', ttsCode: 'it-IT', rtl: false, includeForeignScript: false },
 ];
