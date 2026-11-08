@@ -350,7 +350,7 @@ export function EditTextModal({ isOpen, onClose, textId, onSaved }: EditTextModa
                   onChange={(e) => setContentInput(e.target.value)}
                   disabled={isFetching || isSaving}
                   rows={12}
-                  className="w-full px-3 py-2 font-serif text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 resize-y"
+                  className="w-full px-3 py-2 font-sans text-ui-sm text-ink bg-paper border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all disabled:opacity-50 resize-y"
                 />
                 {hasContentChanged && contentInput.trim().length < 10 && (
                   <p className="font-sans text-ui-xs text-danger mt-1">

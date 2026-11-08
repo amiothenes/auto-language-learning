@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { Heading, Muted } from '@/components/ui/Typography';
@@ -8,16 +8,20 @@ import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { EditTextModal } from '@/components/texts/EditTextModal';
 import { Toast, useToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   ChevronLeft,
   BookOpen,
   Library,
   Download,
-  Pencil
+  Pencil,
+  CheckCheck,
 } from 'lucide-react';
 import type { WordInstanceItem, SentenceListItem } from '@/lib/types/api';
 import { buildOneTCards, buildOneTCsv } from '@/lib/utils/oneTSentences';
 import { roundCompletionPercentage } from '@/lib/utils/textStats';
+import { useBulkUpdateWordStatus } from '@/lib/hooks/useBulkUpdateWordStatus';
+import { VocabularyStatus } from '@/lib/types/vocabulary';
 
 // ============================================================================
 // TextInfo Component
@@ -60,8 +64,38 @@ export function TextInfo({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isMarkAllOpen, setIsMarkAllOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, hideToast } = useToast();
+  const bulkUpdateMutation = useBulkUpdateWordStatus(textId);
+
+  // Unique lemma ids for this text, excluding Ignored — mirrors the dedupe-by-wordId
+  // pattern handleExportCsv already uses below.
+  const markAllWordIds = useMemo(() => {
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    for (const inst of wordInstances ?? []) {
+      if (inst.status === VocabularyStatus.IGNORE) continue;
+      if (!seen.has(inst.wordId)) {
+        seen.add(inst.wordId);
+        ids.push(inst.wordId);
+      }
+    }
+    return ids;
+  }, [wordInstances]);
+
+  const handleMarkAllKnown = useCallback(async () => {
+    try {
+      await bulkUpdateMutation.mutateAsync({
+        wordIds: markAllWordIds,
+        status: VocabularyStatus.WELL_KNOWN,
+      });
+      setIsMarkAllOpen(false);
+      showToast('Marked all words as known', 'success');
+    } catch {
+      showToast('Failed to update words. Try again.', 'error');
+    }
+  }, [bulkUpdateMutation, markAllWordIds, showToast]);
 
   useEffect(() => {
     if (!showExportMenu) return;
@@ -300,6 +334,29 @@ export function TextInfo({
           Edit Text
         </Button>
       </div>
+
+      {/* Mark All Known */}
+      <div className="pt-4 border-t border-border">
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<CheckCheck size={16} strokeWidth={1.5} />}
+          onClick={() => setIsMarkAllOpen(true)}
+          disabled={markAllWordIds.length === 0}
+          className="w-full"
+        >
+          Mark All Words as Known
+        </Button>
+      </div>
+
+      <ConfirmDialog
+        isOpen={isMarkAllOpen}
+        onClose={() => setIsMarkAllOpen(false)}
+        onConfirm={handleMarkAllKnown}
+        title="Mark all words as known?"
+        message={`Sets all ${markAllWordIds.length.toLocaleString('en-US')} words in this text to Well Known. Ignored words are left untouched.`}
+        confirmLabel="Mark as known"
+      />
 
       <EditTextModal
         isOpen={isEditOpen}

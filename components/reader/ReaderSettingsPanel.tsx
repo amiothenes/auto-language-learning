@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useReaderSettings } from '@/lib/contexts/ReaderSettingsContext';
 import { AudioSettingsSection } from './AudioSettingsSection';
+import { ReaderGuideModal } from './ReaderGuideModal';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -90,6 +91,7 @@ export function ReaderSettingsPanel({
     updateColorScheme,
   } = useReaderSettings();
   const [tab, setTab] = useState<SettingsTab>(initialTab);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // ── Position below ⚙ button ──────────────────────────────────────────────
@@ -268,7 +270,10 @@ export function ReaderSettingsPanel({
 
         {/* Footer links */}
         <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">
-          <button className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors cursor-pointer">
+          <button
+            onClick={() => setIsGuideOpen(true)}
+            className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
+          >
             Reader Guide
           </button>
           <button className="font-sans text-ui-xs text-primary hover:text-primary/80 transition-colors cursor-pointer">
@@ -276,6 +281,8 @@ export function ReaderSettingsPanel({
           </button>
         </div>
       </div>
+
+      <ReaderGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </>
   );
 }

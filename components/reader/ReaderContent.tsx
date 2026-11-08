@@ -84,11 +84,10 @@ interface ReaderContentProps {
   isLoading?: boolean;
   loadError?: string | null;
   seriesId?: string;
-  /** Whether a next text exists in the series (per the reader's current sort).
-   * The full "End" treatment only makes sense once there's nothing left to
-   * read — otherwise it sits right above the "next text →" link and reads
-   * as a contradiction. */
-  hasNextText?: boolean;
+  /** The next text in the series (per the reader's current sort), if any.
+   * When present, the end-of-text card becomes a primary "Up next" action
+   * instead of the plain "End" treatment. */
+  nextText?: { id: string; title: string } | null;
 }
 
 export function ReaderContent({
@@ -104,7 +103,7 @@ export function ReaderContent({
   isLoading,
   loadError,
   seriesId,
-  hasNextText,
+  nextText,
 }: ReaderContentProps) {
   const { settings } = useReaderSettings();
 
@@ -258,29 +257,50 @@ export function ReaderContent({
         </p>
       ))}
 
-      {/* End-of-series marker — only when there's no next text to read, so it
-          never contradicts the "next text →" link the page renders right
-          below this. A standalone (non-series) text always qualifies. */}
-      {!hasNextText && (
-        <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
-          <img
-            src="/illustrations/mountain.svg"
-            width={72}
-            height={72}
-            alt=""
-            className="opacity-60"
-          />
-          <p className="font-serif italic text-content-base text-muted">End</p>
-          {seriesId && (
+      {/* End-of-text marker. When a next text exists in the series, this
+          becomes a primary "Up next" action instead of a dead end — it
+          sits above the plain "next text →" breadcrumb the page renders
+          below, which still covers the "prev" direction. */}
+      <div className="flex flex-col items-center gap-4 pt-12 pb-8 border-t border-border mt-8">
+        <img
+          src="/illustrations/mountain.svg"
+          width={72}
+          height={72}
+          alt=""
+          className="opacity-60"
+        />
+        {nextText ? (
+          <>
+            <p className="font-sans text-ui-xs text-muted uppercase tracking-wide">Up next</p>
             <Link
-              href={`/series/${seriesId}`}
-              className="font-sans text-ui-sm text-primary hover:underline"
+              href={`/reader/${nextText.id}`}
+              className="inline-flex items-center justify-center gap-2 font-sans font-medium rounded transition-all bg-primary text-white shadow-raised hover:brightness-90 hover:shadow-raised-hover active:translate-y-px px-5 py-2.5 text-ui-base"
             >
-              Back to series →
+              {nextText.title} →
             </Link>
-          )}
-        </div>
-      )}
+            {seriesId && (
+              <Link
+                href={`/series/${seriesId}`}
+                className="font-sans text-ui-xs text-muted hover:text-primary hover:underline"
+              >
+                Back to series
+              </Link>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="font-serif italic text-content-base text-muted">End</p>
+            {seriesId && (
+              <Link
+                href={`/series/${seriesId}`}
+                className="font-sans text-ui-sm text-primary hover:underline"
+              >
+                Back to series →
+              </Link>
+            )}
+          </>
+        )}
+      </div>
     </article>
   );
 }

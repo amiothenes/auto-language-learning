@@ -318,7 +318,7 @@ export function MobileWordSheet({
             <div className="mb-3">
               {justGraded ? (
                 <div>
-                  <p className="font-serif text-2xl text-ink/65 font-normal italic leading-snug">
+                  <p className="font-serif text-3xl text-ink/65 font-normal italic leading-snug">
                     {translation || (
                       <span className="not-italic text-muted/40 text-xl">No translation</span>
                     )}
@@ -339,7 +339,7 @@ export function MobileWordSheet({
                   onClick={(e) => { e.stopPropagation(); if (!effectiveFirstTest) setEditingTranslation(true); }}
                   className="w-full text-left group cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
+                  <p className="font-serif text-xl text-ink/65 font-normal italic leading-snug">
                     {translation || (
                       <span className="not-italic font-sans font-normal text-muted/50">Add translation…</span>
                     )}

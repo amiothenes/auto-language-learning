@@ -225,9 +225,9 @@ export function WordTooltip({
               <div className="mt-1">
                 {justGraded ? (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-serif text-xl text-ink/65 font-normal italic leading-snug">
+                    <p className="font-serif text-2xl text-ink/65 font-normal italic leading-snug">
                       {translationValue || (
-                        <span className="not-italic text-muted/40 text-base">No translation</span>
+                        <span className="not-italic text-muted/40 text-lg">No translation</span>
                       )}
                     </p>
                     {showMeaningsBadge && (
@@ -243,7 +243,7 @@ export function WordTooltip({
                 ) : !editingTranslation ? (
                   <button className="w-full text-left group cursor-pointer" onClick={() => setEditingTranslation(true)}>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-serif text-base text-ink/65 font-normal italic leading-snug">
+                      <p className="font-serif text-lg text-ink/65 font-normal italic leading-snug">
                         {translationValue || (
                           <span className="not-italic text-muted/50 font-sans text-sm">Add translation…</span>
                         )}
